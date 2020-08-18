@@ -130,19 +130,19 @@ module.exports = app;
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-const userType = __webpack_require__(/*! ./userType */ "./src/constants/userType.js").userTypes;
+const userType = __webpack_require__(/*! ./types */ "./src/constants/types.js").userTypes;
 /**
  * Get menus list
  */
 
 
 exports.menus = [{
-  name: "Inicio",
-  path: "/",
-  icon: "icon icon-home2",
+  name: "Mi Cuenta",
+  path: "/admin/cuenta",
+  icon: "icon icon-account_circle",
   visible: true,
-  validUserTypes: [userType.guard, userType.admin, userType.guest, userType.neighbor],
-  order: 1
+  validUserTypes: [userType.guard, userType.suburbAdmin, userType.admin, userType.guest, userType.neighbor],
+  order: 5
 }, {
   name: "Guardias",
   path: "/admin/guardias",
@@ -155,53 +155,67 @@ exports.menus = [{
   icon: "icon icon-shield",
   path: "/admin/guardias-form",
   visible: false,
-  validUserTypes: [userType.guest, userType.guard, userType.admin],
+  validUserTypes: [userType.suburbAdmin, userType.admin],
   order: 6
 }, {
   name: "Vecinos",
   path: "/admin/vecinos",
   icon: "icon icon-users",
   visible: true,
-  validUserTypes: [userType.guard, userType.admin],
+  validUserTypes: [userType.guard, userType.suburbAdmin, userType.admin],
   order: 3
 }, {
   name: "Colonia",
   path: "/admin/colonias",
   icon: "icon icon-building",
   visible: true,
-  validUserTypes: [userType.admin, userType.guest],
+  validUserTypes: [userType.admin, userType.suburbAdmin, userType.guest],
   order: 4
 }, {
   name: "Colonia Status",
   path: "/admin/coloniaStatus",
   icon: "icon icon-building",
   visible: false,
-  validUserTypes: [userType.admin, userType.guest],
+  validUserTypes: [userType.admin, userType.suburbAdmin, userType.guest],
   order: 4
 }, {
-  name: "Mi Cuenta",
-  path: "/admin/cuenta",
-  icon: "icon icon-account_circle",
-  visible: true,
-  validUserTypes: [userType.guard, userType.admin, userType.guest, userType.neighbor],
-  order: 5
+  name: "Colonia Status",
+  path: "/admin/coloniaMain",
+  icon: "icon icon-building",
+  visible: false,
+  validUserTypes: [userType.admin, userType.suburbAdmin, userType.suburbAdmin],
+  order: 4
 }];
 
 /***/ }),
 
-/***/ "./src/constants/userType.js":
-/*!***********************************!*\
-  !*** ./src/constants/userType.js ***!
-  \***********************************/
+/***/ "./src/constants/types.js":
+/*!********************************!*\
+  !*** ./src/constants/types.js ***!
+  \********************************/
 /*! no static exports found */
 /***/ (function(module, exports) {
 
 exports.userTypes = {
   guest: "guest",
   admin: "admin",
+  suburbAdmin: "suburbAdmin",
   guard: "guard",
   neighbor: "neighbor"
 };
+exports.suburbStatus = [{
+  status: "pending",
+  description: "Tu solicitud para registrar la colonia ha sido enviada, por favor espera de 2 a 3 dias habiles o contactanos por medio de nuestras redes sociales para mayor informacion."
+}, {
+  status: "rejected",
+  description: "Lo sentimos tu solicitud fue rechazada."
+}, {
+  status: "approved",
+  description: "Tu solicitud a sido aprobada."
+}, {
+  status: "feedback",
+  description: "Tu solicitud a sido revisada, se requiere mas información."
+}];
 
 /***/ }),
 
@@ -225,7 +239,7 @@ const dropboxV2Api = __webpack_require__(/*! dropbox-v2-api */ "dropbox-v2-api")
 const sgMail = __webpack_require__(/*! @sendgrid/mail */ "@sendgrid/mail");
 
 const getFileName = (nodeFileName, originalName) => {
-  let idx = originalName.lastIndexOf('.');
+  let idx = originalName.lastIndexOf(".");
   return `${nodeFileName}.${originalName.substring(idx + 1)}`;
 };
 
@@ -235,7 +249,7 @@ const uploadFileDropbox = file => {
   });
   return new Promise((resolve, reject) => {
     dropbox({
-      resource: 'files/upload',
+      resource: "files/upload",
       parameters: {
         path: `/neighby/${getFileName(file.filename, file.originalname)}`
       },
@@ -250,7 +264,7 @@ const base64_encode = file_path => {
   // read binary data
   var bitmap = fs.readFileSync(file_path); // convert binary data to base64 encoded string
 
-  return new Buffer.from(bitmap, 'base64').toString('base64'); //.toString('base64');
+  return new Buffer.from(bitmap, "base64").toString("base64"); //.toString('base64');
 };
 
 const getEmailAttachments = files => {
@@ -264,15 +278,15 @@ const getEmailAttachments = files => {
   return attachments;
 };
 
-const sendEmail = async (files, user, suburb) => {
+const sendEmail = async (files, user, suburb, suburbId) => {
   try {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
     const msg = {
-      to: process.env.OWNER_EMAILS.split(','),
-      from: 'support@neighby.com',
-      subject: 'Nuevo requerimiento de registro de colonia.',
+      to: process.env.OWNER_EMAILS.split(","),
+      from: "support@neighby.com",
+      subject: "Nuevo requerimiento de registro de colonia.",
       text: `solicitud de registro.`,
-      html: `<strong>El usuario ${user} desea registrar la colonia ${suburb} y envia estos documentos para revisión.</strong>`,
+      html: `<strong>El usuario ${user} desea registrar la colonia ${suburb} y envia los documentos para revisión adjuntos en este email para revision, id de referencia:[${suburbId}].</strong>`,
       attachments: getEmailAttachments(files)
     };
     await sgMail.send(msg);
@@ -309,7 +323,20 @@ const processFileUpload = async (files, data) => {
       proms.push(uploadFileDropbox(file));
     });
     let uploadedFiles = await Promise.all(proms);
-    await sendEmail(files, `${name} ${lastName}`, suburbName);
+    let saveSuburb = await suburbService.saveSuburb({
+      name: suburbName,
+      location: section,
+      postalCode: postalCode,
+      active: true,
+      userAdmins: [userId],
+      status: [suburbService.getSuburbStatus("pending")],
+      files: files.map(fil => ({
+        fileName: fil.filename,
+        originalName: fil.originalname,
+        actionType: "solicitudRegistro",
+        mimetype: fil.mimetype
+      }))
+    });
     let updateUser = await userServices.updateUser({
       _id: userId,
       name,
@@ -318,23 +345,7 @@ const processFileUpload = async (files, data) => {
       email,
       active: true
     });
-    let saveSuburb = await suburbService.saveSuburb({
-      name: suburbName,
-      location: section,
-      postalCode: postalCode,
-      active: true,
-      userAdmins: [userId],
-      status: [{
-        status: 'activacionPendiente',
-        description: 'Tu solicitud para registrar la colonia ha sido enviada, por favor espera de 2 a 3 dias habiles o contactanos por medio de nuestras redes sociales para mayor informacion.'
-      }],
-      files: files.map(fil => ({
-        fileName: fil.filename,
-        originalName: fil.originalname,
-        actionType: "solicitudRegistro",
-        mimetype: fil.mimetype
-      }))
-    });
+    await sendEmail(files, `${name} ${lastName}`, suburbName, saveSuburb.id);
     deleteTemporaryFiles(files);
     return saveSuburb;
   } catch (ex) {
@@ -367,11 +378,11 @@ exports.uploadFile = async (req, res, next) => {
       recaptchaToken
     });
     res.status(202).json({
-      message: 'ok'
+      message: "ok"
     });
   } catch (ex) {
     res.status(400).json({
-      message: ex.message || 'No se pudo completar el registro.'
+      message: ex.message || "No se pudo completar el registro."
     });
   }
 };
@@ -678,19 +689,64 @@ exports.logOff = (req, res, next) => {
 
 /***/ }),
 
-/***/ "./src/controllers/suburbInfo.js":
-/*!***************************************!*\
-  !*** ./src/controllers/suburbInfo.js ***!
-  \***************************************/
+/***/ "./src/controllers/suburb.js":
+/*!***********************************!*\
+  !*** ./src/controllers/suburb.js ***!
+  \***********************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 const suburbService = __webpack_require__(/*! ../logic/suburbService */ "./src/logic/suburbService.js");
 
+const userService = __webpack_require__(/*! ../logic/userService */ "./src/logic/userService.js");
+
+const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants/types.js").userTypes;
+
+const moment = __webpack_require__(/*! moment */ "moment");
+
+exports.approveReject = async (req, res, next) => {
+  try {
+    let {
+      suburbId,
+      newStatus,
+      details
+    } = req.body;
+    let suburb = await suburbService.getSuburbById(suburbId);
+    let status = suburbService.getSuburbStatus(newStatus);
+
+    if (suburb && status) {
+      let addStatus = await suburbService.suburbAddStatus(suburbId, { ...status,
+        details,
+        transtime: moment.utc()
+      });
+
+      if (addStatus) {
+        if (status.status === "approved") await userService.updateUser({
+          _id: suburb.userAdmins[0].id,
+          userType: userTypes.suburbAdmin,
+          transtime: moment.utc()
+        });
+        res.status(200).json({
+          success: true,
+          message: `El estatus ha sido actualizado correctamente, el nuevo estatus es: "${status.status}"`
+        });
+      }
+    } else res.status(400).json({
+      success: false,
+      message: "El estatus no es valido o la colonia no existe"
+    });
+  } catch (ex) {
+    res.status(400).json({
+      success: false,
+      message: ex.message || "No se pudo procesar aprobar/rechazar la colonia."
+    });
+  }
+};
+
 exports.getSuburbByAdminId = (req, res, next) => {
   let userId = req.query.id;
   suburbService.getSuburbByAdminUser(userId).then(result => {
-    res.status('200').json(result);
+    res.status("200").json(result);
   }, err => {
     res.status(400).json({
       success: false,
@@ -710,7 +766,7 @@ exports.getSuburbByAdminId = (req, res, next) => {
 
 const userService = __webpack_require__(/*! ../logic/userService */ "./src/logic/userService.js");
 
-const userTypes = __webpack_require__(/*! ../constants/userType */ "./src/constants/userType.js").userTypes;
+const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants/types.js").userTypes;
 
 exports.saveGoogleUser = (req, res, next) => {
   //get user data here
@@ -739,20 +795,20 @@ exports.saveGoogleUser = (req, res, next) => {
       googleId,
       userConfirmed: true
     }).then(resSave => {
-      res.status('200').json({
+      res.status("200").json({
         success: true,
         message: res.message || "Has sido registrado correctamente."
       });
     }, err => {
-      res.status('400').json({
+      res.status("400").json({
         success: false,
-        message: err.message || 'Bad request.'
+        message: err.message || "Bad request."
       });
     });
   }, err => {
-    res.status('400').json({
+    res.status("400").json({
       success: false,
-      message: err.message || 'Bad request.'
+      message: err.message || "Bad request."
     });
   });
 };
@@ -783,20 +839,20 @@ exports.saveFacebookUser = (req, res, next) => {
       googleId,
       userConfirmed: true
     }).then(resSave => {
-      res.status('200').json({
+      res.status("200").json({
         success: true,
         message: res.message || "Has sido registrado correctamente."
       });
     }, err => {
-      res.status('400').json({
+      res.status("400").json({
         success: false,
-        message: err.message || 'Bad request.'
+        message: err.message || "Bad request."
       });
     });
   }, err => {
-    res.status('400').json({
+    res.status("400").json({
       success: false,
-      message: err.message || 'Bad request.'
+      message: err.message || "Bad request."
     });
   });
 };
@@ -827,20 +883,20 @@ exports.saveEmailUser = (req, res, next) => {
       googleId,
       userConfirmed: false
     }).then(resSave => {
-      res.status('200').json({
+      res.status("200").json({
         success: true,
         message: res.message || "Has sido registrado correctamente."
       });
     }, err => {
-      res.status('400').json({
+      res.status("400").json({
         success: false,
-        message: err.message || 'Bad request.'
+        message: err.message || "Bad request."
       });
     });
   }, err => {
-    res.status('400').json({
+    res.status("400").json({
       success: false,
-      message: err.message || 'Bad request.'
+      message: err.message || "Bad request."
     });
   });
 };
@@ -857,9 +913,9 @@ exports.createUserByType = async (req, res, next) => {
     const userType = userTypes[req.params.userType];
 
     if (!userType) {
-      res.status('400').json({
+      res.status("400").json({
         success: false,
-        message: 'Bad request.'
+        message: "Bad request."
       });
       return;
     }
@@ -873,14 +929,14 @@ exports.createUserByType = async (req, res, next) => {
       userConfirmed: false,
       userType
     });
-    res.status('200').json({
+    res.status("200").json({
       success: true,
       message: result.message || "Has sido registrado correctamente."
     });
   } catch (err) {
-    res.status('400').json({
+    res.status("400").json({
       success: false,
-      message: err.message || 'Bad request.'
+      message: err.message || "Bad request."
     });
   }
 };
@@ -890,22 +946,22 @@ exports.getUserByType = async (req, res, next) => {
     const userType = userTypes[req.params.userType];
 
     if (!userType) {
-      res.status('400').json({
+      res.status("400").json({
         success: false,
-        message: 'Bad request.'
+        message: "Bad request."
       });
       return;
     }
 
     const result = await userService.getUserByType(userType);
-    res.status('200').json({
+    res.status("200").json({
       success: true,
       data: result
     });
   } catch (err) {
-    res.status('400').json({
+    res.status("400").json({
       success: false,
-      message: err.message || 'Bad request.'
+      message: err.message || "Bad request."
     });
   }
 };
@@ -913,17 +969,61 @@ exports.getUserByType = async (req, res, next) => {
 exports.getUserInfo = async (req, res, next) => {
   try {
     userService.getUserByToken(req.query.token).then(result => {
-      res.status('200').json(result);
+      res.status("200").json(result);
     }, err => {
-      res.status('400').json({
+      res.status("400").json({
         success: false,
-        message: err.message || 'Bad request.'
+        message: err.message || "Bad request."
       });
     });
   } catch (err) {
-    res.status('400').json({
+    res.status("400").json({
       success: false,
-      message: err.message || 'Bad request.'
+      message: err.message || "Bad request."
+    });
+  }
+};
+
+exports.getUserFavs = async (req, res, next) => {
+  try {
+    let userFavs = await userService.getUserFavorites(req.query.userId);
+    res.status("200").json(userFavs);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
+exports.addUserFavs = async (req, res, next) => {
+  try {
+    let {
+      favs,
+      userId
+    } = req.body;
+    let userFavs = await userService.saveUserFavorites(userId, favs);
+    res.status("200").json(userFavs);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
+exports.removeUserFavs = async (req, res, next) => {
+  try {
+    let {
+      favs,
+      userId
+    } = req.body;
+    let userFavs = await userService.removeUserFavorites(userId, favs);
+    res.status("200").json(userFavs);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
     });
   }
 };
@@ -937,10 +1037,14 @@ exports.getUserInfo = async (req, res, next) => {
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-const User = __webpack_require__(/*! ../models/user */ "./src/models/user.js"); //const connectDb = require("../models/index").connectDb;
+const User = __webpack_require__(/*! ../models/user */ "./src/models/user.js");
 
+const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants/types.js").userTypes;
 
-const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveEmailUser", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload"];
+const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveEmailUser", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", "/api/userInfo/favorites", //remover esto cuando se agregue authenticacion en mobile
+"/api/userInfo/addFavorites", //remover esto cuando se agregue authenticacion en mobile
+"/api/userInfo/removeFavorites"];
+const protectedApi = ["/api/suburb/approveReject"];
 module.exports = class Auth {
   validateToken(token) {
     let user = User;
@@ -961,15 +1065,52 @@ module.exports = class Auth {
     }));
   }
 
+  validateAdminUser(token) {
+    let user = User;
+    let getPayload = user.getTokenPayload(token);
+    return new Promise((resolve, reject) => {
+      getPayload.then(payload => {
+        if (payload.userType !== userTypes.admin) reject({
+          valid: false,
+          message: "The user does not have permissions to execute this api."
+        });else resolve({
+          valid: true,
+          message: "Ok"
+        });
+      });
+    }, err => {
+      console.log(err);
+      reject({
+        valid: false,
+        message: "The user does not have permissions to execute this api."
+      });
+    });
+  }
+
   isOpenApi(apiPath) {
     return openApi.indexOf(apiPath) !== -1 ? true : false;
+  }
+
+  isProtectedApi(apiPath) {
+    return protectedApi.indexOf(apiPath) !== -1 ? true : false;
   }
 
   validateApiRequest(apiPath, token) {
     if (this.isOpenApi(apiPath)) return new Promise(resolve => resolve({
       valid: true,
       message: "the api is open."
-    }));else return this.validateToken(token);
+    }));else if (this.isProtectedApi(apiPath)) {
+      return new Promise((resolve, reject) => {
+        this.validateAdminUser(token).then(res => {
+          let validateToken = this.validateToken(token);
+          validateToken.then(res => resolve(res)).catch(err => reject(err));
+        }).catch(err => {
+          reject(err);
+        });
+      });
+    } else {
+      return this.validateToken(token);
+    }
   }
 
 };
@@ -1062,12 +1203,20 @@ exports.getCPInfo = async postalCode => {
 
 const Suburb = __webpack_require__(/*! ../models/suburb */ "./src/models/suburb.js");
 
+const suburbStatus = __webpack_require__(/*! ../constants/types */ "./src/constants/types.js").suburbStatus;
+
+const getSuburbStatus = statusName => {
+  let status = suburbStatus.filter(st => st.status === statusName);
+  return status[0];
+};
+
 const saveSuburb = suburbObj => {
   return new Promise((resolve, reject) => {
     Suburb.SaveSuburb(suburbObj).then((sub, err) => {
       if (!err) resolve({
         success: true,
-        message: "La colonia fue guardada correctamente."
+        message: "La colonia fue guardada correctamente.",
+        id: sub.id
       });else reject({
         success: false,
         message: err.message || "Ocurrio un error al intentar guardar la colonia."
@@ -1115,11 +1264,24 @@ const getSuburbByAdminUser = userId => {
   });
 };
 
+const getSuburbById = suburbId => {
+  return new Promise((resolve, reject) => {
+    Suburb.GetSuburb(suburbId).then((sub, err) => {
+      if (!err) resolve(sub);else reject({
+        success: false,
+        message: err.message || "Ocurrio un error al intentar obtener la colonia."
+      });
+    }).catch(err => reject(err));
+  });
+};
+
 module.exports = {
   saveSuburb,
   suburbAddStatus,
   suburbAddStatusByName,
-  getSuburbByAdminUser
+  getSuburbByAdminUser,
+  getSuburbById,
+  getSuburbStatus
 };
 
 /***/ }),
@@ -1135,6 +1297,8 @@ const User = __webpack_require__(/*! ../models/user */ "./src/models/user.js");
 
 const request = __webpack_require__(/*! request */ "request");
 
+const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants/types.js").userTypes;
+
 const saveUser = userObj => {
   return new Promise((resolve, reject) => {
     User.getLogin(userObj.loginName).then(login => {
@@ -1145,7 +1309,9 @@ const saveUser = userObj => {
         });
       } else {
         //create the user
-        User.saveUser(userObj).then((usr, err) => {
+        User.saveUser(userObj.userType ? userObj : { ...userObj,
+          userType: userTypes.guest
+        }).then((usr, err) => {
           //check if there is an error
           if (!err) resolve({
             success: true,
@@ -1196,18 +1362,18 @@ const validateRecaptcha = async token => {
     request.post(verificationURL, (error, resG, body) => {
       if (error) reject({
         success: false,
-        message: 'Por favor intenta de nuevo (no es posible validar recaptcha).'
+        message: "Por favor intenta de nuevo (no es posible validar recaptcha)."
       });
       let status = JSON.parse(body);
       if (!status.success) reject({
         success: false,
-        message: 'Por favor intenta de nuevo.'
+        message: "Por favor intenta de nuevo."
       });else if (status.score <= 0.5) reject({
         success: false,
-        message: 'Por favor intenta de nuevo (score demasiado bajo).'
+        message: "Por favor intenta de nuevo (score demasiado bajo)."
       });else resolve({
         success: true,
-        message: 'recaptcha valido.'
+        message: "recaptcha valido."
       });
     });
   });
@@ -1229,7 +1395,7 @@ const saveUserWithPassword = async userObj => {
     }, err => {
       reject({
         success: false,
-        message: err.message || 'Bad request.'
+        message: err.message || "Bad request."
       });
     });
   });
@@ -1238,7 +1404,7 @@ const saveUserWithPassword = async userObj => {
 const getUserByType = async userType => {
   try {
     return await User.find({
-      "userType": userType
+      userType: userType
     });
   } catch (ex) {
     return ex;
@@ -1254,13 +1420,43 @@ const getUserByToken = async token => {
   }
 };
 
+const getUserFavorites = async userId => {
+  try {
+    let payload = await User.getUserFavs(userId);
+    return payload;
+  } catch (ex) {
+    throw ex;
+  }
+};
+
+const saveUserFavorites = async (userId, favs) => {
+  try {
+    let payload = await User.addUserFavs(userId, favs);
+    return payload;
+  } catch (ex) {
+    throw ex;
+  }
+};
+
+const removeUserFavorites = async (userId, favs) => {
+  try {
+    let payload = await User.removeUserFavs(userId, favs);
+    return payload;
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
   saveUserWithPassword,
   getUserByType,
   getUserByToken,
-  updateUser
+  updateUser,
+  getUserFavorites,
+  saveUserFavorites,
+  removeUserFavorites
 };
 
 /***/ }),
@@ -1338,7 +1534,7 @@ const validApiRequest = (apiPath, token) => {
       resolve(res);
     }, err => reject({
       valid: false,
-      message: `Error: ${JSON.stringify(err)}`
+      message: err.message ? err.message : `Error: ${JSON.stringify(err)}`
     }));
   });
 };
@@ -1349,13 +1545,13 @@ exports.checkApiAuth = (req, res, next) => {
   let apiPath = req.baseUrl,
       token = req.headers["authorization"];
   validApiRequest(apiPath, token).then(result => {
-    if (result.valid) next();else res.status('401').json({
+    if (result.valid) next();else res.status("401").json({
       success: false,
-      error: 'Unauthorized request.'
+      error: "Unauthorized request."
     });
-  }, err => res.status('500').json({
+  }, err => res.status("401").json({
     success: false,
-    error: 'An error occurs while validating the request.'
+    error: err.message || "An error occurs while validating the request."
   }));
 };
 
@@ -1699,6 +1895,56 @@ module.exports = Role;
 
 /***/ }),
 
+/***/ "./src/models/schemas/guestSchema.js":
+/*!*******************************************!*\
+  !*** ./src/models/schemas/guestSchema.js ***!
+  \*******************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
+
+const moment = __webpack_require__(/*! moment */ "moment");
+
+const GuestSchema = new mongoose.Schema({
+  name: {
+    type: String
+  },
+  vehicle: {
+    type: String
+  },
+  subject: {
+    type: String
+  },
+  isService: {
+    type: Boolean,
+    default: false
+  },
+  plates: {
+    type: String
+  },
+  additionalInformation: {
+    type: String
+  },
+  active: {
+    type: Boolean,
+    default: true
+  },
+  arriveOn: {
+    type: Date
+  },
+  leaveOn: {
+    type: Date
+  },
+  transtime: {
+    type: Date,
+    default: moment.utc()
+  }
+});
+module.exports = GuestSchema;
+
+/***/ }),
+
 /***/ "./src/models/schemas/suburbFileSchema.js":
 /*!************************************************!*\
   !*** ./src/models/schemas/suburbFileSchema.js ***!
@@ -1750,6 +1996,9 @@ const SuburbStatusSchema = new mongoose.Schema({
   description: {
     type: String
   },
+  details: {
+    type: String
+  },
   transtime: {
     type: Date,
     default: moment.utc()
@@ -1794,16 +2043,16 @@ const SuburbSchema = new mongoose.Schema({
   },
   userAdmins: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    ref: "User"
   }],
 
   /*
-      estatus validos:
-      activacionPendiente,
-      activacionRechazada
-      activadoBasico,
-      activadoPlus
-  */
+        estatus validos:
+        activacionPendiente,
+        activacionRechazada
+        activadoBasico,
+        activadoPlus
+    */
   status: [SuburbStatusSchema],
   files: [SuburbFileSchema]
 });
@@ -1845,7 +2094,7 @@ SuburbSchema.statics = {
     return new Promise((resolve, reject) => {
       this.findOne({
         _id: id
-      }).exec((err, result) => {
+      }).populate("userAdmins", "User").exec((err, result) => {
         if (err) reject(err);
         resolve(result);
       });
@@ -1895,10 +2144,12 @@ const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
 
 const base64 = __webpack_require__(/*! base-64 */ "base-64");
 
+const GuestSchema = __webpack_require__(/*! ./schemas/guestSchema */ "./src/models/schemas/guestSchema.js");
+
 const UserSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: 'Ingresa el nombre'
+    required: "Ingresa el nombre"
   },
   lastName: {
     type: String
@@ -1965,12 +2216,13 @@ const UserSchema = new mongoose.Schema({
   },
   roles: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Role'
+    ref: "Role"
   }],
   suburb: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Suburb'
-  }
+    ref: "Suburb"
+  },
+  favorites: [GuestSchema]
 });
 /**
  * Private attributes
@@ -1980,7 +2232,7 @@ const _secretKey = process.env.JWT_SECRET;
 
 let _getExpDate = () => {
   var expTimeByMin = process.env.exptoken != null ? process.env.exptoken : "180";
-  return moment().add(expTimeByMin, 'minutes').valueOf();
+  return moment().add(expTimeByMin, "minutes").valueOf();
 };
 
 let _getValidApis = id => {
@@ -1994,7 +2246,7 @@ let _getValidMenus = id => {
 };
 /**
  * Method to validate exp from the user token.
- * @param {*} expDate 
+ * @param {*} expDate
  */
 
 
@@ -2023,35 +2275,35 @@ UserSchema.methods = {
           this.increaseLoginAttempts(true).then(res => {
             resolve({
               success: true,
-              message: 'La contraseña coincide.'
+              message: "La contraseña coincide."
             });
           }, err => reject({
             success: false,
-            message: 'Un error occurio.'
+            message: "Un error occurio."
           }));
         } else {
           //increase login attempts
           this.increaseLoginAttempts().then(res => {
             reject({
               success: false,
-              message: 'La contraseña no es valida.'
+              message: "La contraseña no es valida."
             });
           }, err => reject({
             success: false,
-            message: 'Un error occurio, la contraseña no es valida.'
+            message: "Un error occurio, la contraseña no es valida."
           }));
         }
       });
     }, err => reject({
       success: false,
-      message: 'Ocurrio un error al comparar la contraseña.'
+      message: "Ocurrio un error al comparar la contraseña."
     }));
   },
   getDisabledSince: function () {
     let disabledSince = this.disabledSince ? this.disabledSince : moment.utc();
     let start = moment(disabledSince);
     let end = moment(moment.utc());
-    return end.diff(start, 'minutes');
+    return end.diff(start, "minutes");
   },
   increaseLoginAttempts: function (reset) {
     if (reset) {
@@ -2119,13 +2371,46 @@ UserSchema.methods = {
     return new Promise((resolve, reject) => {
       this.find({
         _id: userId
-      }).populate('roles').exec((err, result) => {
+      }).populate("roles").exec((err, result) => {
         if (err) reject(err);
-        resolve(getCleanResult(result, 'roles'));
+        resolve(getCleanResult(result, "roles"));
       });
     });
   }
 };
+
+const mergeArrayObjects = (arr1, arr2) => {
+  let firstMerge = arr1.map((item, i) => {
+    let assign = {
+      name: item.name,
+      vehicle: item.vehicle,
+      subject: item.subject,
+      isService: item.isService
+    };
+    arr2.forEach(a2 => {
+      if (item.name === a2.name) {
+        assign = Object.assign({}, {
+          name: item.name,
+          vehicle: item.vehicle,
+          subject: item.subject,
+          isService: item.isService
+        }, a2);
+      }
+    });
+    return { ...assign
+    };
+  });
+  let all = [];
+  arr2.forEach(item => {
+    let add = true;
+    firstMerge.forEach(fm => {
+      if (item.name.trim() === fm.name.trim()) add = false;
+    });
+    if (add) all.push(item);
+  });
+  return [...firstMerge, ...all];
+};
+
 UserSchema.statics = {
   /**
    * Method to get a user by login name
@@ -2136,12 +2421,12 @@ UserSchema.statics = {
         loginName: _loginName
       })
       /*.populate({
-        path: 'roles',
-        populate: {
-            path: 'menus',
-            model: 'Menu'
-        }
-      })*/
+             path: 'roles',
+             populate: {
+                 path: 'menus',
+                 model: 'Menu'
+             }
+         })*/
       .exec((err, result) => {
         if (err) reject(err);
         resolve(result);
@@ -2168,18 +2453,84 @@ UserSchema.statics = {
       });
     });
   },
+  getUserFavs: function (userId) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: userId
+      }).exec((err, result) => {
+        if (err) reject(err);
+        resolve(result.favorites);
+      });
+    });
+  },
+  addUserFavs: function (userId, favs) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: userId
+      }).exec((err, result) => {
+        if (err) reject(err);
+        if (!result) reject({
+          message: "user not found"
+        });
+        let mergedFavs = mergeArrayObjects(result.favorites || [], favs);
+        this.findOneAndUpdate({
+          _id: userId
+        }, {
+          $set: {
+            favorites: mergedFavs
+          }
+        }, {
+          new: true
+        }, function (err, user) {
+          if (err) reject(err);
+          resolve(mergedFavs);
+        });
+        resolve(result);
+      });
+    });
+  },
+  removeUserFavs: function (userId, favs) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: userId
+      }).exec((err, result) => {
+        if (err) reject(err);
+        if (!result) reject({
+          message: "user not found"
+        });
+        let filterFavs = (result.favorites || []).filter(item => {
+          let exists = favs.filter(f => f.name.trim() === item.name.trim());
+          return exists.length === 0;
+        });
+        this.findOneAndUpdate({
+          _id: userId
+        }, {
+          $set: {
+            favorites: filterFavs
+          }
+        }, {
+          new: true
+        }, function (err, user) {
+          if (err) reject(err);
+          resolve(filterFavs);
+        });
+        resolve(result);
+      });
+    });
+  },
   updateUser: function (objUser) {
     return this.updateOne({
       _id: objUser._id
     }, {
       $set: {
-        'name': objUser.name,
-        'lastName': objUser.lastName,
-        'password': objUser.password,
-        'email': objUser.email,
-        'cellphone': objUser.cellphone,
-        'active': objUser.active,
-        'transtime': moment.utc()
+        name: objUser.name,
+        lastName: objUser.lastName,
+        password: objUser.password,
+        email: objUser.email,
+        cellphone: objUser.cellphone,
+        active: objUser.active,
+        userType: objUser.userType,
+        transtime: moment.utc()
       }
     });
   },
@@ -2214,7 +2565,7 @@ UserSchema.statics = {
 
   /**
    * Get the payload of the jwt token
-   * @param {String} _token 
+   * @param {String} _token
    */
   getTokenPayload: function (_token) {
     return new Promise(function (resolve, reject) {
@@ -2267,34 +2618,39 @@ const handleFiles = __webpack_require__(/*! ../controllers/handleFile */ "./src/
 
 const multer = __webpack_require__(/*! multer */ "multer");
 
-const suburb = __webpack_require__(/*! ../controllers/suburbInfo */ "./src/controllers/suburbInfo.js");
+const suburb = __webpack_require__(/*! ../controllers/suburb */ "./src/controllers/suburb.js");
 
 let upload = multer({
   dest: "./uploads/"
 });
-router.post('/api/checkAuth', siteAuth.checkAuth);
-router.post('/api/isValidToken', siteAuth.isValidToken);
-router.post('/api/validateTokenPath', siteAuth.validateTokenPath);
-router.post('/api/logOff', siteAuth.logOff);
-router.get('/api/auth/fbtoken', siteAuth.getTokenByFacebookId);
-router.get('/api/auth/googletoken', siteAuth.getTokenByGoogleId);
-router.post('/api/signUp', signup.signUp); //user apis
+router.post("/api/checkAuth", siteAuth.checkAuth);
+router.post("/api/isValidToken", siteAuth.isValidToken);
+router.post("/api/validateTokenPath", siteAuth.validateTokenPath);
+router.post("/api/logOff", siteAuth.logOff);
+router.get("/api/auth/fbtoken", siteAuth.getTokenByFacebookId);
+router.get("/api/auth/googletoken", siteAuth.getTokenByGoogleId);
+router.post("/api/signUp", signup.signUp); //user apis
 
 const userAdmin = __webpack_require__(/*! ../controllers/userAdmin */ "./src/controllers/userAdmin.js");
 
-router.post('/api/user/:userType', userAdmin.createUserByType);
-router.get('/api/user/:userType', userAdmin.getUserByType);
-router.get('/api/user', userAdmin.getUserInfo);
-router.post('/api/saveGoogleUser', userAdmin.saveGoogleUser);
-router.post('/api/saveFacebookUser', userAdmin.saveFacebookUser);
-router.post('/api/saveEmailUser', userAdmin.saveEmailUser); //logged user APIs
+router.post("/api/user/:userType", userAdmin.createUserByType);
+router.get("/api/user/:userType", userAdmin.getUserByType);
+router.get("/api/user", userAdmin.getUserInfo);
+router.get("/api/userInfo/favorites", userAdmin.getUserFavs);
+router.post("/api/userInfo/addFavorites", userAdmin.addUserFavs);
+router.post("/api/userInfo/removeFavorites", userAdmin.removeUserFavs);
+router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
+router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
+router.post("/api/saveEmailUser", userAdmin.saveEmailUser); //logged user APIs
 
-router.get('/api/me/menu', menus.getMenusByUser); //postal codes
+router.get("/api/me/menu", menus.getMenusByUser); //postal codes
 
-router.get('/api/cp/getCPInfo', postalCodes.getPostalCodeInfo); //handle files
+router.get("/api/cp/getCPInfo", postalCodes.getPostalCodeInfo); //handle files
 
-router.post('/api/file/upload', upload.any(), handleFiles.uploadFile);
-router.get('/api/suburb/info', suburb.getSuburbByAdminId);
+router.post("/api/file/upload", upload.any(), handleFiles.uploadFile); //suburb apis
+
+router.post("/api/suburb/approveReject", suburb.approveReject);
+router.get("/api/suburb/info", suburb.getSuburbByAdminId);
 module.exports = router;
 
 /***/ }),
@@ -2315,7 +2671,7 @@ const auth = __webpack_require__(/*! ../middleware/auth */ "./src/middleware/aut
 
 const apiRoutes = __webpack_require__(/*! ./apiRoutes */ "./src/routes/apiRoutes.js");
 
-router.use('/api/*', auth.checkApiAuth);
+router.use("/api/*", auth.checkApiAuth);
 router.all("/api/*", apiRoutes);
 module.exports = router;
 
