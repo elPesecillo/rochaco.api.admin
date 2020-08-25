@@ -267,15 +267,16 @@ UserSchema.methods = {
   },
 };
 
-const mergeArrayObjects = (arr1, arr2) => {
-  let firstMerge = arr1.map((item, i) => {
+const mergeArrayObjects = (currentFavs, newFavs) => {
+  let firstMerge = currentFavs.map((item, i) => {
     let assign = {
       name: item.name,
       vehicle: item.vehicle,
       subject: item.subject,
       isService: item.isService,
+      count: item.count || 0,
     };
-    arr2.forEach((a2) => {
+    newFavs.forEach((a2) => {
       if (item.name === a2.name) {
         assign = Object.assign(
           {},
@@ -284,6 +285,7 @@ const mergeArrayObjects = (arr1, arr2) => {
             vehicle: item.vehicle,
             subject: item.subject,
             isService: item.isService,
+            count: item.count || 0 + 1, //add 1 to calculate more used favs
           },
           a2
         );
@@ -293,7 +295,7 @@ const mergeArrayObjects = (arr1, arr2) => {
   });
 
   let all = [];
-  arr2.forEach((item) => {
+  newFavs.forEach((item) => {
     let add = true;
     firstMerge.forEach((fm) => {
       if (item.name.trim() === fm.name.trim()) add = false;
@@ -301,7 +303,8 @@ const mergeArrayObjects = (arr1, arr2) => {
     if (add) all.push(item);
   });
 
-  return [...firstMerge, ...all];
+  let items = [...firstMerge, ...all].sort((a, b) => b.count - a.count);
+  return items.slice(0, items.length <= 10 ? items.length : 10); // reducido a 10 favoritos por usuario (podemos cobrar por tener mas tal vez)
 };
 
 UserSchema.statics = {

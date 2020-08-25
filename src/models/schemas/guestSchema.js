@@ -31,6 +31,10 @@ const GuestSchema = new mongoose.Schema({
   leaveOn: {
     type: Date,
   },
+  count: {
+    type: Number,
+    default: 0,
+  },
   transtime: {
     type: Date,
     default: moment.utc(),
