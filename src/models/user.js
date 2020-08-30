@@ -26,9 +26,6 @@ const UserSchema = new mongoose.Schema({
   cellphone: {
     type: String,
   },
-  suburb: {
-    type: String,
-  },
   loginAttempts: {
     type: Number,
     default: 0,
@@ -92,8 +89,8 @@ const _secretKey = process.env.JWT_SECRET;
 
 let _getExpDate = () => {
   var expTimeByMin =
-    process.env.exptoken != null ? process.env.exptoken : "180";
-  return moment().add(expTimeByMin, "minutes").valueOf();
+    process.env.exptoken != null ? process.env.exptoken : "1440";
+  return moment().add(expTimeByMin, "minutes").unix();
 };
 
 let _getValidApis = (id) => {
@@ -111,7 +108,7 @@ let _getValidMenus = (id) => {
  * @param {*} expDate
  */
 let _validateExpDate = function (expDate) {
-  let currentTime = moment().valueOf();
+  let currentTime = moment().unix();
   return expDate > currentTime;
 };
 
