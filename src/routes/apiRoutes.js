@@ -58,4 +58,6 @@ router.post("/api/suburb/approveReject", suburb.approveReject);
 
 router.get("/api/suburb/info", suburb.getSuburbByAdminId);
 
+router.get("/api/suburb/get", suburb.getSuburbById);
+
 module.exports = router;

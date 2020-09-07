@@ -54,3 +54,16 @@ exports.getSuburbByAdminId = (req, res, next) => {
     }
   );
 };
+
+exports.getSuburbById = (req, res, next) => {
+  let suburbId = req.query.suburbId;
+  suburbService.getSuburbById(suburbId).then((result) => {
+    res.status(200).json(result),
+      (err) => {
+        res.status(400).json({
+          success: false,
+          message: err.message || "no se encontro la colonia",
+        });
+      };
+  });
+};
