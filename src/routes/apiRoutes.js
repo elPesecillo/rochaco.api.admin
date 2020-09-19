@@ -60,4 +60,6 @@ router.get("/api/suburb/info", suburb.getSuburbByAdminId);
 
 router.get("/api/suburb/get", suburb.getSuburbById);
 
+router.post("/api/suburb/addSuburbInvite", suburb.addSuburbInvite);
+
 module.exports = router;

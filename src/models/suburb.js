@@ -35,6 +35,12 @@ const SuburbSchema = new mongoose.Schema({
     */
   status: [SuburbStatusSchema],
   files: [SuburbFileSchema],
+  suburbInvites: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SuburbInvite",
+    },
+  ],
 });
 
 SuburbSchema.statics = {
@@ -74,15 +80,47 @@ SuburbSchema.statics = {
       }
     );
   },
+  AddSuburbInvite: function (id, userInviteId) {
+    if (!Array.isArray(userInviteId)) userInviteId = [userInviteId];
+    return this.updateOne(
+      { _id: id },
+      {
+        $addToSet: {
+          suburbInvites: {
+            $each: userInviteId,
+          },
+        },
+      },
+      { multi: true }
+    );
+  },
   GetSuburb: function (id) {
     return new Promise((resolve, reject) => {
       this.findOne({
         _id: id,
       })
         .populate("userAdmins", "User")
+        .populate("suburbInvites", "SuburbInvite")
         .exec((err, result) => {
           if (err) reject(err);
-          resolve(result);
+          let {
+            name,
+            location,
+            postalCode,
+            active,
+            transtime,
+            status,
+            suburbInvites,
+          } = result;
+          resolve({
+            name,
+            location,
+            postalCode,
+            active,
+            transtime,
+            status,
+            suburbInvites,
+          });
         });
     });
   },

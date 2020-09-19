@@ -1,5 +1,6 @@
 const Suburb = require("../models/suburb");
 const suburbStatus = require("../constants/types").suburbStatus;
+const SuburbInvite = require("../models/suburbInvite");
 
 const getSuburbStatus = (statusName) => {
   let status = suburbStatus.filter((st) => st.status === statusName);
@@ -94,6 +95,38 @@ const getSuburbById = (suburbId) => {
   });
 };
 
+const addSuburbInvite = (suburbId, name, street, streetNumber) => {
+  return new Promise((resolve, reject) => {
+    SuburbInvite.SaveSuburbInvite({
+      suburbId,
+      name,
+      street,
+      streetNumber,
+    }).then((subInv, err) => {
+      if (!err) {
+        Suburb.AddSuburbInvite(suburbId, subInv._id.toString()).then(
+          (sub, err) => {
+            if (!err) resolve(subInv);
+            else
+              reject({
+                success: false,
+                message:
+                  err.message ||
+                  "Ocurrio un error al intentar agregar una invitacion a usuario",
+              });
+          }
+        );
+      } else
+        reject({
+          success: false,
+          message:
+            err.message ||
+            "Ocurrio un error al intentar agregar una invitacion a usuario",
+        });
+    });
+  });
+};
+
 module.exports = {
   saveSuburb,
   suburbAddStatus,
@@ -101,4 +134,5 @@ module.exports = {
   getSuburbByAdminUser,
   getSuburbById,
   getSuburbStatus,
+  addSuburbInvite,
 };

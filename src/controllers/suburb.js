@@ -57,13 +57,31 @@ exports.getSuburbByAdminId = (req, res, next) => {
 
 exports.getSuburbById = (req, res, next) => {
   let suburbId = req.query.suburbId;
-  suburbService.getSuburbById(suburbId).then((result) => {
-    res.status(200).json(result),
-      (err) => {
-        res.status(400).json({
-          success: false,
-          message: err.message || "no se encontro la colonia",
-        });
-      };
-  });
+  suburbService.getSuburbById(suburbId).then(
+    (result) => {
+      res.status(200).json(result);
+    },
+    (err) => {
+      res.status(400).json({
+        success: false,
+        message: err.message || "no se encontro la colonia",
+      });
+    }
+  );
+};
+
+exports.addSuburbInvite = (req, res, next) => {
+  let { suburbId, name, street, streetNumber } = req.body;
+  suburbService.addSuburbInvite(suburbId, name, street, streetNumber).then(
+    (result) => {
+      res.status(200).json(result);
+    },
+    (err) => {
+      res.status(500).json({
+        success: false,
+        message:
+          err.message || "No se pudo generar la invitacion para el usuario.",
+      });
+    }
+  );
 };
