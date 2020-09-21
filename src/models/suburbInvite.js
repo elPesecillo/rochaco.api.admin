@@ -41,7 +41,7 @@ SuburbInviteSchema.statics = {
   },
   UpdateSuburbInviteUsed: function (code, usedBy) {
     return this.updateOne(
-      { code: code },
+      { $and: [{ code: code }, { active: true }] },
       {
         $set: {
           usedBy: usedBy,
