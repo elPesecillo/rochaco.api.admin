@@ -39,9 +39,9 @@ SuburbInviteSchema.statics = {
     let userInvite = new this(userInviteObj);
     return userInvite.save();
   },
-  UpdateSuburbInviteUsed: function (code, usedBy, suburbId) {
+  UpdateSuburbInviteUsed: function (code, usedBy) {
     return this.updateOne(
-      { $and: [{ code: code }, { suburbId: suburbId }] },
+      { code: code },
       {
         $set: {
           usedBy: usedBy,
