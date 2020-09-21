@@ -2,6 +2,9 @@ const mongoose = require("mongoose");
 const moment = require("moment");
 
 const SuburbInviteSchema = new mongoose.Schema({
+  code: {
+    type: String,
+  },
   name: {
     type: String,
   },
@@ -36,9 +39,9 @@ SuburbInviteSchema.statics = {
     let userInvite = new this(userInviteObj);
     return userInvite.save();
   },
-  UpdateSuburbInviteUsed: function (id, usedBy, suburbId) {
+  UpdateSuburbInviteUsed: function (code, usedBy, suburbId) {
     return this.updateOne(
-      { $and: [{ _id: id }, { suburbId: suburbId }] },
+      { $and: [{ code: code }, { suburbId: suburbId }] },
       {
         $set: {
           usedBy: usedBy,

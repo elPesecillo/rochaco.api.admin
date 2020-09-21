@@ -97,7 +97,11 @@ const getSuburbById = (suburbId) => {
 
 const addSuburbInvite = (suburbId, name, street, streetNumber) => {
   return new Promise((resolve, reject) => {
+    let _code =
+      Math.random().toString(36).substring(2, 5) +
+      Math.random().toString(36).substring(2, 4);
     SuburbInvite.SaveSuburbInvite({
+      code: _code,
       suburbId,
       name,
       street,
