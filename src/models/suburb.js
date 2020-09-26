@@ -124,6 +124,23 @@ SuburbSchema.statics = {
         });
     });
   },
+  GetSuburbBasicInfo: function (id) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: id,
+      }).exec((err, result) => {
+        if (err) reject(err);
+        let { name, location, postalCode, active, transtime } = result;
+        resolve({
+          name,
+          location,
+          postalCode,
+          active,
+          transtime,
+        });
+      });
+    });
+  },
   GetSuburbByName: function (postalCode, name) {
     return new Promise((resolve, reject) => {
       this.findOne({

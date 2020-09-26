@@ -26,6 +26,9 @@ const UserSchema = new mongoose.Schema({
   cellphone: {
     type: String,
   },
+  photoUrl: {
+    type: String,
+  },
   loginAttempts: {
     type: Number,
     default: 0,

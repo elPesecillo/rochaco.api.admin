@@ -180,6 +180,51 @@ exports.createUserByType = async (req, res, next) => {
   }
 };
 
+exports.saveUserBySuburbId = async (req, res, next) => {
+  let {
+    name,
+    lastName,
+    loginName,
+    email,
+    password,
+    cellphone,
+    facebookId,
+    googleId,
+    photoUrl,
+    suburbId,
+    token, // add captcha here
+  } = req.body;
+
+  //***add validate captcha here***
+  userService
+    .saveUser({
+      name,
+      lastName,
+      loginName,
+      email,
+      password,
+      cellphone,
+      photoUrl,
+      facebookId,
+      googleId,
+      suburb: suburbId,
+      userConfirmed: true,
+    })
+    .then(
+      (resSave) => {
+        res.status("200").json({
+          success: true,
+          message: res.message || "Has sido registrado correctamente.",
+        });
+      },
+      (err) => {
+        res
+          .status("400")
+          .json({ success: false, message: err.message || "Bad request." });
+      }
+    );
+};
+
 exports.getUserByType = async (req, res, next) => {
   try {
     const userType = userTypes[req.params.userType];

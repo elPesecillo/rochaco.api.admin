@@ -51,6 +51,16 @@ SuburbInviteSchema.statics = {
       }
     );
   },
+  GetInviteByCode: function (code) {
+    return new Promise((resolve, reject) => {
+      return this.findOne({ code: code, active: true }).exec((err, result) => {
+        if (err) reject(err);
+        if (!result)
+          reject({ success: false, message: "Cannot find the invite code." });
+        resolve(result);
+      });
+    });
+  },
 };
 
 const SuburbInvite = mongoose.model("SuburbInvite", SuburbInviteSchema);

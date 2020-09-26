@@ -43,6 +43,7 @@ router.post("/api/userInfo/removeFavorites", userAdmin.removeUserFavs);
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
 router.post("/api/saveEmailUser", userAdmin.saveEmailUser);
+router.post("/api/saveUserBySuburb", userAdmin.saveUserBySuburbId);
 
 //logged user APIs
 router.get("/api/me/menu", menus.getMenusByUser);
@@ -61,5 +62,7 @@ router.get("/api/suburb/info", suburb.getSuburbByAdminId);
 router.get("/api/suburb/get", suburb.getSuburbById);
 
 router.post("/api/suburb/addSuburbInvite", suburb.addSuburbInvite);
+
+router.get("/api/suburb/getInviteByCode", suburb.getSuburbInvite);
 
 module.exports = router;

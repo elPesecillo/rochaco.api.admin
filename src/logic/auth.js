@@ -8,6 +8,7 @@ const openApi = [
   "/api/saveGoogleUser",
   "/api/saveFacebookUser",
   "/api/saveEmailUser",
+  "/api/saveUserBySuburb",
   "/api/signUp",
   "/api/validateTokenPath",
   "/api/cp/getCPInfo",
@@ -15,6 +16,7 @@ const openApi = [
   "/api/userInfo/favorites", //remover esto cuando se agregue authenticacion en mobile
   "/api/userInfo/addFavorites", //remover esto cuando se agregue authenticacion en mobile
   "/api/userInfo/removeFavorites", //remover esto cuando se agregue authenticacion en mobile
+  "/api/suburb/getInviteByCode",
 ];
 
 const protectedApi = ["/api/suburb/approveReject"];

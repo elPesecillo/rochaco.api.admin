@@ -98,8 +98,8 @@ const getSuburbById = (suburbId) => {
 const addSuburbInvite = (suburbId, name, street, streetNumber) => {
   return new Promise((resolve, reject) => {
     let _code =
-      Math.random().toString(36).substring(2, 5).toUpperCase() +
-      Math.random().toString(36).substring(2, 5).toUpperCase();
+      Math.random().toString(36).substring(2, 4).toUpperCase() +
+      Math.random().toString(36).substring(2, 4).toUpperCase();
     SuburbInvite.SaveSuburbInvite({
       code: _code,
       suburbId,
@@ -131,6 +131,50 @@ const addSuburbInvite = (suburbId, name, street, streetNumber) => {
   });
 };
 
+const getSuburbInvite = (code) => {
+  return new Promise((resolve, reject) => {
+    SuburbInvite.GetInviteByCode(code)
+      .then((subInvite, err) => {
+        if (!err) {
+          Suburb.GetSuburbBasicInfo(subInvite.suburbId.toString()).then(
+            (suburb, err) => {
+              if (!err)
+                resolve({
+                  suburb: {
+                    ...suburb,
+                  },
+                  invite: {
+                    ...subInvite._doc,
+                  },
+                });
+              else
+                reject({
+                  success: false,
+                  message:
+                    err.message ||
+                    "Ocurrio un error al intentar obtener la invitación",
+                });
+            }
+          );
+        } else
+          reject({
+            success: false,
+            message:
+              err.message ||
+              "Ocurrio un error al intentar obtener la invitación",
+          });
+      })
+      .catch((err) => {
+        reject({
+          sucess: false,
+          message:
+            err.message ||
+            "Ocurrion un error al intentar obtener la invitación",
+        });
+      });
+  });
+};
+
 module.exports = {
   saveSuburb,
   suburbAddStatus,
@@ -139,4 +183,5 @@ module.exports = {
   getSuburbById,
   getSuburbStatus,
   addSuburbInvite,
+  getSuburbInvite,
 };

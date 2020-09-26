@@ -85,3 +85,18 @@ exports.addSuburbInvite = (req, res, next) => {
     }
   );
 };
+
+exports.getSuburbInvite = (req, res, next) => {
+  let code = req.query.code;
+  suburbService.getSuburbInvite(code).then(
+    (result) => {
+      res.status(200).json(result);
+    },
+    (err) => {
+      res.status(500).json({
+        success: false,
+        message: err.message || "No se pudo obtener la invitacion.",
+      });
+    }
+  );
+};
