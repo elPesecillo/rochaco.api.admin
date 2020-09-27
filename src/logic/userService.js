@@ -24,6 +24,7 @@ const saveUser = (userObj) => {
                 resolve({
                   success: true,
                   message: "Has sido registrado correctamente.",
+                  userData: { ...usr },
                 });
               else
                 reject({

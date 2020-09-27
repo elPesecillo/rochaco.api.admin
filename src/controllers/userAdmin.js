@@ -1,5 +1,6 @@
 const userService = require("../logic/userService");
 const userTypes = require("../constants/types").userTypes;
+const SuburbInvite = require("../models/suburbInvite");
 
 exports.saveGoogleUser = (req, res, next) => {
   //get user data here
@@ -192,37 +193,74 @@ exports.saveUserBySuburbId = async (req, res, next) => {
     googleId,
     photoUrl,
     suburbId,
+    code,
     token, // add captcha here
   } = req.body;
 
-  //***add validate captcha here***
-  userService
-    .saveUser({
-      name,
-      lastName,
-      loginName,
-      email,
-      password,
-      cellphone,
-      photoUrl,
-      facebookId,
-      googleId,
-      suburb: suburbId,
-      userConfirmed: true,
-    })
-    .then(
-      (resSave) => {
-        res.status("200").json({
-          success: true,
-          message: res.message || "Has sido registrado correctamente.",
+  SuburbInvite.GetInviteByCode(code)
+    .then((resInv) => {
+      //***add validate captcha here***
+
+      let save = null;
+      if (password && password.trim() !== "")
+        save = userService.saveUserWithPassword({
+          name,
+          lastName,
+          loginName,
+          email,
+          password,
+          cellphone,
+          photoUrl,
+          facebookId,
+          googleId,
+          suburb: suburbId,
+          userConfirmed: false, // if the user is an email user the user needs to confirm
         });
-      },
-      (err) => {
-        res
-          .status("400")
-          .json({ success: false, message: err.message || "Bad request." });
-      }
-    );
+      else
+        save = userService.saveUser({
+          name,
+          lastName,
+          loginName,
+          email,
+          password,
+          cellphone,
+          photoUrl,
+          facebookId,
+          googleId,
+          suburb: suburbId,
+          userConfirmed: true,
+        });
+      save.then(
+        (resSave) => {
+          SuburbInvite.UpdateSuburbInviteUsed(
+            code,
+            resSave.userData._doc._id.toString()
+          )
+            .then((resCodeUpdate) => {
+              res.status("200").json({
+                success: true,
+                message: res.message || "Has sido registrado correctamente.",
+              });
+            })
+            .catch((err) => {
+              res.status("400").json({
+                success: false,
+                message: err.message || "Bad request.",
+              });
+            });
+        },
+        (err) => {
+          res
+            .status("400")
+            .json({ success: false, message: err.message || "Bad request." });
+        }
+      );
+    })
+    .catch((err) => {
+      res
+        .status("400")
+        .json({ success: false, message: err.message || "Bad request." });
+    });
 };
 
 exports.getUserByType = async (req, res, next) => {
