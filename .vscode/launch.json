@@ -9,6 +9,11 @@
       "request": "launch",
       "name": "Launch Directly",
       "program": "${workspaceFolder}\\src\\server.js"
+    },{
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Directly Mac",
+      "program": "${workspaceFolder}//src//server.js"
     },
     {
       "type": "node",

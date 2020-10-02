@@ -469,6 +469,16 @@ UserSchema.statics = {
       });
     });
   },
+  getUserById: function (id) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: id,
+      }).exec((err, result) => {
+        if (err) reject(err);
+        resolve(result);
+      });
+    });
+  },
 };
 
 const User = mongoose.model("User", UserSchema);

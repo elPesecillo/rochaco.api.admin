@@ -80,6 +80,7 @@ function onError(error) {
  */
 
 function onListening() {
+  console.log("running on port", process.env.PORT);
   var addr = server.address();
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr

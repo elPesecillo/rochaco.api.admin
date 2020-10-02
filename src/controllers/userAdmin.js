@@ -298,6 +298,18 @@ exports.getUserInfo = async (req, res, next) => {
   }
 };
 
+exports.getUserById = async (req, res, next) => {
+  try {
+    let result = await userService.getUserById(req.query.id);
+    res.status("200").json(result);
+  }
+  catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+}
+
 exports.getUserFavs = async (req, res, next) => {
   try {
     let userFavs = await userService.getUserFavorites(req.query.userId);

@@ -36,6 +36,7 @@ const userAdmin = require("../controllers/userAdmin");
 router.post("/api/user/:userType", userAdmin.createUserByType);
 router.get("/api/user/:userType", userAdmin.getUserByType);
 router.get("/api/user", userAdmin.getUserInfo);
+router.get("/api/userId", userAdmin.getUserById);
 router.get("/api/userInfo/favorites", userAdmin.getUserFavs);
 router.post("/api/userInfo/addFavorites", userAdmin.addUserFavs);
 router.post("/api/userInfo/removeFavorites", userAdmin.removeUserFavs);

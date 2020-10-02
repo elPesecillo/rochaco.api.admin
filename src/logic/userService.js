@@ -138,6 +138,15 @@ const getUserByToken = async (token) => {
   }
 };
 
+const getUserById = async (id) => {
+  try {
+    return await User.findById(id)
+  }
+  catch (ex) {
+    throw ex;
+  }
+}
+
 const getUserFavorites = async (userId) => {
   try {
     let payload = await User.getUserFavs(userId);
@@ -175,4 +184,5 @@ module.exports = {
   getUserFavorites,
   saveUserFavorites,
   removeUserFavorites,
+  getUserById
 };
