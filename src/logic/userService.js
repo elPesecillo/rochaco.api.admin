@@ -140,12 +140,11 @@ const getUserByToken = async (token) => {
 
 const getUserById = async (id) => {
   try {
-    return await User.findById(id)
-  }
-  catch (ex) {
+    return await User.getUserById(id);
+  } catch (ex) {
     throw ex;
   }
-}
+};
 
 const getUserFavorites = async (userId) => {
   try {
@@ -184,5 +183,5 @@ module.exports = {
   getUserFavorites,
   saveUserFavorites,
   removeUserFavorites,
-  getUserById
+  getUserById,
 };

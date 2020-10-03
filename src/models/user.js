@@ -473,10 +473,12 @@ UserSchema.statics = {
     return new Promise((resolve, reject) => {
       this.findOne({
         _id: id,
-      }).exec((err, result) => {
-        if (err) reject(err);
-        resolve(result);
-      });
+      })
+        .populate("suburb", "name")
+        .exec((err, result) => {
+          if (err) reject(err);
+          resolve(result);
+        });
     });
   },
 };
