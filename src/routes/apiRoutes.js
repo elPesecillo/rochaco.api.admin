@@ -14,6 +14,8 @@ const multer = require("multer");
 
 const suburb = require("../controllers/suburb");
 
+const pushNotification = require("../controllers/pushNotification");
+
 let upload = multer({ dest: "./uploads/" });
 
 router.post("/api/checkAuth", siteAuth.checkAuth);
@@ -40,6 +42,7 @@ router.get("/api/userId", userAdmin.getUserById);
 router.get("/api/userInfo/favorites", userAdmin.getUserFavs);
 router.post("/api/userInfo/addFavorites", userAdmin.addUserFavs);
 router.post("/api/userInfo/removeFavorites", userAdmin.removeUserFavs);
+router.post("/api/userInfo/addUserPushToken", userAdmin.addUserPushToken);
 
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
@@ -65,5 +68,9 @@ router.get("/api/suburb/get", suburb.getSuburbById);
 router.post("/api/suburb/addSuburbInvite", suburb.addSuburbInvite);
 
 router.get("/api/suburb/getInviteByCode", suburb.getSuburbInvite);
+
+
+//push notifications
+router.post("/api/notification/test", pushNotification.sendTestNotification);
 
 module.exports = router;

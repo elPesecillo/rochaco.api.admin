@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const base64 = require("base-64");
 const GuestSchema = require("./schemas/guestSchema");
+const PushTokenSchema = require("./schemas/pushTokenSchema");
 
 const UserSchema = new mongoose.Schema({
   name: {
@@ -83,6 +84,7 @@ const UserSchema = new mongoose.Schema({
     ref: "Suburb",
   },
   favorites: [GuestSchema],
+  pushTokens: [PushTokenSchema],
 });
 
 /**
@@ -210,6 +212,7 @@ UserSchema.methods = {
       userType: this.userType,
       exp: _getExpDate(),
       validApis: _getValidApis(this._id),
+      pushTokens: this.pushTokens,
       //validMenus: _getValidMenus(this._id) //verify if is better put this in another schema i.e. suburb
     };
     let token = jwt.sign(payload, _secretKey);
@@ -304,7 +307,16 @@ const mergeArrayObjects = (currentFavs, newFavs) => {
   });
 
   let items = [...firstMerge, ...all].sort((a, b) => b.count - a.count);
-  return items.slice(0, items.length <= 10 ? items.length : 10); // reducido a 10 favoritos por usuario (podemos cobrar por tener mas tal vez)
+  return items.slice(0, items.length <= 30 ? items.length : 30); // solo mantendremos 30 favoritos para no sobrecargar la bd
+};
+
+const mergePushTokens = (currentPushTokens, newPushToken) => {
+  let tokens = currentPushTokens.map((t) =>
+    t.token === newPushToken.token ? { ...newPushToken } : { ...t._doc }
+  );
+
+  let exists = tokens.filter((t) => t.token === newPushToken.token);
+  return exists.length > 0 ? [...tokens] : [...tokens, newPushToken];
 };
 
 UserSchema.statics = {
@@ -395,6 +407,26 @@ UserSchema.statics = {
           }
         );
         resolve(result);
+      });
+    });
+  },
+  addUserPushToken: function (userId, pushToken) {
+    return new Promise((resolve, reject) => {
+      this.findOne({ _id: userId }).exec((err, result) => {
+        if (err) reject(err);
+        if (!result) reject({ message: "user not found" });
+        let mergedPushTokens = mergePushTokens(result.pushTokens, {
+          token: pushToken,
+        });
+        this.findOneAndUpdate(
+          { _id: userId },
+          { $set: { pushTokens: mergedPushTokens } },
+          { new: true },
+          function (err, user) {
+            if (err) reject(err);
+            resolve(mergedPushTokens);
+          }
+        );
       });
     });
   },

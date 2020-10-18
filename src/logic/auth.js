@@ -13,10 +13,11 @@ const openApi = [
   "/api/validateTokenPath",
   "/api/cp/getCPInfo",
   "/api/file/upload",
-  "/api/userInfo/favorites", //remover esto cuando se agregue authenticacion en mobile
-  "/api/userInfo/addFavorites", //remover esto cuando se agregue authenticacion en mobile
-  "/api/userInfo/removeFavorites", //remover esto cuando se agregue authenticacion en mobile
+  //"/api/userInfo/favorites", //remover esto cuando se agregue authenticacion en mobile
+  //"/api/userInfo/addFavorites", //remover esto cuando se agregue authenticacion en mobile
+  //"/api/userInfo/removeFavorites", //remover esto cuando se agregue authenticacion en mobile
   "/api/suburb/getInviteByCode",
+  "/api/notification/test",
 ];
 
 const protectedApi = ["/api/suburb/approveReject"];

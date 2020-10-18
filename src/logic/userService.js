@@ -173,6 +173,15 @@ const removeUserFavorites = async (userId, favs) => {
   }
 };
 
+const addUserPushToken = async (userId, pushToken) => {
+  try {
+    let payload = await User.addUserPushToken(userId, pushToken);
+    return payload;
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -184,4 +193,5 @@ module.exports = {
   saveUserFavorites,
   removeUserFavorites,
   getUserById,
+  addUserPushToken,
 };

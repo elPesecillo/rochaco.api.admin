@@ -302,13 +302,12 @@ exports.getUserById = async (req, res, next) => {
   try {
     let result = await userService.getUserById(req.query.id);
     res.status("200").json(result);
-  }
-  catch (err) {
+  } catch (err) {
     res
       .status("400")
       .json({ success: false, message: err.message || "Bad request." });
   }
-}
+};
 
 exports.getUserFavs = async (req, res, next) => {
   try {
@@ -338,6 +337,18 @@ exports.removeUserFavs = async (req, res, next) => {
     let { favs, userId } = req.body;
     let userFavs = await userService.removeUserFavorites(userId, favs);
     res.status("200").json(userFavs);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.addUserPushToken = async (req, res, next) => {
+  try {
+    let { pushToken, userId } = req.body;
+    let pushTokens = await userService.addUserPushToken(userId, pushToken);
+    res.status("200").json(pushTokens);
   } catch (err) {
     res
       .status("400")
