@@ -30,6 +30,12 @@ const UserSchema = new mongoose.Schema({
   photoUrl: {
     type: String,
   },
+  street: {
+    type: String,
+  },
+  streetNumber: {
+    type: String,
+  },
   loginAttempts: {
     type: Number,
     default: 0,
@@ -213,6 +219,8 @@ UserSchema.methods = {
       exp: _getExpDate(),
       validApis: _getValidApis(this._id),
       pushTokens: this.pushTokens,
+      street: this.street,
+      streetNumber: this.streetNumber,
       //validMenus: _getValidMenus(this._id) //verify if is better put this in another schema i.e. suburb
     };
     let token = jwt.sign(payload, _secretKey);

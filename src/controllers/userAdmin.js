@@ -193,6 +193,8 @@ exports.saveUserBySuburbId = async (req, res, next) => {
     googleId,
     photoUrl,
     suburbId,
+    street,
+    streetNumber,
     code,
     token, // add captcha here
   } = req.body;
@@ -214,6 +216,8 @@ exports.saveUserBySuburbId = async (req, res, next) => {
           facebookId,
           googleId,
           suburb: suburbId,
+          street,
+          streetNumber,
           userConfirmed: false, // if the user is an email user the user needs to confirm
         });
       else
@@ -228,6 +232,8 @@ exports.saveUserBySuburbId = async (req, res, next) => {
           facebookId,
           googleId,
           suburb: suburbId,
+          street,
+          streetNumber,
           userConfirmed: true,
         });
       save.then(
