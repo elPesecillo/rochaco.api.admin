@@ -435,6 +435,34 @@ exports.getPostalCodeInfo = async (req, res, next) => {
 
 /***/ }),
 
+/***/ "./src/controllers/pushNotification.js":
+/*!*********************************************!*\
+  !*** ./src/controllers/pushNotification.js ***!
+  \*********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const pushNotificationService = __webpack_require__(/*! ../logic/pushNotificationService */ "./src/logic/pushNotificationService.js");
+
+exports.sendTestNotification = async (req, res, next) => {
+  try {
+    let result = await pushNotificationService.sendPushNotification(["ExponentPushToken[TRMrLcG4VUxVUwmsCXPIyw]"], {
+      sound: "default",
+      body: "This is a test notification ;)",
+      data: {
+        withSome: "data"
+      },
+      title: "Notificacion Nueva",
+      subtitle: "soy un subtitulo"
+    });
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(400).json(err);
+  }
+};
+
+/***/ }),
+
 /***/ "./src/controllers/signup.js":
 /*!***********************************!*\
   !*** ./src/controllers/signup.js ***!
@@ -755,6 +783,47 @@ exports.getSuburbByAdminId = (req, res, next) => {
   });
 };
 
+exports.getSuburbById = (req, res, next) => {
+  let suburbId = req.query.suburbId;
+  suburbService.getSuburbById(suburbId).then(result => {
+    res.status(200).json(result);
+  }, err => {
+    res.status(400).json({
+      success: false,
+      message: err.message || "no se encontro la colonia"
+    });
+  });
+};
+
+exports.addSuburbInvite = (req, res, next) => {
+  let {
+    suburbId,
+    name,
+    street,
+    streetNumber
+  } = req.body;
+  suburbService.addSuburbInvite(suburbId, name, street, streetNumber).then(result => {
+    res.status(200).json(result);
+  }, err => {
+    res.status(500).json({
+      success: false,
+      message: err.message || "No se pudo generar la invitacion para el usuario."
+    });
+  });
+};
+
+exports.getSuburbInvite = (req, res, next) => {
+  let code = req.query.code;
+  suburbService.getSuburbInvite(code).then(result => {
+    res.status(200).json(result);
+  }, err => {
+    res.status(500).json({
+      success: false,
+      message: err.message || "No se pudo obtener la invitacion."
+    });
+  });
+};
+
 /***/ }),
 
 /***/ "./src/controllers/userAdmin.js":
@@ -767,6 +836,8 @@ exports.getSuburbByAdminId = (req, res, next) => {
 const userService = __webpack_require__(/*! ../logic/userService */ "./src/logic/userService.js");
 
 const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants/types.js").userTypes;
+
+const SuburbInvite = __webpack_require__(/*! ../models/suburbInvite */ "./src/models/suburbInvite.js");
 
 exports.saveGoogleUser = (req, res, next) => {
   //get user data here
@@ -941,6 +1012,83 @@ exports.createUserByType = async (req, res, next) => {
   }
 };
 
+exports.saveUserBySuburbId = async (req, res, next) => {
+  let {
+    name,
+    lastName,
+    loginName,
+    email,
+    password,
+    cellphone,
+    facebookId,
+    googleId,
+    photoUrl,
+    suburbId,
+    street,
+    streetNumber,
+    code,
+    token // add captcha here
+
+  } = req.body;
+  SuburbInvite.GetInviteByCode(code).then(resInv => {
+    //***add validate captcha here***
+    let save = null;
+    if (password && password.trim() !== "") save = userService.saveUserWithPassword({
+      name,
+      lastName,
+      loginName,
+      email,
+      password,
+      cellphone,
+      photoUrl,
+      facebookId,
+      googleId,
+      suburb: suburbId,
+      street,
+      streetNumber,
+      userConfirmed: false // if the user is an email user the user needs to confirm
+
+    });else save = userService.saveUser({
+      name,
+      lastName,
+      loginName,
+      email,
+      password,
+      cellphone,
+      photoUrl,
+      facebookId,
+      googleId,
+      suburb: suburbId,
+      street,
+      streetNumber,
+      userConfirmed: true
+    });
+    save.then(resSave => {
+      SuburbInvite.UpdateSuburbInviteUsed(code, resSave.userData._doc._id.toString()).then(resCodeUpdate => {
+        res.status("200").json({
+          success: true,
+          message: res.message || "Has sido registrado correctamente."
+        });
+      }).catch(err => {
+        res.status("400").json({
+          success: false,
+          message: err.message || "Bad request."
+        });
+      });
+    }, err => {
+      res.status("400").json({
+        success: false,
+        message: err.message || "Bad request."
+      });
+    });
+  }).catch(err => {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  });
+};
+
 exports.getUserByType = async (req, res, next) => {
   try {
     const userType = userTypes[req.params.userType];
@@ -976,6 +1124,18 @@ exports.getUserInfo = async (req, res, next) => {
         message: err.message || "Bad request."
       });
     });
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
+exports.getUserById = async (req, res, next) => {
+  try {
+    let result = await userService.getUserById(req.query.id);
+    res.status("200").json(result);
   } catch (err) {
     res.status("400").json({
       success: false,
@@ -1028,6 +1188,22 @@ exports.removeUserFavs = async (req, res, next) => {
   }
 };
 
+exports.addUserPushToken = async (req, res, next) => {
+  try {
+    let {
+      pushToken,
+      userId
+    } = req.body;
+    let pushTokens = await userService.addUserPushToken(userId, pushToken);
+    res.status("200").json(pushTokens);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
 /***/ }),
 
 /***/ "./src/logic/auth.js":
@@ -1041,9 +1217,10 @@ const User = __webpack_require__(/*! ../models/user */ "./src/models/user.js");
 
 const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants/types.js").userTypes;
 
-const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveEmailUser", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", "/api/userInfo/favorites", //remover esto cuando se agregue authenticacion en mobile
-"/api/userInfo/addFavorites", //remover esto cuando se agregue authenticacion en mobile
-"/api/userInfo/removeFavorites"];
+const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveEmailUser", "/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", //"/api/userInfo/favorites", //remover esto cuando se agregue authenticacion en mobile
+//"/api/userInfo/addFavorites", //remover esto cuando se agregue authenticacion en mobile
+//"/api/userInfo/removeFavorites", //remover esto cuando se agregue authenticacion en mobile
+"/api/suburb/getInviteByCode", "/api/notification/test"];
 const protectedApi = ["/api/suburb/approveReject"];
 module.exports = class Auth {
   validateToken(token) {
@@ -1194,6 +1371,132 @@ exports.getCPInfo = async postalCode => {
 
 /***/ }),
 
+/***/ "./src/logic/pushNotificationService.js":
+/*!**********************************************!*\
+  !*** ./src/logic/pushNotificationService.js ***!
+  \**********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Expo = __webpack_require__(/*! expo-server-sdk */ "expo-server-sdk").Expo;
+
+let expo = new Expo();
+
+const getMessagesBatches = (pushTokens, message) => {
+  let messages = [];
+  pushTokens.forEach(token => {
+    if (!Expo.isExpoPushToken(token)) {
+      console.error(`Push token ${token} is not a valid push token`); //continue;
+    }
+
+    messages = [...messages, { ...message,
+      to: token
+    }];
+  });
+  return expo.chunkPushNotifications(messages);
+};
+
+const sendExpoNotification = async chunks => {
+  //(async () => {
+  // Send the chunks to the Expo push notification service. There are
+  // different strategies you could use. A simple one is to send one chunk at a
+  // time, which nicely spreads the load out over time:
+  let tickets = [];
+
+  for (let chunk of chunks) {
+    try {
+      let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+      console.log(ticketChunk);
+      tickets.push(...ticketChunk); // NOTE: If a ticket contains an error code in ticket.details.error, you
+      // must handle it appropriately. The error codes are listed in the Expo
+      // documentation:
+      // https://docs.expo.io/push-notifications/sending-notifications/#individual-errors
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  return tickets; //})();
+};
+
+const checkTickets = async tickets => {
+  // Later, after the Expo push notification service has delivered the
+  // notifications to Apple or Google (usually quickly, but allow the the service
+  // up to 30 minutes when under load), a "receipt" for each notification is
+  // created. The receipts will be available for at least a day; stale receipts
+  // are deleted.
+  //
+  // The ID of each receipt is sent back in the response "ticket" for each
+  // notification. In summary, sending a notification produces a ticket, which
+  // contains a receipt ID you later use to get the receipt.
+  //
+  // The receipts may contain error codes to which you must respond. In
+  // particular, Apple or Google may block apps that continue to send
+  // notifications to devices that have blocked notifications or have uninstalled
+  // your app. Expo does not control this policy and sends back the feedback from
+  // Apple and Google so you can handle it appropriately.
+  let receiptIds = [];
+
+  for (let ticket of tickets) {
+    // NOTE: Not all tickets have IDs; for example, tickets for notifications
+    // that could not be enqueued will have error information and no receipt ID.
+    if (ticket.id) {
+      receiptIds.push(ticket.id);
+    }
+  }
+
+  let receiptIdChunks = expo.chunkPushNotificationReceiptIds(receiptIds); //(async () => {
+  // Like sending notifications, there are different strategies you could use
+  // to retrieve batches of receipts from the Expo service.
+
+  for (let chunk of receiptIdChunks) {
+    try {
+      let receipts = await expo.getPushNotificationReceiptsAsync(chunk);
+      console.log(receipts); // The receipts specify whether Apple or Google successfully received the
+      // notification and information about an error, if one occurred.
+
+      for (let receiptId in receipts) {
+        let {
+          status,
+          message,
+          details
+        } = receipts[receiptId];
+
+        if (status === "ok") {//continue;
+        } else if (status === "error") {
+          console.error(`There was an error sending a notification: ${message}`);
+
+          if (details && details.error) {
+            // The error codes are listed in the Expo documentation:
+            // https://docs.expo.io/push-notifications/sending-notifications/#individual-errors
+            // You must handle the errors appropriately.
+            console.error(`The error code is ${details.error}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  } //})();
+
+};
+
+const sendPushNotification = async (pushTokens, message) => {
+  try {
+    let chunks = getMessagesBatches(pushTokens, message);
+    let tickets = await sendExpoNotification(chunks);
+    await checkTickets(tickets);
+  } catch (ex) {
+    throw ex;
+  }
+};
+
+module.exports = {
+  sendPushNotification
+};
+
+/***/ }),
+
 /***/ "./src/logic/suburbService.js":
 /*!************************************!*\
   !*** ./src/logic/suburbService.js ***!
@@ -1204,6 +1507,8 @@ exports.getCPInfo = async postalCode => {
 const Suburb = __webpack_require__(/*! ../models/suburb */ "./src/models/suburb.js");
 
 const suburbStatus = __webpack_require__(/*! ../constants/types */ "./src/constants/types.js").suburbStatus;
+
+const SuburbInvite = __webpack_require__(/*! ../models/suburbInvite */ "./src/models/suburbInvite.js");
 
 const getSuburbStatus = statusName => {
   let status = suburbStatus.filter(st => st.status === statusName);
@@ -1275,13 +1580,69 @@ const getSuburbById = suburbId => {
   });
 };
 
+const addSuburbInvite = (suburbId, name, street, streetNumber) => {
+  return new Promise((resolve, reject) => {
+    let _code = Math.random().toString(36).substring(2, 4).toUpperCase() + Math.random().toString(36).substring(2, 4).toUpperCase();
+
+    SuburbInvite.SaveSuburbInvite({
+      code: _code,
+      suburbId,
+      name,
+      street,
+      streetNumber
+    }).then((subInv, err) => {
+      if (!err) {
+        Suburb.AddSuburbInvite(suburbId, subInv._id.toString()).then((sub, err) => {
+          if (!err) resolve(subInv);else reject({
+            success: false,
+            message: err.message || "Ocurrio un error al intentar agregar una invitacion a usuario"
+          });
+        });
+      } else reject({
+        success: false,
+        message: err.message || "Ocurrio un error al intentar agregar una invitacion a usuario"
+      });
+    });
+  });
+};
+
+const getSuburbInvite = code => {
+  return new Promise((resolve, reject) => {
+    SuburbInvite.GetInviteByCode(code).then((subInvite, err) => {
+      if (!err) {
+        Suburb.GetSuburbBasicInfo(subInvite.suburbId.toString()).then((suburb, err) => {
+          if (!err) resolve({
+            suburb: { ...suburb
+            },
+            invite: { ...subInvite._doc
+            }
+          });else reject({
+            success: false,
+            message: err.message || "Ocurrio un error al intentar obtener la invitación"
+          });
+        });
+      } else reject({
+        success: false,
+        message: err.message || "Ocurrio un error al intentar obtener la invitación"
+      });
+    }).catch(err => {
+      reject({
+        sucess: false,
+        message: err.message || "Ocurrion un error al intentar obtener la invitación"
+      });
+    });
+  });
+};
+
 module.exports = {
   saveSuburb,
   suburbAddStatus,
   suburbAddStatusByName,
   getSuburbByAdminUser,
   getSuburbById,
-  getSuburbStatus
+  getSuburbStatus,
+  addSuburbInvite,
+  getSuburbInvite
 };
 
 /***/ }),
@@ -1315,7 +1676,9 @@ const saveUser = userObj => {
           //check if there is an error
           if (!err) resolve({
             success: true,
-            message: "Has sido registrado correctamente."
+            message: "Has sido registrado correctamente.",
+            userData: { ...usr
+            }
           });else reject({
             success: false,
             message: err.message || "No se pudo registrar el usuario."
@@ -1420,6 +1783,14 @@ const getUserByToken = async token => {
   }
 };
 
+const getUserById = async id => {
+  try {
+    return await User.getUserById(id);
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 const getUserFavorites = async userId => {
   try {
     let payload = await User.getUserFavs(userId);
@@ -1447,6 +1818,15 @@ const removeUserFavorites = async (userId, favs) => {
   }
 };
 
+const addUserPushToken = async (userId, pushToken) => {
+  try {
+    let payload = await User.addUserPushToken(userId, pushToken);
+    return payload;
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -1456,7 +1836,9 @@ module.exports = {
   updateUser,
   getUserFavorites,
   saveUserFavorites,
-  removeUserFavorites
+  removeUserFavorites,
+  getUserById,
+  addUserPushToken
 };
 
 /***/ }),
@@ -1572,13 +1954,16 @@ const Role = __webpack_require__(/*! ./role */ "./src/models/role.js");
 
 const User = __webpack_require__(/*! ./user */ "./src/models/user.js");
 
+const SuburbInvite = __webpack_require__(/*! ./suburbInvite */ "./src/models/suburbInvite.js");
+
 const PostalCode = __webpack_require__(/*! ./postalCode */ "./src/models/postalCode.js");
 
 const models = {
   Menu,
   Role,
   User,
-  PostalCode
+  PostalCode,
+  SuburbInvite
 };
 
 const connectDb = () => {
@@ -1936,12 +2321,40 @@ const GuestSchema = new mongoose.Schema({
   leaveOn: {
     type: Date
   },
+  count: {
+    type: Number,
+    default: 0
+  },
   transtime: {
     type: Date,
     default: moment.utc()
   }
 });
 module.exports = GuestSchema;
+
+/***/ }),
+
+/***/ "./src/models/schemas/pushTokenSchema.js":
+/*!***********************************************!*\
+  !*** ./src/models/schemas/pushTokenSchema.js ***!
+  \***********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
+
+const moment = __webpack_require__(/*! moment */ "moment");
+
+const PushTokenSchema = new mongoose.Schema({
+  token: {
+    type: String
+  },
+  transtime: {
+    type: Date,
+    default: moment.utc()
+  }
+});
+module.exports = PushTokenSchema;
 
 /***/ }),
 
@@ -2054,7 +2467,11 @@ const SuburbSchema = new mongoose.Schema({
         activadoPlus
     */
   status: [SuburbStatusSchema],
-  files: [SuburbFileSchema]
+  files: [SuburbFileSchema],
+  suburbInvites: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "SuburbInvite"
+  }]
 });
 SuburbSchema.statics = {
   SaveSuburb: function (suburbObj) {
@@ -2090,13 +2507,67 @@ SuburbSchema.statics = {
       multi: true
     });
   },
+  AddSuburbInvite: function (id, userInviteId) {
+    if (!Array.isArray(userInviteId)) userInviteId = [userInviteId];
+    return this.updateOne({
+      _id: id
+    }, {
+      $addToSet: {
+        suburbInvites: {
+          $each: userInviteId
+        }
+      }
+    }, {
+      multi: true
+    });
+  },
   GetSuburb: function (id) {
     return new Promise((resolve, reject) => {
       this.findOne({
         _id: id
-      }).populate("userAdmins", "User").exec((err, result) => {
+      }).populate("userAdmins", "User").populate("suburbInvites", "SuburbInvite").exec((err, result) => {
         if (err) reject(err);
-        resolve(result);
+        let {
+          name,
+          location,
+          postalCode,
+          active,
+          transtime,
+          status,
+          suburbInvites
+        } = result;
+        resolve({
+          name,
+          location,
+          postalCode,
+          active,
+          transtime,
+          status,
+          suburbInvites
+        });
+      });
+    });
+  },
+  GetSuburbBasicInfo: function (id) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: id
+      }).exec((err, result) => {
+        if (err) reject(err);
+        let {
+          name,
+          location,
+          postalCode,
+          active,
+          transtime
+        } = result;
+        resolve({
+          name,
+          location,
+          postalCode,
+          active,
+          transtime
+        });
       });
     });
   },
@@ -2127,6 +2598,90 @@ module.exports = Suburb;
 
 /***/ }),
 
+/***/ "./src/models/suburbInvite.js":
+/*!************************************!*\
+  !*** ./src/models/suburbInvite.js ***!
+  \************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
+
+const moment = __webpack_require__(/*! moment */ "moment");
+
+const SuburbInviteSchema = new mongoose.Schema({
+  code: {
+    type: String
+  },
+  name: {
+    type: String
+  },
+  street: {
+    type: String
+  },
+  streetNumber: {
+    type: String
+  },
+  suburbId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Suburb"
+  },
+  active: {
+    type: Boolean,
+    default: true
+  },
+  usedBy: {
+    type: String
+  },
+  updatedTranstime: {
+    type: Date
+  },
+  transtime: {
+    type: Date,
+    default: moment.utc()
+  }
+});
+SuburbInviteSchema.statics = {
+  SaveSuburbInvite: function (userInviteObj) {
+    let userInvite = new this(userInviteObj);
+    return userInvite.save();
+  },
+  UpdateSuburbInviteUsed: function (code, usedBy) {
+    return this.updateOne({
+      $and: [{
+        code: code
+      }, {
+        active: true
+      }]
+    }, {
+      $set: {
+        usedBy: usedBy,
+        active: false,
+        updatedTranstime: moment.utc()
+      }
+    });
+  },
+  GetInviteByCode: function (code) {
+    return new Promise((resolve, reject) => {
+      return this.findOne({
+        code: code,
+        active: true
+      }).exec((err, result) => {
+        if (err) reject(err);
+        if (!result) reject({
+          success: false,
+          message: "Cannot find the invite code."
+        });
+        resolve(result);
+      });
+    });
+  }
+};
+const SuburbInvite = mongoose.model("SuburbInvite", SuburbInviteSchema);
+module.exports = SuburbInvite;
+
+/***/ }),
+
 /***/ "./src/models/user.js":
 /*!****************************!*\
   !*** ./src/models/user.js ***!
@@ -2145,6 +2700,8 @@ const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
 const base64 = __webpack_require__(/*! base-64 */ "base-64");
 
 const GuestSchema = __webpack_require__(/*! ./schemas/guestSchema */ "./src/models/schemas/guestSchema.js");
+
+const PushTokenSchema = __webpack_require__(/*! ./schemas/pushTokenSchema */ "./src/models/schemas/pushTokenSchema.js");
 
 const UserSchema = new mongoose.Schema({
   name: {
@@ -2167,7 +2724,13 @@ const UserSchema = new mongoose.Schema({
   cellphone: {
     type: String
   },
-  suburb: {
+  photoUrl: {
+    type: String
+  },
+  street: {
+    type: String
+  },
+  streetNumber: {
     type: String
   },
   loginAttempts: {
@@ -2222,7 +2785,8 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Suburb"
   },
-  favorites: [GuestSchema]
+  favorites: [GuestSchema],
+  pushTokens: [PushTokenSchema]
 });
 /**
  * Private attributes
@@ -2231,8 +2795,8 @@ const UserSchema = new mongoose.Schema({
 const _secretKey = process.env.JWT_SECRET;
 
 let _getExpDate = () => {
-  var expTimeByMin = process.env.exptoken != null ? process.env.exptoken : "180";
-  return moment().add(expTimeByMin, "minutes").valueOf();
+  var expTimeByMin = process.env.exptoken != null ? process.env.exptoken : "1440";
+  return moment().add(expTimeByMin, "minutes").unix();
 };
 
 let _getValidApis = id => {
@@ -2251,7 +2815,7 @@ let _getValidMenus = id => {
 
 
 let _validateExpDate = function (expDate) {
-  let currentTime = moment().valueOf();
+  let currentTime = moment().unix();
   return expDate > currentTime;
 };
 
@@ -2332,7 +2896,10 @@ UserSchema.methods = {
       suburb: this.suburb || _suburb,
       userType: this.userType,
       exp: _getExpDate(),
-      validApis: _getValidApis(this._id) //validMenus: _getValidMenus(this._id) //verify if is better put this in another schema i.e. suburb
+      validApis: _getValidApis(this._id),
+      pushTokens: this.pushTokens,
+      street: this.street,
+      streetNumber: this.streetNumber //validMenus: _getValidMenus(this._id) //verify if is better put this in another schema i.e. suburb
 
     };
     let token = jwt.sign(payload, _secretKey);
@@ -2379,21 +2946,24 @@ UserSchema.methods = {
   }
 };
 
-const mergeArrayObjects = (arr1, arr2) => {
-  let firstMerge = arr1.map((item, i) => {
+const mergeArrayObjects = (currentFavs, newFavs) => {
+  let firstMerge = currentFavs.map((item, i) => {
     let assign = {
       name: item.name,
       vehicle: item.vehicle,
       subject: item.subject,
-      isService: item.isService
+      isService: item.isService,
+      count: item.count || 0
     };
-    arr2.forEach(a2 => {
+    newFavs.forEach(a2 => {
       if (item.name === a2.name) {
         assign = Object.assign({}, {
           name: item.name,
           vehicle: item.vehicle,
           subject: item.subject,
-          isService: item.isService
+          isService: item.isService,
+          count: item.count || 0 + 1 //add 1 to calculate more used favs
+
         }, a2);
       }
     });
@@ -2401,14 +2971,23 @@ const mergeArrayObjects = (arr1, arr2) => {
     };
   });
   let all = [];
-  arr2.forEach(item => {
+  newFavs.forEach(item => {
     let add = true;
     firstMerge.forEach(fm => {
       if (item.name.trim() === fm.name.trim()) add = false;
     });
     if (add) all.push(item);
   });
-  return [...firstMerge, ...all];
+  let items = [...firstMerge, ...all].sort((a, b) => b.count - a.count);
+  return items.slice(0, items.length <= 30 ? items.length : 30); // solo mantendremos 30 favoritos para no sobrecargar la bd
+};
+
+const mergePushTokens = (currentPushTokens, newPushToken) => {
+  let tokens = currentPushTokens.map(t => t.token === newPushToken.token ? { ...newPushToken
+  } : { ...t._doc
+  });
+  let exists = tokens.filter(t => t.token === newPushToken.token);
+  return exists.length > 0 ? [...tokens] : [...tokens, newPushToken];
 };
 
 UserSchema.statics = {
@@ -2518,6 +3097,33 @@ UserSchema.statics = {
       });
     });
   },
+  addUserPushToken: function (userId, pushToken) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: userId
+      }).exec((err, result) => {
+        if (err) reject(err);
+        if (!result) reject({
+          message: "user not found"
+        });
+        let mergedPushTokens = mergePushTokens(result.pushTokens, {
+          token: pushToken
+        });
+        this.findOneAndUpdate({
+          _id: userId
+        }, {
+          $set: {
+            pushTokens: mergedPushTokens
+          }
+        }, {
+          new: true
+        }, function (err, user) {
+          if (err) reject(err);
+          resolve(mergedPushTokens);
+        });
+      });
+    });
+  },
   updateUser: function (objUser) {
     return this.updateOne({
       _id: objUser._id
@@ -2590,6 +3196,16 @@ UserSchema.statics = {
         });
       });
     });
+  },
+  getUserById: function (id) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: id
+      }).populate("suburb", "name").exec((err, result) => {
+        if (err) reject(err);
+        resolve(result);
+      });
+    });
   }
 };
 const User = mongoose.model("User", UserSchema);
@@ -2620,6 +3236,8 @@ const multer = __webpack_require__(/*! multer */ "multer");
 
 const suburb = __webpack_require__(/*! ../controllers/suburb */ "./src/controllers/suburb.js");
 
+const pushNotification = __webpack_require__(/*! ../controllers/pushNotification */ "./src/controllers/pushNotification.js");
+
 let upload = multer({
   dest: "./uploads/"
 });
@@ -2636,12 +3254,15 @@ const userAdmin = __webpack_require__(/*! ../controllers/userAdmin */ "./src/con
 router.post("/api/user/:userType", userAdmin.createUserByType);
 router.get("/api/user/:userType", userAdmin.getUserByType);
 router.get("/api/user", userAdmin.getUserInfo);
+router.get("/api/userId", userAdmin.getUserById);
 router.get("/api/userInfo/favorites", userAdmin.getUserFavs);
 router.post("/api/userInfo/addFavorites", userAdmin.addUserFavs);
 router.post("/api/userInfo/removeFavorites", userAdmin.removeUserFavs);
+router.post("/api/userInfo/addUserPushToken", userAdmin.addUserPushToken);
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
-router.post("/api/saveEmailUser", userAdmin.saveEmailUser); //logged user APIs
+router.post("/api/saveEmailUser", userAdmin.saveEmailUser);
+router.post("/api/saveUserBySuburb", userAdmin.saveUserBySuburbId); //logged user APIs
 
 router.get("/api/me/menu", menus.getMenusByUser); //postal codes
 
@@ -2651,6 +3272,11 @@ router.post("/api/file/upload", upload.any(), handleFiles.uploadFile); //suburb 
 
 router.post("/api/suburb/approveReject", suburb.approveReject);
 router.get("/api/suburb/info", suburb.getSuburbByAdminId);
+router.get("/api/suburb/get", suburb.getSuburbById);
+router.post("/api/suburb/addSuburbInvite", suburb.addSuburbInvite);
+router.get("/api/suburb/getInviteByCode", suburb.getSuburbInvite); //push notifications
+
+router.post("/api/notification/test", pushNotification.sendTestNotification);
 module.exports = router;
 
 /***/ }),
@@ -2763,6 +3389,7 @@ function onError(error) {
 
 
 function onListening() {
+  console.log("running on port", process.env.PORT);
   var addr = server.address();
   var bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
   debug('Listening on ' + bind);
@@ -2855,6 +3482,17 @@ module.exports = require("dotenv");
 /***/ (function(module, exports) {
 
 module.exports = require("dropbox-v2-api");
+
+/***/ }),
+
+/***/ "expo-server-sdk":
+/*!**********************************!*\
+  !*** external "expo-server-sdk" ***!
+  \**********************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("expo-server-sdk");
 
 /***/ }),
 
