@@ -69,8 +69,11 @@ router.post("/api/suburb/addSuburbInvite", suburb.addSuburbInvite);
 
 router.get("/api/suburb/getInviteByCode", suburb.getSuburbInvite);
 
-
 //push notifications
 router.post("/api/notification/test", pushNotification.sendTestNotification);
+router.post(
+  "/api/notification/arrive",
+  pushNotification.sendArriveNotification
+);
 
 module.exports = router;
