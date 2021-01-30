@@ -245,7 +245,7 @@ exports.saveUserBySuburbId = async (req, res, next) => {
             .then((resCodeUpdate) => {
               res.status("200").json({
                 success: true,
-                message: res.message || "Has sido registrado correctamente.",
+                message: resCodeUpdate.message || "Has sido registrado correctamente.",
               });
             })
             .catch((err) => {
