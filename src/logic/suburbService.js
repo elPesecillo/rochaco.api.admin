@@ -1,14 +1,29 @@
 const Suburb = require("../models/suburb");
 const suburbStatus = require("../constants/types").suburbStatus;
 const SuburbInvite = require("../models/suburbInvite");
+const CryptoJS = require("crypto-js");
+var pjson = require('../../package.json');
+
 
 const getSuburbStatus = (statusName) => {
   let status = suburbStatus.filter((st) => st.status === statusName);
   return status[0];
 };
 
+const encryption = (data) => {
+  if(!data) return "";
+  return CryptoJS.AES.encrypt(data, pjson.cryptoKey).toString();
+};
+
+const decryption = (data) => {
+  if(!data) return "";
+  var bytes  = CryptoJS.AES.decrypt(data, pjson.cryptoKey);
+  return bytes.toString(CryptoJS.enc.Utf8); 
+}
+
 const saveSuburb = (suburbObj) => {
   return new Promise((resolve, reject) => {
+
     Suburb.SaveSuburb(suburbObj).then((sub, err) => {
       if (!err)
         resolve({
@@ -100,12 +115,13 @@ const addSuburbInvite = (suburbId, name, street, streetNumber) => {
     let _code =
       Math.random().toString(36).substring(2, 4).toUpperCase() +
       Math.random().toString(36).substring(2, 4).toUpperCase();
+    console.log(encryption(street));
     SuburbInvite.SaveSuburbInvite({
       code: _code,
       suburbId,
       name,
-      street,
-      streetNumber,
+      street: encryption(street),
+      streetNumber: encryption(streetNumber),
     }).then((subInv, err) => {
       if (!err) {
         Suburb.AddSuburbInvite(suburbId, subInv._id.toString()).then(
@@ -138,22 +154,27 @@ const getSuburbInvite = (code) => {
         if (!err) {
           Suburb.GetSuburbBasicInfo(subInvite.suburbId.toString()).then(
             (suburb, err) => {
-              if (!err)
-                resolve({
+              if (!err) {
+                const {street, streetNumber,...props}=subInvite._doc;
+                const result = {
                   suburb: {
                     ...suburb,
                   },
                   invite: {
-                    ...subInvite._doc,
+                    street:decryption(street),
+                    streetNumber:decryption(streetNumber),
+                    ...props,
                   },
-                });
-              else
+                };
+                resolve(result);
+              } else {
                 reject({
                   success: false,
                   message:
                     err.message ||
                     "Ocurrio un error al intentar obtener la invitación",
                 });
+              }
             }
           );
         } else

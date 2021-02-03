@@ -1,6 +1,7 @@
 {
   "name": "rochaco_api",
   "version": "1.0.0",
+  "cryptoKey": "secretKey123",
   "description": "rochaco management apis",
   "main": "index.js",
   "scripts": {
@@ -8,7 +9,8 @@
     "heroku-prebuild": "npm install --dev",
     "build:server": "webpack --config webpack.config.js ",
     "start": "node build/app.server.js",
-    "heroku-postbuild": "npm run build:server"
+    "heroku-postbuild": "npm run build:server",
+    "start-all": "npm build:server & npm start"
   },
   "repository": {
     "type": "git",
@@ -27,6 +29,7 @@
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
+    "crypto-js": "^4.0.0",
     "dotenv": "^8.1.0",
     "dropbox-v2-api": "^2.4.13",
     "expo-server-sdk": "^3.6.0",

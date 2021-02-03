@@ -86,6 +86,17 @@
 /************************************************************************/
 /******/ ({
 
+/***/ "./package.json":
+/*!**********************!*\
+  !*** ./package.json ***!
+  \**********************/
+/*! exports provided: name, version, cryptoKey, description, main, scripts, repository, keywords, author, license, dependencies, devDependencies, default */
+/***/ (function(module) {
+
+module.exports = JSON.parse("{\"name\":\"rochaco_api\",\"version\":\"1.0.0\",\"cryptoKey\":\"secretKey123\",\"description\":\"rochaco management apis\",\"main\":\"index.js\",\"scripts\":{\"test\":\"echo \\\"Error: no test specified\\\" && exit 1\",\"heroku-prebuild\":\"npm install --dev\",\"build:server\":\"webpack --config webpack.config.js \",\"start\":\"node build/app.server.js\",\"heroku-postbuild\":\"npm run build:server\",\"start-all\":\"npm build:server & npm start\"},\"repository\":{\"type\":\"git\",\"url\":\"https://phdez@dev.azure.com/phdez/rochaco_web/_git/rochaco_api\"},\"keywords\":[\"rochaco\",\"api\",\"nodejs\"],\"author\":\"Pascual Hernandez\",\"license\":\"ISC\",\"dependencies\":{\"@sendgrid/mail\":\"^6.5.4\",\"base-64\":\"^0.1.0\",\"bcryptjs\":\"^2.4.3\",\"body-parser\":\"^1.19.0\",\"cors\":\"^2.8.5\",\"crypto-js\":\"^4.0.0\",\"dotenv\":\"^8.1.0\",\"dropbox-v2-api\":\"^2.4.13\",\"expo-server-sdk\":\"^3.6.0\",\"express\":\"^4.17.1\",\"fs\":\"0.0.1-security\",\"jsonwebtoken\":\"^8.5.1\",\"moment\":\"^2.24.0\",\"mongoose\":\"^5.6.11\",\"morgan\":\"^1.9.1\",\"multer\":\"^1.4.2\",\"request\":\"^2.88.0\"},\"devDependencies\":{\"@babel/core\":\"^7.5.5\",\"babel-loader\":\"^8.0.6\",\"babel-plugin-transform-class-properties\":\"^6.24.1\",\"path\":\"^0.12.7\",\"source-map\":\"^0.7.3\",\"webpack\":\"^4.42.1\",\"webpack-cli\":\"^3.3.11\",\"webpack-node-externals\":\"^1.7.2\"}}");
+
+/***/ }),
+
 /***/ "./src/app.js":
 /*!********************!*\
   !*** ./src/app.js ***!
@@ -646,6 +657,7 @@ exports.checkAuth = (req, res, next) => {
   //over here check the db to know if the auth is valid
   let user = req.body.user;
   let password = req.body.password;
+  console.log(req.body);
   validateUser(user, password).then(result => {
     if (result.success) {
       // var session = req.session;
@@ -828,6 +840,7 @@ exports.addSuburbInvite = (req, res, next) => {
     street,
     streetNumber
   } = req.body;
+  console.log(req.body);
   suburbService.addSuburbInvite(suburbId, name, street, streetNumber).then(result => {
     res.status(200).json(result);
   }, err => {
@@ -1093,7 +1106,7 @@ exports.saveUserBySuburbId = async (req, res, next) => {
       SuburbInvite.UpdateSuburbInviteUsed(code, resSave.userData._doc._id.toString()).then(resCodeUpdate => {
         res.status("200").json({
           success: true,
-          message: res.message || "Has sido registrado correctamente."
+          message: resCodeUpdate.message || "Has sido registrado correctamente."
         });
       }).catch(err => {
         res.status("400").json({
@@ -1536,9 +1549,24 @@ const suburbStatus = __webpack_require__(/*! ../constants/types */ "./src/consta
 
 const SuburbInvite = __webpack_require__(/*! ../models/suburbInvite */ "./src/models/suburbInvite.js");
 
+const CryptoJS = __webpack_require__(/*! crypto-js */ "crypto-js");
+
+var pjson = __webpack_require__(/*! ../../package.json */ "./package.json");
+
 const getSuburbStatus = statusName => {
   let status = suburbStatus.filter(st => st.status === statusName);
   return status[0];
+};
+
+const encryption = data => {
+  if (!data) return "";
+  return CryptoJS.AES.encrypt(data, pjson.cryptoKey).toString();
+};
+
+const decryption = data => {
+  if (!data) return "";
+  var bytes = CryptoJS.AES.decrypt(data, pjson.cryptoKey);
+  return bytes.toString(CryptoJS.enc.Utf8);
 };
 
 const saveSuburb = suburbObj => {
@@ -1610,12 +1638,13 @@ const addSuburbInvite = (suburbId, name, street, streetNumber) => {
   return new Promise((resolve, reject) => {
     let _code = Math.random().toString(36).substring(2, 4).toUpperCase() + Math.random().toString(36).substring(2, 4).toUpperCase();
 
+    console.log(encryption(street));
     SuburbInvite.SaveSuburbInvite({
       code: _code,
       suburbId,
       name,
-      street,
-      streetNumber
+      street: encryption(street),
+      streetNumber: encryption(streetNumber)
     }).then((subInv, err) => {
       if (!err) {
         Suburb.AddSuburbInvite(suburbId, subInv._id.toString()).then((sub, err) => {
@@ -1637,15 +1666,29 @@ const getSuburbInvite = code => {
     SuburbInvite.GetInviteByCode(code).then((subInvite, err) => {
       if (!err) {
         Suburb.GetSuburbBasicInfo(subInvite.suburbId.toString()).then((suburb, err) => {
-          if (!err) resolve({
-            suburb: { ...suburb
-            },
-            invite: { ...subInvite._doc
-            }
-          });else reject({
-            success: false,
-            message: err.message || "Ocurrio un error al intentar obtener la invitación"
-          });
+          if (!err) {
+            const {
+              street,
+              streetNumber,
+              ...props
+            } = subInvite._doc;
+            console.log(subInvite._doc);
+            const result = {
+              suburb: { ...suburb
+              },
+              invite: {
+                street: decryption(street),
+                streetNumber: decryption(streetNumber),
+                ...props
+              }
+            };
+            resolve(result);
+          } else {
+            reject({
+              success: false,
+              message: err.message || "Ocurrio un error al intentar obtener la invitación"
+            });
+          }
         });
       } else reject({
         success: false,
@@ -1948,8 +1991,8 @@ const validApiRequest = (apiPath, token) => {
 };
 
 exports.checkApiAuth = (req, res, next) => {
-  console.log(`validando si el request esta autenticado...`); //check request headers over here to know if the request is authenticated
-
+  //console.log(`validando si el request esta autenticado...`);
+  //check request headers over here to know if the request is authenticated
   let apiPath = req.baseUrl,
       token = req.headers["authorization"];
   validApiRequest(apiPath, token).then(result => {
@@ -3476,6 +3519,17 @@ module.exports = require("body-parser");
 /***/ (function(module, exports) {
 
 module.exports = require("cors");
+
+/***/ }),
+
+/***/ "crypto-js":
+/*!****************************!*\
+  !*** external "crypto-js" ***!
+  \****************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("crypto-js");
 
 /***/ }),
 
