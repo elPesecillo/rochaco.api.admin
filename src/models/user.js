@@ -521,6 +521,24 @@ UserSchema.statics = {
         });
     });
   },
+  getUsersBySuburb: function (suburbId) {
+    return new Promise((resolve, reject) => {
+      this.find({ suburb: suburbId }).exec((err, result) => {
+        if (err) reject(err);
+        resolve(result);
+      });
+    });
+  },
+  getUsersBySuburbStreet: function (suburbId, street) {
+    return new Promise((resolve, reject) => {
+      this.find({ $and: [{ suburb: suburbId }, { street: street }] }).exec(
+        (err, result) => {
+          if (err) reject(err);
+          resolve(result);
+        }
+      );
+    });
+  },
 };
 
 const User = mongoose.model("User", UserSchema);

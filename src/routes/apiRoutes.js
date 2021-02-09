@@ -69,6 +69,10 @@ router.post("/api/suburb/addSuburbInvite", suburb.addSuburbInvite);
 
 router.get("/api/suburb/getInviteByCode", suburb.getSuburbInvite);
 
+router.get("/api/suburb/getStreets", suburb.getStreets);
+
+router.get("/api/suburb/getStreetNumbers", suburb.getStreetNumbers);
+
 //push notifications
 router.post("/api/notification/test", pushNotification.sendTestNotification);
 router.post(

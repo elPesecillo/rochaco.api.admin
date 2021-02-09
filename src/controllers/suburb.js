@@ -100,3 +100,64 @@ exports.getSuburbInvite = (req, res, next) => {
     }
   );
 };
+
+exports.getStreets = (req, res) => {
+  let suburbId = req.query.suburbId;
+  if (suburbId) {
+    userService.getUsersBySuburb(suburbId).then(
+      (users) => {
+        let streets = users.map((usr) => usr._doc.street);
+        const distinctStreets = [...new Set(streets)];
+        res
+          .status(200)
+          .json(
+            distinctStreets
+              .filter((u) => typeof u !== "undefined")
+              .map((s) => ({ street: s }))
+          );
+      },
+      (err) => {
+        res.status(500).json({
+          success: false,
+          message:
+            err.message ||
+            "No se pudieron obtener las calles del fraccionamiento",
+        });
+      }
+    );
+  } else
+    res.status(400).json({
+      success: false,
+      message: "Por favor indique el fraccionamiento.",
+    });
+};
+
+exports.getStreetNumbers = (req, res) => {
+  let { suburbId, street } = req.query;
+  if (suburbId) {
+    userService.getUsersBySuburbStreet(suburbId, street).then(
+      (users) => {
+        let streetNumbers = users.map((usr) => usr._doc.streetNumber);
+        const distinctStreetNumbers = [...new Set(streetNumbers)];
+        res
+          .status(200)
+          .json(
+            distinctStreetNumbers
+              .filter((u) => typeof u !== "undefined")
+              .map((s) => ({ streetNumber: s }))
+          );
+      },
+      (err) => {
+        res.status(500).json({
+          success: false,
+          message:
+            err.message || "No se pudieron obtener los numeros de la calle",
+        });
+      }
+    );
+  } else
+    res.status(400).json({
+      success: false,
+      message: "Por favor indique el fraccionamiento.",
+    });
+};

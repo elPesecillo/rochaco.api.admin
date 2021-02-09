@@ -1,9 +1,9 @@
 const Suburb = require("../models/suburb");
 const suburbStatus = require("../constants/types").suburbStatus;
 const SuburbInvite = require("../models/suburbInvite");
+const User = require("../models/user");
 const CryptoJS = require("crypto-js");
-var pjson = require('../../package.json');
-
+var pjson = require("../../package.json");
 
 const getSuburbStatus = (statusName) => {
   let status = suburbStatus.filter((st) => st.status === statusName);
@@ -11,19 +11,18 @@ const getSuburbStatus = (statusName) => {
 };
 
 const encryption = (data) => {
-  if(!data) return "";
+  if (!data) return "";
   return CryptoJS.AES.encrypt(data, pjson.cryptoKey).toString();
 };
 
 const decryption = (data) => {
-  if(!data) return "";
-  var bytes  = CryptoJS.AES.decrypt(data, pjson.cryptoKey);
-  return bytes.toString(CryptoJS.enc.Utf8); 
-}
+  if (!data) return "";
+  var bytes = CryptoJS.AES.decrypt(data, pjson.cryptoKey);
+  return bytes.toString(CryptoJS.enc.Utf8);
+};
 
 const saveSuburb = (suburbObj) => {
   return new Promise((resolve, reject) => {
-
     Suburb.SaveSuburb(suburbObj).then((sub, err) => {
       if (!err)
         resolve({
@@ -155,14 +154,14 @@ const getSuburbInvite = (code) => {
           Suburb.GetSuburbBasicInfo(subInvite.suburbId.toString()).then(
             (suburb, err) => {
               if (!err) {
-                const {street, streetNumber,...props}=subInvite._doc;
+                const { street, streetNumber, ...props } = subInvite._doc;
                 const result = {
                   suburb: {
                     ...suburb,
                   },
                   invite: {
-                    street:decryption(street),
-                    streetNumber:decryption(streetNumber),
+                    street: decryption(street),
+                    streetNumber: decryption(streetNumber),
                     ...props,
                   },
                 };
