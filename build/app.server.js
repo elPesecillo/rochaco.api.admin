@@ -657,7 +657,6 @@ exports.checkAuth = (req, res, next) => {
   //over here check the db to know if the auth is valid
   let user = req.body.user;
   let password = req.body.password;
-  console.log(req.body);
   validateUser(user, password).then(result => {
     if (result.success) {
       // var session = req.session;
@@ -840,7 +839,6 @@ exports.addSuburbInvite = (req, res, next) => {
     street,
     streetNumber
   } = req.body;
-  console.log(req.body);
   suburbService.addSuburbInvite(suburbId, name, street, streetNumber).then(result => {
     res.status(200).json(result);
   }, err => {
@@ -860,6 +858,53 @@ exports.getSuburbInvite = (req, res, next) => {
       success: false,
       message: err.message || "No se pudo obtener la invitacion."
     });
+  });
+};
+
+exports.getStreets = (req, res) => {
+  let suburbId = req.query.suburbId;
+
+  if (suburbId) {
+    userService.getUsersBySuburb(suburbId).then(users => {
+      let streets = users.map(usr => usr._doc.street);
+      const distinctStreets = [...new Set(streets)];
+      res.status(200).json(distinctStreets.filter(u => typeof u !== "undefined").map(s => ({
+        street: s
+      })));
+    }, err => {
+      res.status(500).json({
+        success: false,
+        message: err.message || "No se pudieron obtener las calles del fraccionamiento"
+      });
+    });
+  } else res.status(400).json({
+    success: false,
+    message: "Por favor indique el fraccionamiento."
+  });
+};
+
+exports.getStreetNumbers = (req, res) => {
+  let {
+    suburbId,
+    street
+  } = req.query;
+
+  if (suburbId) {
+    userService.getUsersBySuburbStreet(suburbId, street).then(users => {
+      let streetNumbers = users.map(usr => usr._doc.streetNumber);
+      const distinctStreetNumbers = [...new Set(streetNumbers)];
+      res.status(200).json(distinctStreetNumbers.filter(u => typeof u !== "undefined").map(s => ({
+        streetNumber: s
+      })));
+    }, err => {
+      res.status(500).json({
+        success: false,
+        message: err.message || "No se pudieron obtener los numeros de la calle"
+      });
+    });
+  } else res.status(400).json({
+    success: false,
+    message: "Por favor indique el fraccionamiento."
   });
 };
 
@@ -1259,7 +1304,8 @@ const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants
 const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveEmailUser", "/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", //"/api/userInfo/favorites", //remover esto cuando se agregue authenticacion en mobile
 //"/api/userInfo/addFavorites", //remover esto cuando se agregue authenticacion en mobile
 //"/api/userInfo/removeFavorites", //remover esto cuando se agregue authenticacion en mobile
-"/api/suburb/getInviteByCode", "/api/notification/test"];
+"/api/suburb/getInviteByCode", "/api/notification/test", "/api/suburb/getStreets", //remover esta api
+"/api/suburb/getStreetNumbers"];
 const protectedApi = ["/api/suburb/approveReject"];
 module.exports = class Auth {
   validateToken(token) {
@@ -1549,6 +1595,8 @@ const suburbStatus = __webpack_require__(/*! ../constants/types */ "./src/consta
 
 const SuburbInvite = __webpack_require__(/*! ../models/suburbInvite */ "./src/models/suburbInvite.js");
 
+const User = __webpack_require__(/*! ../models/user */ "./src/models/user.js");
+
 const CryptoJS = __webpack_require__(/*! crypto-js */ "crypto-js");
 
 var pjson = __webpack_require__(/*! ../../package.json */ "./package.json");
@@ -1672,7 +1720,6 @@ const getSuburbInvite = code => {
               streetNumber,
               ...props
             } = subInvite._doc;
-            console.log(subInvite._doc);
             const result = {
               suburb: { ...suburb
               },
@@ -1896,6 +1943,24 @@ const addUserPushToken = async (userId, pushToken) => {
   }
 };
 
+const getUsersBySuburb = async suburbId => {
+  try {
+    let users = await User.getUsersBySuburb(suburbId);
+    return users;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getUsersBySuburbStreet = async (suburbId, street) => {
+  try {
+    let users = await User.getUsersBySuburbStreet(suburbId, street);
+    return users;
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -1907,7 +1972,9 @@ module.exports = {
   saveUserFavorites,
   removeUserFavorites,
   getUserById,
-  addUserPushToken
+  addUserPushToken,
+  getUsersBySuburb,
+  getUsersBySuburbStreet
 };
 
 /***/ }),
@@ -1991,8 +2058,8 @@ const validApiRequest = (apiPath, token) => {
 };
 
 exports.checkApiAuth = (req, res, next) => {
-  //console.log(`validando si el request esta autenticado...`);
-  //check request headers over here to know if the request is authenticated
+  console.log(`validando si el request esta autenticado...`); //check request headers over here to know if the request is authenticated
+
   let apiPath = req.baseUrl,
       token = req.headers["authorization"];
   validApiRequest(apiPath, token).then(result => {
@@ -3275,6 +3342,30 @@ UserSchema.statics = {
         resolve(result);
       });
     });
+  },
+  getUsersBySuburb: function (suburbId) {
+    return new Promise((resolve, reject) => {
+      this.find({
+        suburb: suburbId
+      }).exec((err, result) => {
+        if (err) reject(err);
+        resolve(result);
+      });
+    });
+  },
+  getUsersBySuburbStreet: function (suburbId, street) {
+    return new Promise((resolve, reject) => {
+      this.find({
+        $and: [{
+          suburb: suburbId
+        }, {
+          street: street
+        }]
+      }).exec((err, result) => {
+        if (err) reject(err);
+        resolve(result);
+      });
+    });
   }
 };
 const User = mongoose.model("User", UserSchema);
@@ -3343,7 +3434,9 @@ router.post("/api/suburb/approveReject", suburb.approveReject);
 router.get("/api/suburb/info", suburb.getSuburbByAdminId);
 router.get("/api/suburb/get", suburb.getSuburbById);
 router.post("/api/suburb/addSuburbInvite", suburb.addSuburbInvite);
-router.get("/api/suburb/getInviteByCode", suburb.getSuburbInvite); //push notifications
+router.get("/api/suburb/getInviteByCode", suburb.getSuburbInvite);
+router.get("/api/suburb/getStreets", suburb.getStreets);
+router.get("/api/suburb/getStreetNumbers", suburb.getStreetNumbers); //push notifications
 
 router.post("/api/notification/test", pushNotification.sendTestNotification);
 router.post("/api/notification/arrive", pushNotification.sendArriveNotification);
