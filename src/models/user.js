@@ -327,6 +327,14 @@ const mergePushTokens = (currentPushTokens, newPushToken) => {
   return exists.length > 0 ? [...tokens] : [...tokens, newPushToken];
 };
 
+const extractUsersFromDoc = (mUsers) => {
+  let users = mUsers.map((u) => {
+    let { _id, name, lastName, street, streetNumber, active } = u._doc;
+    return { _id, name, lastName, street, streetNumber, active };
+  });
+  return users;
+};
+
 UserSchema.statics = {
   /**
    * Method to get a user by login name
@@ -525,7 +533,7 @@ UserSchema.statics = {
     return new Promise((resolve, reject) => {
       this.find({ suburb: suburbId }).exec((err, result) => {
         if (err) reject(err);
-        resolve(result);
+        resolve(extractUsersFromDoc(result));
       });
     });
   },
@@ -534,9 +542,23 @@ UserSchema.statics = {
       this.find({ $and: [{ suburb: suburbId }, { street: street }] }).exec(
         (err, result) => {
           if (err) reject(err);
-          resolve(result);
+          resolve(extractUsersFromDoc(result));
         }
       );
+    });
+  },
+  getUsersByAddress: function (suburbId, street, streetNumber) {
+    return new Promise((resolve, reject) => {
+      this.find({
+        $and: [
+          { suburb: suburbId },
+          { street: street },
+          { streetNumber: streetNumber },
+        ],
+      }).exec((err, result) => {
+        if (err) reject(err);
+        resolve(extractUsersFromDoc(result));
+      });
     });
   },
 };

@@ -106,7 +106,7 @@ exports.getStreets = (req, res) => {
   if (suburbId) {
     userService.getUsersBySuburb(suburbId).then(
       (users) => {
-        let streets = users.map((usr) => usr._doc.street);
+        let streets = users.map((usr) => usr.street);
         const distinctStreets = [...new Set(streets)];
         res
           .status(200)
@@ -137,7 +137,7 @@ exports.getStreetNumbers = (req, res) => {
   if (suburbId) {
     userService.getUsersBySuburbStreet(suburbId, street).then(
       (users) => {
-        let streetNumbers = users.map((usr) => usr._doc.streetNumber);
+        let streetNumbers = users.map((usr) => usr.streetNumber);
         const distinctStreetNumbers = [...new Set(streetNumbers)];
         res
           .status(200)

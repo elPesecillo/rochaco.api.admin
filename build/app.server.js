@@ -866,7 +866,7 @@ exports.getStreets = (req, res) => {
 
   if (suburbId) {
     userService.getUsersBySuburb(suburbId).then(users => {
-      let streets = users.map(usr => usr._doc.street);
+      let streets = users.map(usr => usr.street);
       const distinctStreets = [...new Set(streets)];
       res.status(200).json(distinctStreets.filter(u => typeof u !== "undefined").map(s => ({
         street: s
@@ -891,7 +891,7 @@ exports.getStreetNumbers = (req, res) => {
 
   if (suburbId) {
     userService.getUsersBySuburbStreet(suburbId, street).then(users => {
-      let streetNumbers = users.map(usr => usr._doc.streetNumber);
+      let streetNumbers = users.map(usr => usr.streetNumber);
       const distinctStreetNumbers = [...new Set(streetNumbers)];
       res.status(200).json(distinctStreetNumbers.filter(u => typeof u !== "undefined").map(s => ({
         streetNumber: s
@@ -1288,6 +1288,23 @@ exports.addUserPushToken = async (req, res, next) => {
   }
 };
 
+exports.getUsersByAddress = async (req, res) => {
+  try {
+    let {
+      suburbId,
+      street,
+      streetNumber
+    } = req.query;
+    let users = await userService.getUsersByAddress(suburbId, street, streetNumber);
+    res.status("200").json(users);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
 /***/ }),
 
 /***/ "./src/logic/auth.js":
@@ -1305,7 +1322,8 @@ const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken",
 //"/api/userInfo/addFavorites", //remover esto cuando se agregue authenticacion en mobile
 //"/api/userInfo/removeFavorites", //remover esto cuando se agregue authenticacion en mobile
 "/api/suburb/getInviteByCode", "/api/notification/test", "/api/suburb/getStreets", //remover esta api
-"/api/suburb/getStreetNumbers"];
+"/api/suburb/getStreetNumbers", //remover esta api
+"/api/userInfo/getUsersByAddress"];
 const protectedApi = ["/api/suburb/approveReject"];
 module.exports = class Auth {
   validateToken(token) {
@@ -1961,6 +1979,15 @@ const getUsersBySuburbStreet = async (suburbId, street) => {
   }
 };
 
+const getUsersByAddress = async (suburbId, street, streetNumber) => {
+  try {
+    let users = await User.getUsersByAddress(suburbId, street, streetNumber);
+    return users;
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -1974,7 +2001,8 @@ module.exports = {
   getUserById,
   addUserPushToken,
   getUsersBySuburb,
-  getUsersBySuburbStreet
+  getUsersBySuburbStreet,
+  getUsersByAddress
 };
 
 /***/ }),
@@ -3126,6 +3154,28 @@ const mergePushTokens = (currentPushTokens, newPushToken) => {
   return exists.length > 0 ? [...tokens] : [...tokens, newPushToken];
 };
 
+const extractUsersFromDoc = mUsers => {
+  let users = mUsers.map(u => {
+    let {
+      _id,
+      name,
+      lastName,
+      street,
+      streetNumber,
+      active
+    } = u._doc;
+    return {
+      _id,
+      name,
+      lastName,
+      street,
+      streetNumber,
+      active
+    };
+  });
+  return users;
+};
+
 UserSchema.statics = {
   /**
    * Method to get a user by login name
@@ -3349,7 +3399,7 @@ UserSchema.statics = {
         suburb: suburbId
       }).exec((err, result) => {
         if (err) reject(err);
-        resolve(result);
+        resolve(extractUsersFromDoc(result));
       });
     });
   },
@@ -3363,7 +3413,23 @@ UserSchema.statics = {
         }]
       }).exec((err, result) => {
         if (err) reject(err);
-        resolve(result);
+        resolve(extractUsersFromDoc(result));
+      });
+    });
+  },
+  getUsersByAddress: function (suburbId, street, streetNumber) {
+    return new Promise((resolve, reject) => {
+      this.find({
+        $and: [{
+          suburb: suburbId
+        }, {
+          street: street
+        }, {
+          streetNumber: streetNumber
+        }]
+      }).exec((err, result) => {
+        if (err) reject(err);
+        resolve(extractUsersFromDoc(result));
       });
     });
   }
@@ -3419,6 +3485,7 @@ router.get("/api/userInfo/favorites", userAdmin.getUserFavs);
 router.post("/api/userInfo/addFavorites", userAdmin.addUserFavs);
 router.post("/api/userInfo/removeFavorites", userAdmin.removeUserFavs);
 router.post("/api/userInfo/addUserPushToken", userAdmin.addUserPushToken);
+router.get("/api/userInfo/getUsersByAddress", userAdmin.getUsersByAddress);
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
 router.post("/api/saveEmailUser", userAdmin.saveEmailUser);

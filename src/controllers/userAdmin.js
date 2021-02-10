@@ -245,7 +245,8 @@ exports.saveUserBySuburbId = async (req, res, next) => {
             .then((resCodeUpdate) => {
               res.status("200").json({
                 success: true,
-                message: resCodeUpdate.message || "Has sido registrado correctamente.",
+                message:
+                  resCodeUpdate.message || "Has sido registrado correctamente.",
               });
             })
             .catch((err) => {
@@ -355,6 +356,22 @@ exports.addUserPushToken = async (req, res, next) => {
     let { pushToken, userId } = req.body;
     let pushTokens = await userService.addUserPushToken(userId, pushToken);
     res.status("200").json(pushTokens);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.getUsersByAddress = async (req, res) => {
+  try {
+    let { suburbId, street, streetNumber } = req.query;
+    let users = await userService.getUsersByAddress(
+      suburbId,
+      street,
+      streetNumber
+    );
+    res.status("200").json(users);
   } catch (err) {
     res
       .status("400")

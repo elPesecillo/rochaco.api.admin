@@ -200,6 +200,15 @@ const getUsersBySuburbStreet = async (suburbId, street) => {
   }
 };
 
+const getUsersByAddress = async (suburbId, street, streetNumber) => {
+  try {
+    let users = await User.getUsersByAddress(suburbId, street, streetNumber);
+    return users;
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -214,4 +223,5 @@ module.exports = {
   addUserPushToken,
   getUsersBySuburb,
   getUsersBySuburbStreet,
+  getUsersByAddress,
 };

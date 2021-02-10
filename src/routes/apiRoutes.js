@@ -43,6 +43,7 @@ router.get("/api/userInfo/favorites", userAdmin.getUserFavs);
 router.post("/api/userInfo/addFavorites", userAdmin.addUserFavs);
 router.post("/api/userInfo/removeFavorites", userAdmin.removeUserFavs);
 router.post("/api/userInfo/addUserPushToken", userAdmin.addUserPushToken);
+router.get("/api/userInfo/getUsersByAddress", userAdmin.getUsersByAddress);
 
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);

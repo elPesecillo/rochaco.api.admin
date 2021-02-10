@@ -20,6 +20,7 @@ const openApi = [
   "/api/notification/test",
   "/api/suburb/getStreets", //remover esta api
   "/api/suburb/getStreetNumbers", //remover esta api
+  "/api/userInfo/getUsersByAddress", //remover esta api
 ];
 
 const protectedApi = ["/api/suburb/approveReject"];
