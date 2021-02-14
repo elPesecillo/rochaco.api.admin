@@ -28,7 +28,9 @@ exports.sendArriveNotification = async (req, res) => {
       pushTokens,
       {
         sound: "default",
-        body: `Tu invitado ${guest.name} ha llegado.`,
+        body: guest.isService
+          ? `Tu servicio ${guest.name} ha llegado.`
+          : `Tu invitado ${guest.name} ha llegado.`,
         data: { redirect: "myVisits" },
         title: `Hola ${user.name}`,
       }
