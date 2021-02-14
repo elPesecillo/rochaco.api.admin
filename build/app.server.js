@@ -3056,6 +3056,7 @@ UserSchema.methods = {
   generateUserToken: function (_suburb) {
     let payload = {
       userId: this._id != undefined ? JSON.parse(JSON.stringify(this._id)) : "",
+      userName: `${this.name} ${this.lastName}`,
       loginName: this.loginName,
       suburb: this.suburb || _suburb,
       userType: this.userType,
