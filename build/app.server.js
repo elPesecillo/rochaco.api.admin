@@ -486,7 +486,7 @@ exports.sendArriveNotification = async (req, res) => {
     let pushTokens = user.pushTokens.map(t => t._doc.token);
     let result = await pushNotificationService.sendPushNotification(pushTokens, {
       sound: "default",
-      body: `Tu invitado ${guest.name} ha llegado.`,
+      body: guest.isService ? `Tu servicio ${guest.name} ha llegado.` : `Tu invitado ${guest.name} ha llegado.`,
       data: {
         redirect: "myVisits"
       },
