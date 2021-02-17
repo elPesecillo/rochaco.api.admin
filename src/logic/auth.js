@@ -18,9 +18,9 @@ const openApi = [
   //"/api/userInfo/removeFavorites", //remover esto cuando se agregue authenticacion en mobile
   "/api/suburb/getInviteByCode",
   "/api/notification/test",
-  "/api/suburb/getStreets", //remover esta api
-  "/api/suburb/getStreetNumbers", //remover esta api
-  "/api/userInfo/getUsersByAddress", //remover esta api
+  //"/api/suburb/getStreets", //remover esta api
+  //"/api/suburb/getStreetNumbers", //remover esta api
+  //"/api/userInfo/getUsersByAddress", //remover esta api
 ];
 
 const protectedApi = ["/api/suburb/approveReject"];

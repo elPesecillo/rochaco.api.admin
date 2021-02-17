@@ -1321,9 +1321,7 @@ const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants
 const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveEmailUser", "/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", //"/api/userInfo/favorites", //remover esto cuando se agregue authenticacion en mobile
 //"/api/userInfo/addFavorites", //remover esto cuando se agregue authenticacion en mobile
 //"/api/userInfo/removeFavorites", //remover esto cuando se agregue authenticacion en mobile
-"/api/suburb/getInviteByCode", "/api/notification/test", "/api/suburb/getStreets", //remover esta api
-"/api/suburb/getStreetNumbers", //remover esta api
-"/api/userInfo/getUsersByAddress"];
+"/api/suburb/getInviteByCode", "/api/notification/test"];
 const protectedApi = ["/api/suburb/approveReject"];
 module.exports = class Auth {
   validateToken(token) {
