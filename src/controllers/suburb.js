@@ -71,19 +71,21 @@ exports.getSuburbById = (req, res, next) => {
 };
 
 exports.addSuburbInvite = (req, res, next) => {
-  let { suburbId, name, street, streetNumber } = req.body;
-  suburbService.addSuburbInvite(suburbId, name, street, streetNumber).then(
-    (result) => {
-      res.status(200).json(result);
-    },
-    (err) => {
-      res.status(500).json({
-        success: false,
-        message:
-          err.message || "No se pudo generar la invitacion para el usuario.",
-      });
-    }
-  );
+  let { suburbId, name, street, streetNumber, userType } = req.body;
+  suburbService
+    .addSuburbInvite(suburbId, name, street, streetNumber, userType)
+    .then(
+      (result) => {
+        res.status(200).json(result);
+      },
+      (err) => {
+        res.status(500).json({
+          success: false,
+          message:
+            err.message || "No se pudo generar la invitacion para el usuario.",
+        });
+      }
+    );
 };
 
 exports.getSuburbInvite = (req, res, next) => {

@@ -109,7 +109,7 @@ const getSuburbById = (suburbId) => {
   });
 };
 
-const addSuburbInvite = (suburbId, name, street, streetNumber) => {
+const addSuburbInvite = (suburbId, name, street, streetNumber, userType) => {
   return new Promise((resolve, reject) => {
     let _code =
       Math.random().toString(36).substring(2, 4).toUpperCase() +
@@ -121,6 +121,7 @@ const addSuburbInvite = (suburbId, name, street, streetNumber) => {
       name,
       street: encryption(street),
       streetNumber: encryption(streetNumber),
+      userType,
     }).then((subInv, err) => {
       if (!err) {
         Suburb.AddSuburbInvite(suburbId, subInv._id.toString()).then(

@@ -837,9 +837,10 @@ exports.addSuburbInvite = (req, res, next) => {
     suburbId,
     name,
     street,
-    streetNumber
+    streetNumber,
+    userType
   } = req.body;
-  suburbService.addSuburbInvite(suburbId, name, street, streetNumber).then(result => {
+  suburbService.addSuburbInvite(suburbId, name, street, streetNumber, userType).then(result => {
     res.status(200).json(result);
   }, err => {
     res.status(500).json({
@@ -1111,6 +1112,7 @@ exports.saveUserBySuburbId = async (req, res, next) => {
     street,
     streetNumber,
     code,
+    userType,
     token // add captcha here
 
   } = req.body;
@@ -1130,6 +1132,7 @@ exports.saveUserBySuburbId = async (req, res, next) => {
       suburb: suburbId,
       street,
       streetNumber,
+      userType,
       userConfirmed: false // if the user is an email user the user needs to confirm
 
     });else save = userService.saveUser({
@@ -1145,6 +1148,7 @@ exports.saveUserBySuburbId = async (req, res, next) => {
       suburb: suburbId,
       street,
       streetNumber,
+      userType,
       userConfirmed: true
     });
     save.then(resSave => {
@@ -1698,7 +1702,7 @@ const getSuburbById = suburbId => {
   });
 };
 
-const addSuburbInvite = (suburbId, name, street, streetNumber) => {
+const addSuburbInvite = (suburbId, name, street, streetNumber, userType) => {
   return new Promise((resolve, reject) => {
     let _code = Math.random().toString(36).substring(2, 4).toUpperCase() + Math.random().toString(36).substring(2, 4).toUpperCase();
 
@@ -1708,7 +1712,8 @@ const addSuburbInvite = (suburbId, name, street, streetNumber) => {
       suburbId,
       name,
       street: encryption(street),
-      streetNumber: encryption(streetNumber)
+      streetNumber: encryption(streetNumber),
+      userType
     }).then((subInv, err) => {
       if (!err) {
         Suburb.AddSuburbInvite(suburbId, subInv._id.toString()).then((sub, err) => {
@@ -2797,6 +2802,9 @@ const SuburbInviteSchema = new mongoose.Schema({
   },
   updatedTranstime: {
     type: Date
+  },
+  userType: {
+    type: String
   },
   transtime: {
     type: Date,

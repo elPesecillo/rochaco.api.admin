@@ -28,6 +28,9 @@ const SuburbInviteSchema = new mongoose.Schema({
   updatedTranstime: {
     type: Date,
   },
+  userType: {
+    type: String,
+  },
   transtime: {
     type: Date,
     default: moment.utc(),
