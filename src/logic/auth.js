@@ -13,14 +13,12 @@ const openApi = [
   "/api/validateTokenPath",
   "/api/cp/getCPInfo",
   "/api/file/upload",
-  //"/api/userInfo/favorites", //remover esto cuando se agregue authenticacion en mobile
-  //"/api/userInfo/addFavorites", //remover esto cuando se agregue authenticacion en mobile
-  //"/api/userInfo/removeFavorites", //remover esto cuando se agregue authenticacion en mobile
   "/api/suburb/getInviteByCode",
   "/api/notification/test",
-  //"/api/suburb/getStreets", //remover esta api
-  //"/api/suburb/getStreetNumbers", //remover esta api
-  //"/api/userInfo/getUsersByAddress", //remover esta api
+  "/api/suburb/updateConfig", // remover esta api de esta lista
+  "/api/suburb/getConfig", //remover esta api de esta lista
+  "/api/suburb/saveStreet", //remover esta api de la lista
+  "/api/suburb/getAllStreets", //remover este endpoint de la lista
 ];
 
 const protectedApi = ["/api/suburb/approveReject"];

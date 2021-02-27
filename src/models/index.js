@@ -3,9 +3,19 @@ const Menu = require("./menu");
 const Role = require("./role");
 const User = require("./user");
 const SuburbInvite = require("./suburbInvite");
+const SuburbConfig = require("./suburbConfig");
+const SuburbStreet = require("./suburbStreet");
 const PostalCode = require("./postalCode");
 
-const models = { Menu, Role, User, PostalCode, SuburbInvite };
+const models = {
+  Menu,
+  Role,
+  User,
+  PostalCode,
+  SuburbInvite,
+  SuburbConfig,
+  SuburbStreet,
+};
 
 const connectDb = () => {
   //setup the mongo connection

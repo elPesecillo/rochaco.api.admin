@@ -2,8 +2,14 @@ const Suburb = require("../models/suburb");
 const suburbStatus = require("../constants/types").suburbStatus;
 const SuburbInvite = require("../models/suburbInvite");
 const User = require("../models/user");
+const SuburbConfig = require("../models/suburbConfig");
+const SuburbStreet = require("../models/suburbStreet");
+const ObjectId = require("mongoose").Types.ObjectId;
+
 const CryptoJS = require("crypto-js");
+
 var pjson = require("../../package.json");
+const { Mongoose } = require("mongoose");
 
 const getSuburbStatus = (statusName) => {
   let status = suburbStatus.filter((st) => st.status === statusName);
@@ -196,6 +202,76 @@ const getSuburbInvite = (code) => {
   });
 };
 
+const saveSuburbConfig = async (suburbId, config) => {
+  try {
+    let suburbData = await Suburb.GetSuburb(suburbId);
+    if (!ObjectId.isValid(suburbData.config)) {
+      let saveConfig = await SuburbConfig.SaveConfig(config);
+      await Suburb.SaveSuburbConfig(suburbId, saveConfig._id);
+      return {
+        success: true,
+        message: "la configuracion fue agregada con exito.",
+        id: saveConfig.id,
+      };
+    } else {
+      let updateConfig = await SuburbConfig.UpdateConfig(
+        suburbData.config.toString(),
+        config
+      );
+      return {
+        success: true,
+        message: "la configuracion fue actualizada con exito.",
+      };
+    }
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getSuburbConfig = async (suburbId) => {
+  try {
+    return await Suburb.GetSuburbConfig(suburbId);
+  } catch (err) {
+    throw err;
+  }
+};
+
+const saveSuburbStreet = async (suburbId, street) => {
+  try {
+    let suburbData = await Suburb.GetSuburbStreets(suburbId);
+    let selectedStreet = suburbData.streets
+      ? suburbData.streets.filter(
+          (st) => st.street.toLowerCase() === street.street.toLowerCase()
+        )
+      : [];
+    if (selectedStreet.length === 0) {
+      let saveStreet = await SuburbStreet.SaveStreet(street);
+      await Suburb.SaveSuburbStreet(suburbId, saveStreet._id);
+      return {
+        success: true,
+        message: "la calle fue agregada con exito.",
+        id: saveStreet.id,
+      };
+    } else {
+      let updateStreet = await SuburbStreet.UpdateStreet(
+        selectedStreet[0]._id,
+        street
+      );
+      return { success: true, message: "la calle fue actualizada con exito." };
+    }
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getSuburbStreets = async (suburbId) => {
+  try {
+    return await Suburb.GetSuburbStreets(suburbId);
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports = {
   saveSuburb,
   suburbAddStatus,
@@ -205,4 +281,8 @@ module.exports = {
   getSuburbStatus,
   addSuburbInvite,
   getSuburbInvite,
+  saveSuburbConfig,
+  getSuburbConfig,
+  saveSuburbStreet,
+  getSuburbStreets,
 };

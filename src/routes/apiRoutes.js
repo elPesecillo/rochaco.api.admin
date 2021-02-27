@@ -74,6 +74,14 @@ router.get("/api/suburb/getStreets", suburb.getStreets);
 
 router.get("/api/suburb/getStreetNumbers", suburb.getStreetNumbers);
 
+router.post("/api/suburb/updateConfig", suburb.saveSuburbConfig);
+
+router.get("/api/suburb/getConfig", suburb.getSuburbConfig);
+
+router.post("/api/suburb/saveStreet", suburb.saveSuburbStreet);
+
+router.get("/api/suburb/getAllStreets", suburb.getSuburbStreets);
+
 //push notifications
 router.post("/api/notification/test", pushNotification.sendTestNotification);
 router.post(

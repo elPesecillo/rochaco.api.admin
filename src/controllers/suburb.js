@@ -2,6 +2,7 @@ const suburbService = require("../logic/suburbService");
 const userService = require("../logic/userService");
 const userTypes = require("../constants/types").userTypes;
 const moment = require("moment");
+const ObjectId = require("mongoose").Types.ObjectId;
 
 exports.approveReject = async (req, res, next) => {
   try {
@@ -157,6 +158,99 @@ exports.getStreetNumbers = (req, res) => {
         });
       }
     );
+  } else
+    res.status(400).json({
+      success: false,
+      message: "Por favor indique el fraccionamiento.",
+    });
+};
+
+exports.saveSuburbConfig = (req, res) => {
+  let { suburbId, config } = req.body;
+  if (ObjectId.isValid(suburbId)) {
+    suburbService
+      .saveSuburbConfig(suburbId, config)
+      .then((sub) => {
+        res.status(200).json({
+          success: true,
+          message:
+            "La configuración del fraccionamiento fue actualizada correctamente.",
+        });
+      })
+      .catch((err) => {
+        res.status(500).json({
+          success: false,
+          message: err.message || "No se pudo actualizar la configuracion",
+        });
+      });
+  } else
+    res.status(400).json({
+      success: false,
+      message: "Por favor indique el fraccionamiento.",
+    });
+};
+
+exports.getSuburbConfig = (req, res) => {
+  let { suburbId } = req.query;
+  if (ObjectId.isValid(suburbId)) {
+    suburbService
+      .getSuburbConfig(suburbId)
+      .then((config) => {
+        res.status(200).json({ ...config });
+      })
+      .catch((err) => {
+        res.status(500).json({
+          success: false,
+          message: err.message || "No se pudo obtener la configuracion",
+        });
+      });
+  } else
+    res.status(400).json({
+      success: false,
+      message: "Por favor indique el fraccionamiento.",
+    });
+};
+
+exports.saveSuburbStreet = (req, res) => {
+  let { suburbId, street } = req.body;
+  if (ObjectId.isValid(suburbId)) {
+    suburbService
+      .saveSuburbStreet(suburbId, street)
+      .then((sub) => {
+        res.status(200).json({
+          success: true,
+          message: "La calle fue guardada correctamente.",
+        });
+      })
+      .catch((err) => {
+        res.status(500).json({
+          success: false,
+          message: err.message || "No se pudo guardar la calle",
+        });
+      });
+  } else
+    res.status(400).json({
+      success: false,
+      message: "Por favor indique el fraccionamiento.",
+    });
+};
+
+exports.getSuburbStreets = (req, res) => {
+  let { suburbId } = req.query;
+  if (ObjectId.isValid(suburbId)) {
+    suburbService
+      .getSuburbStreets(suburbId)
+      .then((streets) => {
+        res.status(200).json({ ...streets });
+      })
+      .catch((err) => {
+        res.status(500).json({
+          success: false,
+          message:
+            err.message ||
+            "No se pudieron obtener las calles del fraccionamiento",
+        });
+      });
   } else
     res.status(400).json({
       success: false,

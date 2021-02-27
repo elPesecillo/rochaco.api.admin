@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 const moment = require("moment");
 const SuburbStatusSchema = require("./schemas/suburbStatusSchema");
 const SuburbFileSchema = require("./schemas/suburbFileSchema");
+const suburbConfig = require("./suburbConfig");
+const suburbStreet = require("./suburbStreet");
 
 const SuburbSchema = new mongoose.Schema({
   name: {
@@ -39,6 +41,16 @@ const SuburbSchema = new mongoose.Schema({
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "SuburbInvite",
+    },
+  ],
+  config: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "SuburbConfig",
+  },
+  streets: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SuburbStreet",
     },
   ],
 });
@@ -111,6 +123,7 @@ SuburbSchema.statics = {
             transtime,
             status,
             suburbInvites,
+            config,
           } = result;
           resolve({
             name,
@@ -120,6 +133,7 @@ SuburbSchema.statics = {
             transtime,
             status,
             suburbInvites,
+            config,
           });
         });
     });
@@ -160,6 +174,52 @@ SuburbSchema.statics = {
           resolve(result);
         }
       );
+    });
+  },
+  SaveSuburbConfig: function (id, configId) {
+    return this.updateOne(
+      {
+        _id: id,
+      },
+      {
+        $set: { config: configId },
+      }
+    );
+  },
+  GetSuburbConfig: function (id) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: id,
+      })
+        .populate("config")
+        .exec((err, result) => {
+          if (err) reject(err);
+          let { config } = result;
+          resolve({ ...config._doc });
+        });
+    });
+  },
+  SaveSuburbStreet: function (id, streetId) {
+    if (!Array.isArray(streetId)) streetId = [streetId];
+    return this.updateOne(
+      { _id: id },
+      { $addToSet: { streets: { $each: streetId } } },
+      { multi: true }
+    );
+  },
+  GetSuburbStreets: function (id) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: id,
+      })
+        .populate("streets")
+        .lean()
+        .exec((err, result) => {
+          if (err) reject(err);
+          let { streets } = result;
+          if (streets) resolve({ streets: [...streets] });
+          else resolve({ streets: [] });
+        });
     });
   },
 };
