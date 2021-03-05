@@ -49,6 +49,7 @@ router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
 router.post("/api/saveEmailUser", userAdmin.saveEmailUser);
 router.post("/api/saveUserBySuburb", userAdmin.saveUserBySuburbId);
+router.post("/api/deleteUserInfo", userAdmin.deleteUserInfo);
 
 //logged user APIs
 router.get("/api/me/menu", menus.getMenusByUser);
