@@ -195,7 +195,8 @@ SuburbSchema.statics = {
         .exec((err, result) => {
           if (err) reject(err);
           let { config } = result;
-          resolve({ ...config._doc });
+          if (config) resolve({ ...config._doc });
+          else resolve({});
         });
     });
   },
