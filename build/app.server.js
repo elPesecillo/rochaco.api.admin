@@ -1177,6 +1177,18 @@ exports.saveUserBySuburbId = async (req, res, next) => {
   });
 };
 
+exports.deleteUserInfo = async (req, res, next) => {
+  try {
+    let { userId } = req.body;
+    let removeUserInfo = await userService.deleteUserInfo(userId);
+    res.status("200").json(removeUserInfo);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
 exports.getUserByType = async (req, res, next) => {
   try {
     const userType = userTypes[req.params.userType];

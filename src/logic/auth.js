@@ -19,6 +19,7 @@ const openApi = [
   "/api/suburb/getConfig", //remover esta api de esta lista
   "/api/suburb/saveStreet", //remover esta api de la lista
   "/api/suburb/getAllStreets", //remover este endpoint de la lista
+  "/api/deleteUserInfo", //remover este endpoint de la lista
 ];
 
 const protectedApi = ["/api/suburb/approveReject"];
