@@ -217,9 +217,11 @@ SuburbSchema.statics = {
         .lean()
         .exec((err, result) => {
           if (err) reject(err);
-          let { streets } = result;
-          if (streets) resolve({ streets: [...streets] });
-          else resolve({ streets: [] });
+          if (result) {
+            let { streets } = result;
+            if (streets) resolve({ streets: [...streets] });
+            else resolve({ streets: [] });
+          } else resolve({ streets: [] });
         });
     });
   },
