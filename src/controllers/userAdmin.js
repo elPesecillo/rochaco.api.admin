@@ -397,3 +397,15 @@ exports.getUsersByAddress = async (req, res) => {
       .json({ success: false, message: err.message || "Bad request." });
   }
 };
+
+exports.deleteUserInfo = async (req, res, next) => {
+  try {
+    let { userId } = req.body;
+    let removeUserInfo = await userService.deleteUserInfo(userId);
+    res.status("200").json(removeUserInfo);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};

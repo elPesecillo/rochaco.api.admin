@@ -217,6 +217,15 @@ const getUsersByAddress = async (suburbId, street, streetNumber) => {
   }
 };
 
+const deleteUserInfo = async (userId) => {
+  try {
+    let payload = await User.deleteUserInfo(userId);
+    return payload;
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -233,4 +242,5 @@ module.exports = {
   getUsersBySuburbStreet,
   getUsersByAddress,
   updateUserPicture,
+  deleteUserInfo,
 };

@@ -466,6 +466,9 @@ UserSchema.statics = {
       }
     );
   },
+  deleteUserInfo: function (userId) {
+    return this.deleteOne({ _id: userId });
+  },
   saveUser: function (objUser) {
     let user = new this(objUser);
     return user.save();

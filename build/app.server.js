@@ -1419,6 +1419,21 @@ exports.getUsersByAddress = async (req, res) => {
   }
 };
 
+exports.deleteUserInfo = async (req, res, next) => {
+  try {
+    let {
+      userId
+    } = req.body;
+    let removeUserInfo = await userService.deleteUserInfo(userId);
+    res.status("200").json(removeUserInfo);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
 /***/ }),
 
 /***/ "./src/logic/auth.js":
@@ -1435,7 +1450,8 @@ const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants
 const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveEmailUser", "/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", "/api/suburb/getInviteByCode", "/api/notification/test", "/api/suburb/updateConfig", // remover esta api de esta lista
 "/api/suburb/getConfig", //remover esta api de esta lista
 "/api/suburb/saveStreet", //remover esta api de la lista
-"/api/suburb/getAllStreets"];
+"/api/suburb/getAllStreets", //remover este endpoint de la lista
+"/api/deleteUserInfo"];
 const protectedApi = ["/api/suburb/approveReject"];
 module.exports = class Auth {
   validateToken(token) {
@@ -2188,6 +2204,15 @@ const getUsersByAddress = async (suburbId, street, streetNumber) => {
   }
 };
 
+const deleteUserInfo = async userId => {
+  try {
+    let payload = await User.deleteUserInfo(userId);
+    return payload;
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -2203,7 +2228,8 @@ module.exports = {
   getUsersBySuburb,
   getUsersBySuburbStreet,
   getUsersByAddress,
-  updateUserPicture
+  updateUserPicture,
+  deleteUserInfo
 };
 
 /***/ }),
@@ -3777,6 +3803,11 @@ UserSchema.statics = {
       }
     });
   },
+  deleteUserInfo: function (userId) {
+    return this.deleteOne({
+      _id: userId
+    });
+  },
   saveUser: function (objUser) {
     let user = new this(objUser);
     return user.save();
@@ -3950,7 +3981,8 @@ router.post("/api/userInfo/updatePicture", userAdmin.updateUserPicture);
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
 router.post("/api/saveEmailUser", userAdmin.saveEmailUser);
-router.post("/api/saveUserBySuburb", userAdmin.saveUserBySuburbId); //logged user APIs
+router.post("/api/saveUserBySuburb", userAdmin.saveUserBySuburbId);
+router.post("/api/deleteUserInfo", userAdmin.deleteUserInfo); //logged user APIs
 
 router.get("/api/me/menu", menus.getMenusByUser); //postal codes
 
