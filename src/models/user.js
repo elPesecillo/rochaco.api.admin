@@ -473,6 +473,9 @@ UserSchema.statics = {
     let user = new this(objUser);
     return user.save();
   },
+  updateUserPicture: function (userId, photoUrl) {
+    return this.updateOne({ _id: userId }, { $set: { photoUrl: photoUrl } });
+  },
   /**
    * Validate if the user token is active
    */
