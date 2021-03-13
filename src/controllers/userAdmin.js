@@ -103,6 +103,22 @@ exports.saveFacebookUser = (req, res, next) => {
   );
 };
 
+exports.updateUserPicture = (req, res) => {
+  let { userId, photoUrl } = req.body;
+  userService
+    .updateUserPicture(userId, photoUrl)
+    .then((updated) => {
+      res
+        .status("200")
+        .json({ success: true, message: "profile picture updated." });
+    })
+    .catch((err) => {
+      res
+        .status("400")
+        .json({ success: false, message: err.message || "Bad request." });
+    });
+};
+
 exports.saveEmailUser = (req, res, next) => {
   let {
     name,
