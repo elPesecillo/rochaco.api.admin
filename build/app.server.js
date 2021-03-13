@@ -769,6 +769,8 @@ const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants
 
 const moment = __webpack_require__(/*! moment */ "moment");
 
+const ObjectId = __webpack_require__(/*! mongoose */ "mongoose").Types.ObjectId;
+
 exports.approveReject = async (req, res, next) => {
   try {
     let {
@@ -909,6 +911,96 @@ exports.getStreetNumbers = (req, res) => {
   });
 };
 
+exports.saveSuburbConfig = (req, res) => {
+  let {
+    suburbId,
+    config
+  } = req.body;
+
+  if (ObjectId.isValid(suburbId)) {
+    suburbService.saveSuburbConfig(suburbId, config).then(sub => {
+      res.status(200).json({
+        success: true,
+        message: "La configuración del fraccionamiento fue actualizada correctamente."
+      });
+    }).catch(err => {
+      res.status(500).json({
+        success: false,
+        message: err.message || "No se pudo actualizar la configuracion"
+      });
+    });
+  } else res.status(400).json({
+    success: false,
+    message: "Por favor indique el fraccionamiento."
+  });
+};
+
+exports.getSuburbConfig = (req, res) => {
+  let {
+    suburbId
+  } = req.query;
+
+  if (ObjectId.isValid(suburbId)) {
+    suburbService.getSuburbConfig(suburbId).then(config => {
+      res.status(200).json({ ...config
+      });
+    }).catch(err => {
+      res.status(500).json({
+        success: false,
+        message: err.message || "No se pudo obtener la configuracion"
+      });
+    });
+  } else res.status(400).json({
+    success: false,
+    message: "Por favor indique el fraccionamiento."
+  });
+};
+
+exports.saveSuburbStreet = (req, res) => {
+  let {
+    suburbId,
+    street
+  } = req.body;
+
+  if (ObjectId.isValid(suburbId)) {
+    suburbService.saveSuburbStreet(suburbId, street).then(sub => {
+      res.status(200).json({
+        success: true,
+        message: "La calle fue guardada correctamente."
+      });
+    }).catch(err => {
+      res.status(500).json({
+        success: false,
+        message: err.message || "No se pudo guardar la calle"
+      });
+    });
+  } else res.status(400).json({
+    success: false,
+    message: "Por favor indique el fraccionamiento."
+  });
+};
+
+exports.getSuburbStreets = (req, res) => {
+  let {
+    suburbId
+  } = req.query;
+
+  if (ObjectId.isValid(suburbId)) {
+    suburbService.getSuburbStreets(suburbId).then(streets => {
+      res.status(200).json({ ...streets
+      });
+    }).catch(err => {
+      res.status(500).json({
+        success: false,
+        message: err.message || "No se pudieron obtener las calles del fraccionamiento"
+      });
+    });
+  } else res.status(400).json({
+    success: false,
+    message: "Por favor indique el fraccionamiento."
+  });
+};
+
 /***/ }),
 
 /***/ "./src/controllers/userAdmin.js":
@@ -1006,6 +1098,24 @@ exports.saveFacebookUser = (req, res, next) => {
       });
     });
   }, err => {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  });
+};
+
+exports.updateUserPicture = (req, res) => {
+  let {
+    userId,
+    photoUrl
+  } = req.body;
+  userService.updateUserPicture(userId, photoUrl).then(updated => {
+    res.status("200").json({
+      success: true,
+      message: "profile picture updated."
+    });
+  }).catch(err => {
     res.status("400").json({
       success: false,
       message: err.message || "Bad request."
@@ -1322,10 +1432,10 @@ const User = __webpack_require__(/*! ../models/user */ "./src/models/user.js");
 
 const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants/types.js").userTypes;
 
-const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveEmailUser", "/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", //"/api/userInfo/favorites", //remover esto cuando se agregue authenticacion en mobile
-//"/api/userInfo/addFavorites", //remover esto cuando se agregue authenticacion en mobile
-//"/api/userInfo/removeFavorites", //remover esto cuando se agregue authenticacion en mobile
-"/api/suburb/getInviteByCode", "/api/notification/test"];
+const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveEmailUser", "/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", "/api/suburb/getInviteByCode", "/api/notification/test", "/api/suburb/updateConfig", // remover esta api de esta lista
+"/api/suburb/getConfig", //remover esta api de esta lista
+"/api/suburb/saveStreet", //remover esta api de la lista
+"/api/suburb/getAllStreets"];
 const protectedApi = ["/api/suburb/approveReject"];
 module.exports = class Auth {
   validateToken(token) {
@@ -1617,9 +1727,19 @@ const SuburbInvite = __webpack_require__(/*! ../models/suburbInvite */ "./src/mo
 
 const User = __webpack_require__(/*! ../models/user */ "./src/models/user.js");
 
+const SuburbConfig = __webpack_require__(/*! ../models/suburbConfig */ "./src/models/suburbConfig.js");
+
+const SuburbStreet = __webpack_require__(/*! ../models/suburbStreet */ "./src/models/suburbStreet.js");
+
+const ObjectId = __webpack_require__(/*! mongoose */ "mongoose").Types.ObjectId;
+
 const CryptoJS = __webpack_require__(/*! crypto-js */ "crypto-js");
 
 var pjson = __webpack_require__(/*! ../../package.json */ "./package.json");
+
+const {
+  Mongoose
+} = __webpack_require__(/*! mongoose */ "mongoose");
 
 const getSuburbStatus = statusName => {
   let status = suburbStatus.filter(st => st.status === statusName);
@@ -1771,6 +1891,71 @@ const getSuburbInvite = code => {
   });
 };
 
+const saveSuburbConfig = async (suburbId, config) => {
+  try {
+    let suburbData = await Suburb.GetSuburb(suburbId);
+
+    if (!ObjectId.isValid(suburbData.config)) {
+      let saveConfig = await SuburbConfig.SaveConfig(config);
+      await Suburb.SaveSuburbConfig(suburbId, saveConfig._id);
+      return {
+        success: true,
+        message: "la configuracion fue agregada con exito.",
+        id: saveConfig.id
+      };
+    } else {
+      let updateConfig = await SuburbConfig.UpdateConfig(suburbData.config.toString(), config);
+      return {
+        success: true,
+        message: "la configuracion fue actualizada con exito."
+      };
+    }
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getSuburbConfig = async suburbId => {
+  try {
+    return await Suburb.GetSuburbConfig(suburbId);
+  } catch (err) {
+    throw err;
+  }
+};
+
+const saveSuburbStreet = async (suburbId, street) => {
+  try {
+    let suburbData = await Suburb.GetSuburbStreets(suburbId);
+    let selectedStreet = suburbData.streets ? suburbData.streets.filter(st => st.street.toLowerCase() === street.street.toLowerCase()) : [];
+
+    if (selectedStreet.length === 0) {
+      let saveStreet = await SuburbStreet.SaveStreet(street);
+      await Suburb.SaveSuburbStreet(suburbId, saveStreet._id);
+      return {
+        success: true,
+        message: "la calle fue agregada con exito.",
+        id: saveStreet.id
+      };
+    } else {
+      let updateStreet = await SuburbStreet.UpdateStreet(selectedStreet[0]._id, street);
+      return {
+        success: true,
+        message: "la calle fue actualizada con exito."
+      };
+    }
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getSuburbStreets = async suburbId => {
+  try {
+    return await Suburb.GetSuburbStreets(suburbId);
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports = {
   saveSuburb,
   suburbAddStatus,
@@ -1779,7 +1964,11 @@ module.exports = {
   getSuburbById,
   getSuburbStatus,
   addSuburbInvite,
-  getSuburbInvite
+  getSuburbInvite,
+  saveSuburbConfig,
+  getSuburbConfig,
+  saveSuburbStreet,
+  getSuburbStreets
 };
 
 /***/ }),
@@ -1853,6 +2042,14 @@ const updateUser = async userObj => {
       });
     });
   });
+};
+
+const updateUserPicture = async (userId, photoUrl) => {
+  try {
+    return await User.updateUserPicture(userId, photoUrl);
+  } catch (err) {
+    throw err;
+  }
 };
 
 const validateRecaptcha = async token => {
@@ -2005,7 +2202,8 @@ module.exports = {
   addUserPushToken,
   getUsersBySuburb,
   getUsersBySuburbStreet,
-  getUsersByAddress
+  getUsersByAddress,
+  updateUserPicture
 };
 
 /***/ }),
@@ -2123,6 +2321,10 @@ const User = __webpack_require__(/*! ./user */ "./src/models/user.js");
 
 const SuburbInvite = __webpack_require__(/*! ./suburbInvite */ "./src/models/suburbInvite.js");
 
+const SuburbConfig = __webpack_require__(/*! ./suburbConfig */ "./src/models/suburbConfig.js");
+
+const SuburbStreet = __webpack_require__(/*! ./suburbStreet */ "./src/models/suburbStreet.js");
+
 const PostalCode = __webpack_require__(/*! ./postalCode */ "./src/models/postalCode.js");
 
 const models = {
@@ -2130,7 +2332,9 @@ const models = {
   Role,
   User,
   PostalCode,
-  SuburbInvite
+  SuburbInvite,
+  SuburbConfig,
+  SuburbStreet
 };
 
 const connectDb = () => {
@@ -2447,6 +2651,89 @@ module.exports = Role;
 
 /***/ }),
 
+/***/ "./src/models/schemas/config/dropdownSchema.js":
+/*!*****************************************************!*\
+  !*** ./src/models/schemas/config/dropdownSchema.js ***!
+  \*****************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
+
+const DropdownSchema = new mongoose.Schema({
+  value: {
+    type: String
+  },
+  text: {
+    type: String
+  }
+});
+module.exports = DropdownSchema;
+
+/***/ }),
+
+/***/ "./src/models/schemas/config/fieldSchema.js":
+/*!**************************************************!*\
+  !*** ./src/models/schemas/config/fieldSchema.js ***!
+  \**************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
+
+const moment = __webpack_require__(/*! moment */ "moment");
+
+const DropdownSchema = __webpack_require__(/*! ./dropdownSchema */ "./src/models/schemas/config/dropdownSchema.js");
+
+const FieldSchema = new mongoose.Schema({
+  field: {
+    type: String
+  },
+  type: {
+    type: String
+  },
+  data: [DropdownSchema],
+  label: {
+    type: String
+  },
+  mandatory: {
+    type: Boolean,
+    default: false
+  },
+  mandatoryMessage: {
+    type: String
+  }
+});
+module.exports = FieldSchema;
+
+/***/ }),
+
+/***/ "./src/models/schemas/config/screenSchema.js":
+/*!***************************************************!*\
+  !*** ./src/models/schemas/config/screenSchema.js ***!
+  \***************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
+
+const moment = __webpack_require__(/*! moment */ "moment");
+
+const FieldSchema = __webpack_require__(/*! ./fieldSchema */ "./src/models/schemas/config/fieldSchema.js");
+
+const ScreenSchema = new mongoose.Schema({
+  name: {
+    type: String
+  },
+  title: {
+    type: String
+  },
+  fields: [FieldSchema]
+});
+module.exports = ScreenSchema;
+
+/***/ }),
+
 /***/ "./src/models/schemas/guestSchema.js":
 /*!*******************************************!*\
   !*** ./src/models/schemas/guestSchema.js ***!
@@ -2604,6 +2891,10 @@ const SuburbStatusSchema = __webpack_require__(/*! ./schemas/suburbStatusSchema 
 
 const SuburbFileSchema = __webpack_require__(/*! ./schemas/suburbFileSchema */ "./src/models/schemas/suburbFileSchema.js");
 
+const suburbConfig = __webpack_require__(/*! ./suburbConfig */ "./src/models/suburbConfig.js");
+
+const suburbStreet = __webpack_require__(/*! ./suburbStreet */ "./src/models/suburbStreet.js");
+
 const SuburbSchema = new mongoose.Schema({
   name: {
     type: String
@@ -2638,6 +2929,14 @@ const SuburbSchema = new mongoose.Schema({
   suburbInvites: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "SuburbInvite"
+  }],
+  config: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "SuburbConfig"
+  },
+  streets: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "SuburbStreet"
   }]
 });
 SuburbSchema.statics = {
@@ -2701,7 +3000,8 @@ SuburbSchema.statics = {
           active,
           transtime,
           status,
-          suburbInvites
+          suburbInvites,
+          config
         } = result;
         resolve({
           name,
@@ -2710,7 +3010,8 @@ SuburbSchema.statics = {
           active,
           transtime,
           status,
-          suburbInvites
+          suburbInvites,
+          config
         });
       });
     });
@@ -2758,10 +3059,109 @@ SuburbSchema.statics = {
         resolve(result);
       });
     });
+  },
+  SaveSuburbConfig: function (id, configId) {
+    return this.updateOne({
+      _id: id
+    }, {
+      $set: {
+        config: configId
+      }
+    });
+  },
+  GetSuburbConfig: function (id) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: id
+      }).populate("config").exec((err, result) => {
+        if (err) reject(err);
+        let {
+          config
+        } = result;
+        if (config) resolve({ ...config._doc
+        });else resolve({});
+      });
+    });
+  },
+  SaveSuburbStreet: function (id, streetId) {
+    if (!Array.isArray(streetId)) streetId = [streetId];
+    return this.updateOne({
+      _id: id
+    }, {
+      $addToSet: {
+        streets: {
+          $each: streetId
+        }
+      }
+    }, {
+      multi: true
+    });
+  },
+  GetSuburbStreets: function (id) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: id
+      }).populate("streets").lean().exec((err, result) => {
+        if (err) reject(err);
+
+        if (result) {
+          let {
+            streets
+          } = result;
+          if (streets) resolve({
+            streets: [...streets]
+          });else resolve({
+            streets: []
+          });
+        } else resolve({
+          streets: []
+        });
+      });
+    });
   }
 };
 const Suburb = mongoose.model("Suburb", SuburbSchema);
 module.exports = Suburb;
+
+/***/ }),
+
+/***/ "./src/models/suburbConfig.js":
+/*!************************************!*\
+  !*** ./src/models/suburbConfig.js ***!
+  \************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
+
+const moment = __webpack_require__(/*! moment */ "moment");
+
+const ScreenSchema = __webpack_require__(/*! ./schemas/config/screenSchema */ "./src/models/schemas/config/screenSchema.js");
+
+const SuburbConfigSchema = new mongoose.Schema({
+  imageUrl: {
+    type: String
+  },
+  screens: [ScreenSchema],
+  transtime: {
+    type: Date,
+    default: moment.utc()
+  }
+});
+SuburbConfigSchema.statics = {
+  SaveConfig: function (suburbConfig) {
+    let config = new this(suburbConfig);
+    return config.save();
+  },
+  UpdateConfig: function (id, config) {
+    return this.updateOne({
+      _id: id
+    }, { ...config
+    });
+  }
+};
+const SuburbConfig = mongoose.model("SuburbConfig", SuburbConfigSchema);
+module.exports = SuburbConfig;
 
 /***/ }),
 
@@ -2849,6 +3249,50 @@ SuburbInviteSchema.statics = {
 };
 const SuburbInvite = mongoose.model("SuburbInvite", SuburbInviteSchema);
 module.exports = SuburbInvite;
+
+/***/ }),
+
+/***/ "./src/models/suburbStreet.js":
+/*!************************************!*\
+  !*** ./src/models/suburbStreet.js ***!
+  \************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
+
+const moment = __webpack_require__(/*! moment */ "moment");
+
+const {
+  getUsersBySuburbStreet
+} = __webpack_require__(/*! ../logic/userService */ "./src/logic/userService.js");
+
+const suburbStreetSchema = new mongoose.Schema({
+  street: {
+    type: String
+  },
+  numbers: [{
+    type: String
+  }],
+  transtime: {
+    type: Date,
+    default: moment.utc()
+  }
+});
+suburbStreetSchema.statics = {
+  SaveStreet: function (suburbStreet) {
+    let config = new this(suburbStreet);
+    return config.save();
+  },
+  UpdateStreet: function (id, street) {
+    return this.updateOne({
+      _id: id
+    }, { ...street
+    });
+  }
+};
+const SuburbStreet = mongoose.model("SuburbStreet", suburbStreetSchema);
+module.exports = SuburbStreet;
 
 /***/ }),
 
@@ -3337,6 +3781,15 @@ UserSchema.statics = {
     let user = new this(objUser);
     return user.save();
   },
+  updateUserPicture: function (userId, photoUrl) {
+    return this.updateOne({
+      _id: userId
+    }, {
+      $set: {
+        photoUrl: photoUrl
+      }
+    });
+  },
 
   /**
    * Validate if the user token is active
@@ -3493,6 +3946,7 @@ router.post("/api/userInfo/addFavorites", userAdmin.addUserFavs);
 router.post("/api/userInfo/removeFavorites", userAdmin.removeUserFavs);
 router.post("/api/userInfo/addUserPushToken", userAdmin.addUserPushToken);
 router.get("/api/userInfo/getUsersByAddress", userAdmin.getUsersByAddress);
+router.post("/api/userInfo/updatePicture", userAdmin.updateUserPicture);
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
 router.post("/api/saveEmailUser", userAdmin.saveEmailUser);
@@ -3510,7 +3964,11 @@ router.get("/api/suburb/get", suburb.getSuburbById);
 router.post("/api/suburb/addSuburbInvite", suburb.addSuburbInvite);
 router.get("/api/suburb/getInviteByCode", suburb.getSuburbInvite);
 router.get("/api/suburb/getStreets", suburb.getStreets);
-router.get("/api/suburb/getStreetNumbers", suburb.getStreetNumbers); //push notifications
+router.get("/api/suburb/getStreetNumbers", suburb.getStreetNumbers);
+router.post("/api/suburb/updateConfig", suburb.saveSuburbConfig);
+router.get("/api/suburb/getConfig", suburb.getSuburbConfig);
+router.post("/api/suburb/saveStreet", suburb.saveSuburbStreet);
+router.get("/api/suburb/getAllStreets", suburb.getSuburbStreets); //push notifications
 
 router.post("/api/notification/test", pushNotification.sendTestNotification);
 router.post("/api/notification/arrive", pushNotification.sendArriveNotification);

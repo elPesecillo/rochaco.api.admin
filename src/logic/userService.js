@@ -71,6 +71,14 @@ const updateUser = async (userObj) => {
   });
 };
 
+const updateUserPicture = async (userId, photoUrl) => {
+  try {
+    return await User.updateUserPicture(userId, photoUrl);
+  } catch (err) {
+    throw err;
+  }
+};
+
 const validateRecaptcha = async (token) => {
   const secretKey = process.env.RECAPTCHA_SECRET;
   const verificationURL = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`;
@@ -224,4 +232,5 @@ module.exports = {
   getUsersBySuburb,
   getUsersBySuburbStreet,
   getUsersByAddress,
+  updateUserPicture,
 };
