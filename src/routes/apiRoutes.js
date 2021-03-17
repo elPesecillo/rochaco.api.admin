@@ -30,6 +30,8 @@ router.get("/api/auth/fbtoken", siteAuth.getTokenByFacebookId);
 
 router.get("/api/auth/googletoken", siteAuth.getTokenByGoogleId);
 
+router.get("/api/auth/appletoken", siteAuth.getTokenByAppleId);
+
 router.post("/api/signUp", signup.signUp);
 
 //user apis
@@ -48,6 +50,7 @@ router.post("/api/userInfo/updatePicture", userAdmin.updateUserPicture);
 
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
+router.post("/api/saveAppleUser", userAdmin.saveAppleUser);
 router.post("/api/saveEmailUser", userAdmin.saveEmailUser);
 router.post("/api/saveUserBySuburb", userAdmin.saveUserBySuburbId);
 router.post("/api/deleteUserInfo", userAdmin.deleteUserInfo);

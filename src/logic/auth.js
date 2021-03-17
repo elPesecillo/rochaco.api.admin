@@ -7,6 +7,7 @@ const openApi = [
   "/api/auth/googletoken",
   "/api/saveGoogleUser",
   "/api/saveFacebookUser",
+  "/api/saveAppleUser",
   "/api/saveEmailUser",
   "/api/saveUserBySuburb",
   "/api/signUp",

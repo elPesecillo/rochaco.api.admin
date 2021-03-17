@@ -13,6 +13,7 @@ exports.saveGoogleUser = (req, res, next) => {
     cellphone,
     facebookId,
     googleId,
+    appleId,
     token,
   } = req.body;
   //validate the captcha here
@@ -29,6 +30,7 @@ exports.saveGoogleUser = (req, res, next) => {
           cellphone,
           facebookId,
           googleId,
+          appleId,
           userConfirmed: true,
         })
         .then(
@@ -63,6 +65,59 @@ exports.saveFacebookUser = (req, res, next) => {
     cellphone,
     facebookId,
     googleId,
+    appleId,
+    token,
+  } = req.body;
+  //validate the captcha here
+  userService.validateRecaptcha(token).then(
+    (resV) => {
+      //save the user here
+      userService
+        .saveUser({
+          name,
+          lastName,
+          loginName,
+          email,
+          password,
+          cellphone,
+          facebookId,
+          appleId,
+          googleId,
+          userConfirmed: true,
+        })
+        .then(
+          (resSave) => {
+            res.status("200").json({
+              success: true,
+              message: res.message || "Has sido registrado correctamente.",
+            });
+          },
+          (err) => {
+            res
+              .status("400")
+              .json({ success: false, message: err.message || "Bad request." });
+          }
+        );
+    },
+    (err) => {
+      res
+        .status("400")
+        .json({ success: false, message: err.message || "Bad request." });
+    }
+  );
+};
+
+exports.saveAppleUser = (req, res, next) => {
+  let {
+    name,
+    lastName,
+    loginName,
+    email,
+    password,
+    cellphone,
+    facebookId,
+    googleId,
+    appleId,
     token,
   } = req.body;
   //validate the captcha here
@@ -79,6 +134,7 @@ exports.saveFacebookUser = (req, res, next) => {
           cellphone,
           facebookId,
           googleId,
+          appleId,
           userConfirmed: true,
         })
         .then(
@@ -129,6 +185,7 @@ exports.saveEmailUser = (req, res, next) => {
     cellphone,
     facebookId,
     googleId,
+    appleId,
     token,
   } = req.body;
   //validate the captcha here
@@ -145,6 +202,7 @@ exports.saveEmailUser = (req, res, next) => {
           cellphone,
           facebookId,
           googleId,
+          appleId,
           userConfirmed: false,
         })
         .then(
@@ -207,6 +265,7 @@ exports.saveUserBySuburbId = async (req, res, next) => {
     cellphone,
     facebookId,
     googleId,
+    appleId,
     photoUrl,
     suburbId,
     street,
@@ -232,6 +291,7 @@ exports.saveUserBySuburbId = async (req, res, next) => {
           photoUrl,
           facebookId,
           googleId,
+          appleId,
           suburb: suburbId,
           street,
           streetNumber,

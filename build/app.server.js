@@ -525,6 +525,7 @@ exports.signUp = (req, res, next) => {
     cellphone,
     facebookId,
     googleId,
+    appleId,
     password,
     token
   } = req.body;
@@ -538,6 +539,7 @@ exports.signUp = (req, res, next) => {
       cellphone,
       facebookId,
       googleId,
+      appleId,
       password,
       token
     };
@@ -551,11 +553,29 @@ exports.signUp = (req, res, next) => {
       cellphone,
       facebookId,
       googleId,
+      appleId,
       password,
       token
     };
     user.saveGoogleUser(req, res, next);
-  } else {
+  } 
+  
+  else if (appleId) {
+    req.body = {
+      email,
+      name,
+      lastName,
+      loginName: appleId,
+      cellphone,
+      facebookId,
+      googleId,
+      appleId,
+      password,
+      token
+    };
+    user.saveAppleUser(req, res, next);
+  }
+  else {
     req.body = {
       email,
       name,
@@ -564,6 +584,7 @@ exports.signUp = (req, res, next) => {
       cellphone,
       facebookId,
       googleId,
+      appleId,
       password,
       token
     };
@@ -1027,6 +1048,7 @@ exports.saveGoogleUser = (req, res, next) => {
     cellphone,
     facebookId,
     googleId,
+    appleId,
     token
   } = req.body; //validate the captcha here
 
@@ -1041,6 +1063,54 @@ exports.saveGoogleUser = (req, res, next) => {
       cellphone,
       facebookId,
       googleId,
+      appleId,
+      userConfirmed: true
+    }).then(resSave => {
+      res.status("200").json({
+        success: true,
+        message: res.message || "Has sido registrado correctamente."
+      });
+    }, err => {
+      res.status("400").json({
+        success: false,
+        message: err.message || "Bad request."
+      });
+    });
+  }, err => {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  });
+};
+
+exports.saveAppleUser = (req, res, next) => {
+  //get user data here
+  let {
+    name,
+    lastName,
+    loginName,
+    email,
+    password,
+    cellphone,
+    facebookId,
+    googleId,
+    appleId,
+    token
+  } = req.body; //validate the captcha here
+
+  userService.validateRecaptcha(token).then(resV => {
+    //save the user here
+    userService.saveUser({
+      name,
+      lastName,
+      loginName,
+      email,
+      password,
+      cellphone,
+      facebookId,
+      googleId,
+      appleId,
       userConfirmed: true
     }).then(resSave => {
       res.status("200").json({
@@ -1071,6 +1141,7 @@ exports.saveFacebookUser = (req, res, next) => {
     cellphone,
     facebookId,
     googleId,
+    appleId,
     token
   } = req.body; //validate the captcha here
 
@@ -1085,6 +1156,7 @@ exports.saveFacebookUser = (req, res, next) => {
       cellphone,
       facebookId,
       googleId,
+      appleId,
       userConfirmed: true
     }).then(resSave => {
       res.status("200").json({
@@ -1133,6 +1205,7 @@ exports.saveEmailUser = (req, res, next) => {
     cellphone,
     facebookId,
     googleId,
+    appleId,
     token
   } = req.body; //validate the captcha here
 
@@ -1147,6 +1220,7 @@ exports.saveEmailUser = (req, res, next) => {
       cellphone,
       facebookId,
       googleId,
+      appleId,
       userConfirmed: false
     }).then(resSave => {
       res.status("200").json({
@@ -1217,6 +1291,7 @@ exports.saveUserBySuburbId = async (req, res, next) => {
     cellphone,
     facebookId,
     googleId,
+    appleId,
     photoUrl,
     suburbId,
     street,
@@ -1239,6 +1314,7 @@ exports.saveUserBySuburbId = async (req, res, next) => {
       photoUrl,
       facebookId,
       googleId,
+      appleId,
       suburb: suburbId,
       street,
       streetNumber,
@@ -1255,6 +1331,7 @@ exports.saveUserBySuburbId = async (req, res, next) => {
       photoUrl,
       facebookId,
       googleId,
+      appleId,
       suburb: suburbId,
       street,
       streetNumber,
@@ -1447,7 +1524,7 @@ const User = __webpack_require__(/*! ../models/user */ "./src/models/user.js");
 
 const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants/types.js").userTypes;
 
-const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveEmailUser", "/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", "/api/suburb/getInviteByCode", "/api/notification/test", "/api/suburb/updateConfig", // remover esta api de esta lista
+const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/saveGoogleUser", "/api/saveFacebookUser","/api/saveAppleUser" ,"/api/saveEmailUser","/api/saveAppleUser", "/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", "/api/suburb/getInviteByCode", "/api/notification/test", "/api/suburb/updateConfig", // remover esta api de esta lista
 "/api/suburb/getConfig", //remover esta api de esta lista
 "/api/suburb/saveStreet", //remover esta api de la lista
 "/api/suburb/getAllStreets", //remover este endpoint de la lista
@@ -3409,6 +3486,9 @@ const UserSchema = new mongoose.Schema({
   googleId: {
     type: String
   },
+  appleId:{
+    type:String
+  },
   active: {
     type: Boolean,
     default: true
@@ -3689,6 +3769,16 @@ UserSchema.statics = {
     return new Promise((resolve, reject) => {
       this.findOne({
         googleId: _googleId
+      }).exec((err, result) => {
+        if (err) reject(err);
+        resolve(result);
+      });
+    });
+  },
+  getUserByAppleId: function (_appleId) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        appleId: _appleId
       }).exec((err, result) => {
         if (err) reject(err);
         resolve(result);
@@ -3980,6 +4070,7 @@ router.get("/api/userInfo/getUsersByAddress", userAdmin.getUsersByAddress);
 router.post("/api/userInfo/updatePicture", userAdmin.updateUserPicture);
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
+router.post("/api/saveAppleUser", userAdmin.saveAppleUser);
 router.post("/api/saveEmailUser", userAdmin.saveEmailUser);
 router.post("/api/saveUserBySuburb", userAdmin.saveUserBySuburbId);
 router.post("/api/deleteUserInfo", userAdmin.deleteUserInfo); //logged user APIs
