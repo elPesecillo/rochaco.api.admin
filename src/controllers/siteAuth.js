@@ -71,7 +71,6 @@ exports.getTokenByGoogleId = (req, res) => {
 };
 
 exports.getTokenByAppleId = (req, res) => {
-  debugger;
   let appleId = req.query["id"];
   User.getUserByAppleId(appleId).then((usr) => {
     if (usr) {
