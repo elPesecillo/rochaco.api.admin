@@ -71,6 +71,7 @@ exports.getTokenByGoogleId = (req, res) => {
 };
 
 exports.getTokenByAppleId = (req, res) => {
+  debugger;
   let appleId = req.query["id"];
   User.getUserByAppleId(appleId).then((usr) => {
     if (usr) {
@@ -119,13 +120,11 @@ exports.logOff = (req, res, next) => {
   if (req.session)
     req.session.destroy((err) => {
       if (err)
-        res
-          .status("500")
-          .json({
-            success: false,
-            message:
-              err.message || "An unknow error occurs while trying to log off.",
-          });
+        res.status("500").json({
+          success: false,
+          message:
+            err.message || "An unknow error occurs while trying to log off.",
+        });
       res.status("200").json({ success: true, message: "session destroyed." });
     });
 };

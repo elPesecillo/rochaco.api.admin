@@ -256,6 +256,7 @@ exports.createUserByType = async (req, res, next) => {
 };
 
 exports.saveUserBySuburbId = async (req, res, next) => {
+  debugger;
   let {
     name,
     lastName,
@@ -309,6 +310,7 @@ exports.saveUserBySuburbId = async (req, res, next) => {
           photoUrl,
           facebookId,
           googleId,
+          appleId,
           suburb: suburbId,
           street,
           streetNumber,
