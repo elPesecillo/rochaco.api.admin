@@ -71,6 +71,9 @@ const UserSchema = new mongoose.Schema({
   googleId: {
     type: String,
   },
+  appleId: {
+    type: String,
+  },
   active: {
     type: Boolean,
     default: true,
@@ -371,6 +374,16 @@ UserSchema.statics = {
     return new Promise((resolve, reject) => {
       this.findOne({
         googleId: _googleId,
+      }).exec((err, result) => {
+        if (err) reject(err);
+        resolve(result);
+      });
+    });
+  },
+  getUserByAppleId: function (_appleId) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        appleId: _appleId,
       }).exec((err, result) => {
         if (err) reject(err);
         resolve(result);
