@@ -162,7 +162,7 @@ exports.logOff = (req, res, next) => {
 
 const validateRecaptcha = async (token) => {
   try {
-    const secretKey = process.env.RECAPTCHA_SECRET_V2;
+    const secretKey = process.env.RECAPTCHA_SECRET;
     const verificationURL = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`;
     let response = await axios.post(
       verificationURL,
