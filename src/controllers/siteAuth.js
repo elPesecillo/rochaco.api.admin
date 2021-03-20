@@ -1,5 +1,6 @@
 const User = require("../models/user");
 const viewPermissions = require("../logic/viewPermissions");
+const axios = require("axios").default;
 
 const validateUser = (userLogin, password) => {
   return new Promise((resolve, reject) => {
@@ -24,62 +25,93 @@ const validateUser = (userLogin, password) => {
   });
 };
 
-exports.checkAuth = (req, res, next) => {
-  //over here check the db to know if the auth is valid
-  let user = req.body.user;
-  let password = req.body.password;
-  validateUser(user, password).then(
-    (result) => {
-      if (result.success) {
-        // var session = req.session;
-        // session.token = result.message;
-        // session.user = user;
-        res.status("200").json(result);
-      } else
-        res.status("401").json({ success: false, message: "Unauthorized" });
-    },
-    (err) => {
+exports.checkAuth = async (req, res, next) => {
+  try {
+    //over here check the db to know if the auth is valid
+    let { user, password, captchaToken } = req.body;
+
+    let validCaptcha = await validateRecaptcha(captchaToken);
+    if (validCaptcha) {
+      let usr = await validateUser(user, password); //.then(
+
+      if (usr) {
+        if (usr.success) {
+          // var session = req.session;
+          // session.token = result.message;
+          // session.user = user;
+          res.status("200").json(usr);
+        } else
+          res.status("401").json({ success: false, message: "Unauthorized" });
+      } else {
+        res
+          .status("401")
+          .json({ success: false, message: err.message || "Unauthorized" });
+      }
+    } else
       res
         .status("401")
         .json({ success: false, message: err.message || "Unauthorized" });
-    }
-  );
+  } catch (err) {
+    console.log("error", err);
+    res.status("404").json({ token: null });
+  }
 };
 
-exports.getTokenByFacebookId = (req, res) => {
-  let facebookId = req.query["id"];
-  User.getUserByFacebookId(facebookId).then((usr) => {
-    if (usr) {
-      let token = usr.generateUserToken();
-      res.status("200").json({ token });
-    } else {
-      res.status("404").json({ token: null });
-    }
-  });
+exports.getTokenByFacebookId = async (req, res) => {
+  try {
+    let { id, captchaToken } = req.query;
+    let validCaptcha = await validateRecaptcha(captchaToken);
+    if (validCaptcha) {
+      let usr = await User.getUserByFacebookId(id); //.then((usr) => {
+      if (usr) {
+        let token = usr.generateUserToken();
+        res.status("200").json({ token });
+      } else {
+        res.status("404").json({ token: null });
+      }
+    } else res.status("401").json({ token: null });
+  } catch (err) {
+    console.log("error", err);
+    res.status("404").json({ token: null });
+  }
 };
 
-exports.getTokenByGoogleId = (req, res) => {
-  let googleId = req.query["id"];
-  User.getUserByGoogleId(googleId).then((usr) => {
-    if (usr) {
-      let token = usr.generateUserToken();
-      res.status("200").json({ token });
-    } else {
-      res.status("404").json({ token: null });
-    }
-  });
+exports.getTokenByGoogleId = async (req, res) => {
+  try {
+    let { id, captchaToken } = req.query;
+    let validCaptcha = await validateRecaptcha(captchaToken);
+    if (validCaptcha) {
+      let usr = await User.getUserByGoogleId(id);
+      if (usr) {
+        let token = usr.generateUserToken();
+        res.status("200").json({ token });
+      } else {
+        res.status("404").json({ token: null });
+      }
+    } else res.status("401").json({ token: null });
+  } catch (err) {
+    console.log("error", err);
+    res.status("404").json({ token: null });
+  }
 };
 
-exports.getTokenByAppleId = (req, res) => {
-  let appleId = req.query["id"];
-  User.getUserByAppleId(appleId).then((usr) => {
-    if (usr) {
-      let token = usr.generateUserToken();
-      res.status("200").json({ token });
-    } else {
-      res.status("404").json({ token: null });
-    }
-  });
+exports.getTokenByAppleId = async (req, res) => {
+  try {
+    let { id, captchaToken } = req.query;
+    let validCaptcha = await validateRecaptcha(captchaToken);
+    if (validCaptcha) {
+      let usr = await User.getUserByAppleId(id);
+      if (usr) {
+        let token = usr.generateUserToken();
+        res.status("200").json({ token });
+      } else {
+        res.status("404").json({ token: null });
+      }
+    } else res.status("401").json({ token: null });
+  } catch (err) {
+    console.log("error", err);
+    res.status("404").json({ token: null });
+  }
 };
 
 exports.isValidToken = (req, res, next) => {
@@ -126,4 +158,25 @@ exports.logOff = (req, res, next) => {
         });
       res.status("200").json({ success: true, message: "session destroyed." });
     });
+};
+
+const validateRecaptcha = async (token) => {
+  try {
+    const secretKey = process.env.RECAPTCHA_SECRET_V2;
+    const verificationURL = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`;
+    let response = await axios.post(
+      verificationURL,
+      {},
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
+        },
+      }
+    );
+
+    let captchaResult = response.data;
+    return captchaResult.success;
+  } catch (err) {
+    throw err;
+  }
 };
