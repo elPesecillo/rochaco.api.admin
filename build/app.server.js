@@ -93,7 +93,7 @@
 /*! exports provided: name, version, cryptoKey, description, main, scripts, repository, keywords, author, license, dependencies, devDependencies, default */
 /***/ (function(module) {
 
-module.exports = JSON.parse("{\"name\":\"rochaco_api\",\"version\":\"1.0.0\",\"cryptoKey\":\"secretKey123\",\"description\":\"rochaco management apis\",\"main\":\"index.js\",\"scripts\":{\"test\":\"echo \\\"Error: no test specified\\\" && exit 1\",\"heroku-prebuild\":\"npm install --dev\",\"build:server\":\"webpack --config webpack.config.js \",\"start\":\"node build/app.server.js\",\"heroku-postbuild\":\"npm run build:server\",\"start-all\":\"npm build:server & npm start\"},\"repository\":{\"type\":\"git\",\"url\":\"https://phdez@dev.azure.com/phdez/rochaco_web/_git/rochaco_api\"},\"keywords\":[\"rochaco\",\"api\",\"nodejs\"],\"author\":\"Pascual Hernandez\",\"license\":\"ISC\",\"dependencies\":{\"@sendgrid/mail\":\"^6.5.4\",\"base-64\":\"^0.1.0\",\"bcryptjs\":\"^2.4.3\",\"body-parser\":\"^1.19.0\",\"cors\":\"^2.8.5\",\"crypto-js\":\"^4.0.0\",\"dotenv\":\"^8.1.0\",\"dropbox-v2-api\":\"^2.4.13\",\"expo-server-sdk\":\"^3.6.0\",\"express\":\"^4.17.1\",\"fs\":\"0.0.1-security\",\"jsonwebtoken\":\"^8.5.1\",\"moment\":\"^2.24.0\",\"mongoose\":\"^5.6.11\",\"morgan\":\"^1.9.1\",\"multer\":\"^1.4.2\",\"request\":\"^2.88.0\"},\"devDependencies\":{\"@babel/core\":\"^7.5.5\",\"babel-loader\":\"^8.0.6\",\"babel-plugin-transform-class-properties\":\"^6.24.1\",\"path\":\"^0.12.7\",\"source-map\":\"^0.7.3\",\"webpack\":\"^4.42.1\",\"webpack-cli\":\"^3.3.11\",\"webpack-node-externals\":\"^1.7.2\"}}");
+module.exports = JSON.parse("{\"name\":\"rochaco_api\",\"version\":\"1.0.0\",\"cryptoKey\":\"secretKey123\",\"description\":\"rochaco management apis\",\"main\":\"index.js\",\"scripts\":{\"test\":\"echo \\\"Error: no test specified\\\" && exit 1\",\"heroku-prebuild\":\"npm install --dev\",\"build:server\":\"webpack --config webpack.config.js \",\"start\":\"node build/app.server.js\",\"heroku-postbuild\":\"npm run build:server\",\"start-all\":\"npm build:server & npm start\"},\"repository\":{\"type\":\"git\",\"url\":\"https://phdez@dev.azure.com/phdez/rochaco_web/_git/rochaco_api\"},\"keywords\":[\"rochaco\",\"api\",\"nodejs\"],\"author\":\"Pascual Hernandez\",\"license\":\"ISC\",\"dependencies\":{\"@sendgrid/mail\":\"^6.5.4\",\"axios\":\"^0.21.1\",\"base-64\":\"^0.1.0\",\"bcryptjs\":\"^2.4.3\",\"body-parser\":\"^1.19.0\",\"cors\":\"^2.8.5\",\"crypto-js\":\"^4.0.0\",\"dotenv\":\"^8.1.0\",\"dropbox-v2-api\":\"^2.4.13\",\"expo-server-sdk\":\"^3.6.0\",\"express\":\"^4.17.1\",\"fs\":\"0.0.1-security\",\"jsonwebtoken\":\"^8.5.1\",\"moment\":\"^2.24.0\",\"mongoose\":\"^5.6.11\",\"morgan\":\"^1.9.1\",\"multer\":\"^1.4.2\",\"request\":\"^2.88.0\"},\"devDependencies\":{\"@babel/core\":\"^7.5.5\",\"babel-loader\":\"^8.0.6\",\"babel-plugin-transform-class-properties\":\"^6.24.1\",\"path\":\"^0.12.7\",\"source-map\":\"^0.7.3\",\"webpack\":\"^4.42.1\",\"webpack-cli\":\"^3.3.11\",\"webpack-node-externals\":\"^1.7.2\"}}");
 
 /***/ }),
 
@@ -645,6 +645,8 @@ const User = __webpack_require__(/*! ../models/user */ "./src/models/user.js");
 
 const viewPermissions = __webpack_require__(/*! ../logic/viewPermissions */ "./src/logic/viewPermissions.js");
 
+const axios = __webpack_require__(/*! axios */ "axios").default;
+
 const validateUser = (userLogin, password) => {
   return new Promise((resolve, reject) => {
     User.getLogin(userLogin).then((login, err) => {
@@ -671,74 +673,141 @@ const validateUser = (userLogin, password) => {
   });
 };
 
-exports.checkAuth = (req, res, next) => {
-  //over here check the db to know if the auth is valid
-  let user = req.body.user;
-  let password = req.body.password;
-  validateUser(user, password).then(result => {
-    if (result.success) {
-      // var session = req.session;
-      // session.token = result.message;
-      // session.user = user;
-      res.status("200").json(result);
+exports.checkAuth = async (req, res, next) => {
+  try {
+    //over here check the db to know if the auth is valid
+    let {
+      user,
+      password,
+      captchaToken
+    } = req.body;
+    let validCaptcha = await validateRecaptcha(captchaToken);
+
+    if (validCaptcha) {
+      let usr = await validateUser(user, password); //.then(
+
+      if (usr) {
+        if (usr.success) {
+          // var session = req.session;
+          // session.token = result.message;
+          // session.user = user;
+          res.status("200").json(usr);
+        } else res.status("401").json({
+          success: false,
+          message: "Unauthorized"
+        });
+      } else {
+        res.status("401").json({
+          success: false,
+          message: err.message || "Unauthorized"
+        });
+      }
     } else res.status("401").json({
-      success: false,
-      message: "Unauthorized"
-    });
-  }, err => {
-    res.status("401").json({
       success: false,
       message: err.message || "Unauthorized"
     });
-  });
+  } catch (err) {
+    console.log("error", err);
+    res.status("404").json({
+      token: null
+    });
+  }
 };
 
-exports.getTokenByFacebookId = (req, res) => {
-  let facebookId = req.query["id"];
-  User.getUserByFacebookId(facebookId).then(usr => {
-    if (usr) {
-      let token = usr.generateUserToken();
-      res.status("200").json({
-        token
-      });
-    } else {
-      res.status("404").json({
-        token: null
-      });
-    }
-  });
+exports.getTokenByFacebookId = async (req, res) => {
+  try {
+    let {
+      id,
+      captchaToken
+    } = req.query;
+    let validCaptcha = await validateRecaptcha(captchaToken);
+
+    if (validCaptcha) {
+      let usr = await User.getUserByFacebookId(id); //.then((usr) => {
+
+      if (usr) {
+        let token = usr.generateUserToken();
+        res.status("200").json({
+          token
+        });
+      } else {
+        res.status("404").json({
+          token: null
+        });
+      }
+    } else res.status("401").json({
+      token: null
+    });
+  } catch (err) {
+    console.log("error", err);
+    res.status("404").json({
+      token: null
+    });
+  }
 };
 
-exports.getTokenByGoogleId = (req, res) => {
-  let googleId = req.query["id"];
-  User.getUserByGoogleId(googleId).then(usr => {
-    if (usr) {
-      let token = usr.generateUserToken();
-      res.status("200").json({
-        token
-      });
-    } else {
-      res.status("404").json({
-        token: null
-      });
-    }
-  });
+exports.getTokenByGoogleId = async (req, res) => {
+  try {
+    let {
+      id,
+      captchaToken
+    } = req.query;
+    let validCaptcha = await validateRecaptcha(captchaToken);
+
+    if (validCaptcha) {
+      let usr = await User.getUserByGoogleId(id);
+
+      if (usr) {
+        let token = usr.generateUserToken();
+        res.status("200").json({
+          token
+        });
+      } else {
+        res.status("404").json({
+          token: null
+        });
+      }
+    } else res.status("401").json({
+      token: null
+    });
+  } catch (err) {
+    console.log("error", err);
+    res.status("404").json({
+      token: null
+    });
+  }
 };
 
-exports.getTokenByAppleId = (req, res) => {
-  let appleId = req.query["id"];
-  User.getUserByAppleId(appleId).then(usr => {
-    if (usr) {
-      let token = usr.generateUserToken();
-      res.status("200").json({
-        token
-      });
-    } else {
-      res.status("404").json({
-        token: null
-      });
-    }
-  });
+exports.getTokenByAppleId = async (req, res) => {
+  try {
+    let {
+      id,
+      captchaToken
+    } = req.query;
+    let validCaptcha = await validateRecaptcha(captchaToken);
+
+    if (validCaptcha) {
+      let usr = await User.getUserByAppleId(id);
+
+      if (usr) {
+        let token = usr.generateUserToken();
+        res.status("200").json({
+          token
+        });
+      } else {
+        res.status("404").json({
+          token: null
+        });
+      }
+    } else res.status("401").json({
+      token: null
+    });
+  } catch (err) {
+    console.log("error", err);
+    res.status("404").json({
+      token: null
+    });
+  }
 };
 
 exports.isValidToken = (req, res, next) => {
@@ -784,6 +853,22 @@ exports.logOff = (req, res, next) => {
       message: "session destroyed."
     });
   });
+};
+
+const validateRecaptcha = async token => {
+  try {
+    const secretKey = process.env.RECAPTCHA_SECRET_V2;
+    const verificationURL = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`;
+    let response = await axios.post(verificationURL, {}, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=utf-8"
+      }
+    });
+    let captchaResult = response.data;
+    return captchaResult.success;
+  } catch (err) {
+    throw err;
+  }
 };
 
 /***/ }),
@@ -4236,6 +4321,17 @@ function onListening() {
 /***/ (function(module, exports) {
 
 module.exports = require("@sendgrid/mail");
+
+/***/ }),
+
+/***/ "axios":
+/*!************************!*\
+  !*** external "axios" ***!
+  \************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("axios");
 
 /***/ }),
 
