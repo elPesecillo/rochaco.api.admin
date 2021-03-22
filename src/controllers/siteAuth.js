@@ -1,6 +1,7 @@
 const User = require("../models/user");
 const viewPermissions = require("../logic/viewPermissions");
 const axios = require("axios").default;
+const validateRecaptcha = require("../logic/auth").validateRecaptcha;
 
 const validateUser = (userLogin, password) => {
   return new Promise((resolve, reject) => {
@@ -158,25 +159,4 @@ exports.logOff = (req, res, next) => {
         });
       res.status("200").json({ success: true, message: "session destroyed." });
     });
-};
-
-const validateRecaptcha = async (token) => {
-  try {
-    const secretKey = process.env.RECAPTCHA_SECRET;
-    const verificationURL = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`;
-    let response = await axios.post(
-      verificationURL,
-      {},
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
-        },
-      }
-    );
-
-    let captchaResult = response.data;
-    return captchaResult.success;
-  } catch (err) {
-    throw err;
-  }
 };

@@ -647,6 +647,8 @@ const viewPermissions = __webpack_require__(/*! ../logic/viewPermissions */ "./s
 
 const axios = __webpack_require__(/*! axios */ "axios").default;
 
+const validateRecaptcha = __webpack_require__(/*! ../logic/auth */ "./src/logic/auth.js").validateRecaptcha;
+
 const validateUser = (userLogin, password) => {
   return new Promise((resolve, reject) => {
     User.getLogin(userLogin).then((login, err) => {
@@ -855,22 +857,6 @@ exports.logOff = (req, res, next) => {
   });
 };
 
-const validateRecaptcha = async token => {
-  try {
-    const secretKey = process.env.RECAPTCHA_SECRET_V2;
-    const verificationURL = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`;
-    let response = await axios.post(verificationURL, {}, {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=utf-8"
-      }
-    });
-    let captchaResult = response.data;
-    return captchaResult.success;
-  } catch (err) {
-    throw err;
-  }
-};
-
 /***/ }),
 
 /***/ "./src/controllers/suburb.js":
@@ -889,6 +875,8 @@ const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants
 const moment = __webpack_require__(/*! moment */ "moment");
 
 const ObjectId = __webpack_require__(/*! mongoose */ "mongoose").Types.ObjectId;
+
+const validateRecaptcha = __webpack_require__(/*! ../logic/auth */ "./src/logic/auth.js").validateRecaptcha;
 
 exports.approveReject = async (req, res, next) => {
   try {
@@ -971,16 +959,27 @@ exports.addSuburbInvite = (req, res, next) => {
   });
 };
 
-exports.getSuburbInvite = (req, res, next) => {
-  let code = req.query.code;
-  suburbService.getSuburbInvite(code).then(result => {
-    res.status(200).json(result);
-  }, err => {
+exports.getSuburbInvite = async (req, res, next) => {
+  try {
+    let {
+      code,
+      captchaToken
+    } = req.query;
+    let invite = await suburbService.getSuburbInvite(code);
+    let validCaptcha = await validateRecaptcha(captchaToken);
+
+    if (validCaptcha) {
+      res.status(200).json(invite);
+    } else res.status(401).json({
+      success: false,
+      message: "token invalido"
+    });
+  } catch (err) {
     res.status(500).json({
       success: false,
       message: err.message || "No se pudo obtener la invitacion."
     });
-  });
+  }
 };
 
 exports.getStreets = (req, res) => {
@@ -1134,6 +1133,8 @@ const userService = __webpack_require__(/*! ../logic/userService */ "./src/logic
 const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants/types.js").userTypes;
 
 const SuburbInvite = __webpack_require__(/*! ../models/suburbInvite */ "./src/models/suburbInvite.js");
+
+const validateRecaptcha = __webpack_require__(/*! ../logic/auth */ "./src/logic/auth.js").validateRecaptcha;
 
 exports.saveGoogleUser = (req, res, next) => {
   //get user data here
@@ -1378,87 +1379,87 @@ exports.createUserByType = async (req, res, next) => {
   }
 };
 
-exports.saveUserBySuburbId = async (req, res, next) => {
-  let {
-    name,
-    lastName,
-    loginName,
-    email,
-    password,
-    cellphone,
-    facebookId,
-    googleId,
-    appleId,
-    photoUrl,
-    suburbId,
-    street,
-    streetNumber,
-    code,
-    userType,
-    token // add captcha here
-
-  } = req.body;
-  SuburbInvite.GetInviteByCode(code).then(resInv => {
-    //***add validate captcha here***
-    let save = null;
-    if (password && password.trim() !== "") save = userService.saveUserWithPassword({
+exports.saveUserBySuburbId = async (req, res) => {
+  try {
+    let {
       name,
       lastName,
       loginName,
       email,
       password,
       cellphone,
-      photoUrl,
       facebookId,
       googleId,
       appleId,
-      suburb: suburbId,
+      photoUrl,
+      suburbId,
       street,
       streetNumber,
+      code,
       userType,
-      userConfirmed: false // if the user is an email user the user needs to confirm
+      captchaToken // add captcha here
 
-    });else save = userService.saveUser({
-      name,
-      lastName,
-      loginName,
-      email,
-      password,
-      cellphone,
-      photoUrl,
-      facebookId,
-      googleId,
-      appleId,
-      suburb: suburbId,
-      street,
-      streetNumber,
-      userType,
-      userConfirmed: true
-    });
-    save.then(resSave => {
-      SuburbInvite.UpdateSuburbInviteUsed(code, resSave.userData._doc._id.toString()).then(resCodeUpdate => {
-        res.status("200").json({
-          success: true,
-          message: resCodeUpdate.message || "Has sido registrado correctamente."
+    } = req.body;
+    let validCaptcha = await validateRecaptcha(captchaToken);
+
+    if (validCaptcha) {
+      let getcode = await SuburbInvite.GetInviteByCode(code);
+      let save = null;
+
+      if (password && password.trim() !== "") {
+        save = await userService.saveUserWithPassword({
+          name,
+          lastName,
+          loginName,
+          email,
+          password,
+          cellphone,
+          photoUrl,
+          facebookId,
+          googleId,
+          appleId,
+          suburb: suburbId,
+          street,
+          streetNumber,
+          userType,
+          userConfirmed: false // if the user is an email user the user needs to confirm
+
         });
-      }).catch(err => {
-        res.status("400").json({
-          success: false,
-          message: err.message || "Bad request."
+      } else {
+        save = await userService.saveUser({
+          name,
+          lastName,
+          loginName,
+          email,
+          password,
+          cellphone,
+          photoUrl,
+          facebookId,
+          googleId,
+          appleId,
+          suburb: suburbId,
+          street,
+          streetNumber,
+          userType,
+          userConfirmed: true
         });
+      }
+
+      let updateCode = await SuburbInvite.UpdateSuburbInviteUsed(code, save.userData._doc._id.toString());
+      res.status("200").json({
+        success: true,
+        message: updateCode.message || "Has sido registrado correctamente."
       });
-    }, err => {
-      res.status("400").json({
-        success: false,
-        message: err.message || "Bad request."
-      });
+    } else res.status("401").json({
+      success: false,
+      message: "invalid token"
     });
-  }).catch(err => {
+  } catch (err) {
     res.status("400").json({
       success: false,
       message: err.message || "Bad request."
     });
-  });
+  }
 };
 
 exports.getUserByType = async (req, res, next) => {
@@ -1621,13 +1622,15 @@ const User = __webpack_require__(/*! ../models/user */ "./src/models/user.js");
 
 const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants/types.js").userTypes;
 
+const axios = __webpack_require__(/*! axios */ "axios").default;
+
 const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/auth/appletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveAppleUser", "/api/saveEmailUser", "/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", "/api/suburb/getInviteByCode", "/api/notification/test", "/api/suburb/updateConfig", // remover esta api de esta lista
 "/api/suburb/getConfig", //remover esta api de esta lista
 "/api/suburb/saveStreet", //remover esta api de la lista
 "/api/suburb/getAllStreets", //remover este endpoint de la lista
 "/api/deleteUserInfo"];
 const protectedApi = ["/api/suburb/approveReject"];
-module.exports = class Auth {
+exports.Auth = class Auth {
   validateToken(token) {
     let user = User;
     let def = user.isValidToken(token);
@@ -1695,6 +1698,22 @@ module.exports = class Auth {
     }
   }
 
+};
+
+exports.validateRecaptcha = async token => {
+  try {
+    const secretKey = process.env.RECAPTCHA_SECRET;
+    const verificationURL = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`;
+    let response = await axios.post(verificationURL, {}, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=utf-8"
+      }
+    });
+    let captchaResult = response.data;
+    return captchaResult.success;
+  } catch (err) {
+    throw err;
+  }
 };
 
 /***/ }),
@@ -2472,7 +2491,7 @@ exports.permissionValid = (path, jwt) => {
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-const Auth = __webpack_require__(/*! ../logic/auth */ "./src/logic/auth.js");
+const Auth = __webpack_require__(/*! ../logic/auth */ "./src/logic/auth.js").Auth;
 
 const validApiRequest = (apiPath, token) => {
   return new Promise((resolve, reject) => {
