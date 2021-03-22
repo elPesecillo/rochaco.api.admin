@@ -1,6 +1,7 @@
 const userService = require("../logic/userService");
 const userTypes = require("../constants/types").userTypes;
 const SuburbInvite = require("../models/suburbInvite");
+const validateRecaptcha = require("../logic/auth").validateRecaptcha;
 
 exports.saveGoogleUser = (req, res, next) => {
   //get user data here
@@ -255,34 +256,32 @@ exports.createUserByType = async (req, res, next) => {
   }
 };
 
-exports.saveUserBySuburbId = async (req, res, next) => {
-  debugger;
-  let {
-    name,
-    lastName,
-    loginName,
-    email,
-    password,
-    cellphone,
-    facebookId,
-    googleId,
-    appleId,
-    photoUrl,
-    suburbId,
-    street,
-    streetNumber,
-    code,
-    userType,
-    token, // add captcha here
-  } = req.body;
-
-  SuburbInvite.GetInviteByCode(code)
-    .then((resInv) => {
-      //***add validate captcha here***
-
+exports.saveUserBySuburbId = async (req, res) => {
+  try {
+    let {
+      name,
+      lastName,
+      loginName,
+      email,
+      password,
+      cellphone,
+      facebookId,
+      googleId,
+      appleId,
+      photoUrl,
+      suburbId,
+      street,
+      streetNumber,
+      code,
+      userType,
+      captchaToken, // add captcha here
+    } = req.body;
+    let validCaptcha = await validateRecaptcha(captchaToken);
+    if (validCaptcha) {
+      let getcode = await SuburbInvite.GetInviteByCode(code);
       let save = null;
-      if (password && password.trim() !== "")
-        save = userService.saveUserWithPassword({
+      if (password && password.trim() !== "") {
+        save = await userService.saveUserWithPassword({
           name,
           lastName,
           loginName,
@@ -299,8 +298,8 @@ exports.saveUserBySuburbId = async (req, res, next) => {
           userType,
           userConfirmed: false, // if the user is an email user the user needs to confirm
         });
-      else
-        save = userService.saveUser({
+      } else {
+        save = await userService.saveUser({
           name,
           lastName,
           loginName,
@@ -317,38 +316,22 @@ exports.saveUserBySuburbId = async (req, res, next) => {
           userType,
           userConfirmed: true,
         });
-      save.then(
-        (resSave) => {
-          SuburbInvite.UpdateSuburbInviteUsed(
-            code,
-            resSave.userData._doc._id.toString()
-          )
-            .then((resCodeUpdate) => {
-              res.status("200").json({
-                success: true,
-                message:
-                  resCodeUpdate.message || "Has sido registrado correctamente.",
-              });
-            })
-            .catch((err) => {
-              res.status("400").json({
-                success: false,
-                message: err.message || "Bad request.",
-              });
-            });
-        },
-        (err) => {
-          res
-            .status("400")
-            .json({ success: false, message: err.message || "Bad request." });
-        }
+      }
+      let updateCode = await SuburbInvite.UpdateSuburbInviteUsed(
+        code,
+        save.userData._doc._id.toString()
       );
-    })
-    .catch((err) => {
-      res
-        .status("400")
-        .json({ success: false, message: err.message || "Bad request." });
-    });
+
+      res.status("200").json({
+        success: true,
+        message: updateCode.message || "Has sido registrado correctamente.",
+      });
+    } else res.status("401").json({ success: false, message: "invalid token" });
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
 };
 
 exports.getUserByType = async (req, res, next) => {

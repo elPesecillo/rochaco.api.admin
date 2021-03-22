@@ -1,5 +1,6 @@
 const User = require("../models/user");
 const userTypes = require("../constants/types").userTypes;
+const axios = require("axios").default;
 
 const openApi = [
   "/api/checkAuth",
@@ -26,7 +27,7 @@ const openApi = [
 
 const protectedApi = ["/api/suburb/approveReject"];
 
-module.exports = class Auth {
+exports.Auth = class Auth {
   validateToken(token) {
     let user = User;
 
@@ -100,5 +101,26 @@ module.exports = class Auth {
     } else {
       return this.validateToken(token);
     }
+  }
+};
+
+exports.validateRecaptcha = async (token) => {
+  try {
+    const secretKey = process.env.RECAPTCHA_SECRET;
+    const verificationURL = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`;
+    let response = await axios.post(
+      verificationURL,
+      {},
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
+        },
+      }
+    );
+
+    let captchaResult = response.data;
+    return captchaResult.success;
+  } catch (err) {
+    throw err;
   }
 };

@@ -3,6 +3,7 @@ const userService = require("../logic/userService");
 const userTypes = require("../constants/types").userTypes;
 const moment = require("moment");
 const ObjectId = require("mongoose").Types.ObjectId;
+const validateRecaptcha = require("../logic/auth").validateRecaptcha;
 
 exports.approveReject = async (req, res, next) => {
   try {
@@ -89,19 +90,20 @@ exports.addSuburbInvite = (req, res, next) => {
     );
 };
 
-exports.getSuburbInvite = (req, res, next) => {
-  let code = req.query.code;
-  suburbService.getSuburbInvite(code).then(
-    (result) => {
-      res.status(200).json(result);
-    },
-    (err) => {
-      res.status(500).json({
-        success: false,
-        message: err.message || "No se pudo obtener la invitacion.",
-      });
-    }
-  );
+exports.getSuburbInvite = async (req, res, next) => {
+  try {
+    let { code, captchaToken } = req.query;
+    let invite = await suburbService.getSuburbInvite(code);
+    let validCaptcha = await validateRecaptcha(captchaToken);
+    if (validCaptcha) {
+      res.status(200).json(invite);
+    } else res.status(401).json({ success: false, message: "token invalido" });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message || "No se pudo obtener la invitacion.",
+    });
+  }
 };
 
 exports.getStreets = (req, res) => {
