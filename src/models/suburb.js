@@ -52,7 +52,7 @@ const SuburbSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: "SuburbStreet",
     },
-  ],
+  ]
 });
 
 SuburbSchema.statics = {

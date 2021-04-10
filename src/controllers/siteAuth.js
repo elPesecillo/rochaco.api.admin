@@ -3,6 +3,10 @@ const viewPermissions = require("../logic/viewPermissions");
 const axios = require("axios").default;
 const validateRecaptcha = require("../logic/auth").validateRecaptcha;
 
+const validateActiveUser = (user) => {
+  return user.active;
+};
+
 const validateUser = (userLogin, password) => {
   return new Promise((resolve, reject) => {
     User.getLogin(userLogin).then((login, err) => {
@@ -21,7 +25,7 @@ const validateUser = (userLogin, password) => {
             });
           }
         );
-      } else reject({ succes: false, message: "El usuario no existe." });
+      } else reject({ succes: false, message: "El usuario no existe, o esta deshabilitado." });
     });
   });
 };
@@ -54,7 +58,7 @@ exports.checkAuth = async (req, res, next) => {
         .json({ success: false, message: err.message || "Unauthorized" });
   } catch (err) {
     console.log("error", err);
-    res.status("404").json({ token: null });
+    res.status("404").json({ token: null, message: err });
   }
 };
 
@@ -63,10 +67,17 @@ exports.getTokenByFacebookId = async (req, res) => {
     let { id, captchaToken } = req.query;
     let validCaptcha = await validateRecaptcha(captchaToken);
     if (validCaptcha) {
-      let usr = await User.getUserByFacebookId(id); //.then((usr) => {
+      let usr = await User.getUserByFacebookId(id);
       if (usr) {
-        let token = usr.generateUserToken();
-        res.status("200").json({ token });
+        if (validateActiveUser(usr._doc)) {
+          let token = usr.generateUserToken();
+          res.status("200").json({ token });
+        } else
+          res.status("401").json({
+            token: null,
+            message:
+              "Tu usuario esta desactivado, para mayor información contacta el administrador de tu fraccionamiento.",
+          });
       } else {
         res.status("404").json({ token: null });
       }
@@ -84,8 +95,15 @@ exports.getTokenByGoogleId = async (req, res) => {
     if (validCaptcha) {
       let usr = await User.getUserByGoogleId(id);
       if (usr) {
-        let token = usr.generateUserToken();
-        res.status("200").json({ token });
+        if (validateActiveUser(usr._doc)) {
+          let token = usr.generateUserToken();
+          res.status("200").json({ token });
+        } else
+          res.status("401").json({
+            token: null,
+            message:
+              "Tu usuario esta desactivado, para mayor información contacta el administrador de tu fraccionamiento.",
+          });
       } else {
         res.status("404").json({ token: null });
       }
@@ -103,8 +121,15 @@ exports.getTokenByAppleId = async (req, res) => {
     if (validCaptcha) {
       let usr = await User.getUserByAppleId(id);
       if (usr) {
-        let token = usr.generateUserToken();
-        res.status("200").json({ token });
+        if (validateActiveUser(usr._doc)) {
+          let token = usr.generateUserToken();
+          res.status("200").json({ token });
+        } else
+          res.status("401").json({
+            token: null,
+            message:
+              "Tu usuario esta desactivado, para mayor información contacta el administrador de tu fraccionamiento.",
+          });
       } else {
         res.status("404").json({ token: null });
       }
