@@ -614,7 +614,7 @@ UserSchema.statics = {
             { new: true },
             function (err, user) {
               if (err) reject(err);
-              resolve(user);
+              resolve({ signed: true, termsVersion: terms });
             }
           );
         });

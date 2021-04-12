@@ -18,6 +18,7 @@ const openApi = [
   "/api/file/upload",
   "/api/suburb/getInviteByCode",
   "/api/notification/test",
+  "/api/suburb/getAllStreets",
   "/api/suburb/updateConfig", // remover esta api de esta lista
   "/api/suburb/getConfig", //remover esta api de esta lista
   "/api/userInfo/getSignedUserTerms", //remover
