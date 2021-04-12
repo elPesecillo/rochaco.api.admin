@@ -454,3 +454,27 @@ exports.deleteUserInfo = async (req, res, next) => {
       .json({ success: false, message: err.message || "Bad request." });
   }
 };
+
+exports.getSignedUserTerms = async (req, res) => {
+  try {
+    let { userId } = req.query;
+    let signedUserTerms = await userService.getSignedUserTerms(userId);
+    res.status("200").json(signedUserTerms);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.signUserTerms = async (req, res) => {
+  try {
+    let { userId, termsVersion } = req.body;
+    let update = await userService.signUserTerms(userId, termsVersion);
+    res.status("200").json(update);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};

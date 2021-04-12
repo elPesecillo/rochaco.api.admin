@@ -1,5 +1,6 @@
 const User = require("../models/user");
 const request = require("request");
+const GlobalConfig = require("../models/globalConfig");
 const userTypes = require("../constants/types").userTypes;
 
 const saveUser = (userObj) => {
@@ -226,6 +227,33 @@ const deleteUserInfo = async (userId) => {
   }
 };
 
+const getSignedUserTerms = async (userId) => {
+  try {
+    let user = await User.getUserLeanById(userId);
+    let terms = await GlobalConfig.GetTermsAndCons();
+    let userTerms = user.signedTerms || [];
+    //logic to check if the latest term is signed
+    let latestTerms = terms
+      .map((t) => parseFloat(t))
+      .reduce((i, n) => (i > n ? i : n));
+    return {
+      signed: userTerms.indexOf(latestTerms) !== -1,
+      termsVersion: latestTerms,
+    };
+  } catch (ex) {
+    throw ex;
+  }
+};
+
+const signUserTerms = async (userId, termsVersion) => {
+  try {
+    let updateTerms = await User.updateUserTerms(userId, termsVersion);
+    return updateTerms;
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -243,4 +271,6 @@ module.exports = {
   getUsersByAddress,
   updateUserPicture,
   deleteUserInfo,
+  getSignedUserTerms,
+  signUserTerms,
 };

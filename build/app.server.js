@@ -649,6 +649,10 @@ const axios = __webpack_require__(/*! axios */ "axios").default;
 
 const validateRecaptcha = __webpack_require__(/*! ../logic/auth */ "./src/logic/auth.js").validateRecaptcha;
 
+const validateActiveUser = user => {
+  return user.active;
+};
+
 const validateUser = (userLogin, password) => {
   return new Promise((resolve, reject) => {
     User.getLogin(userLogin).then((login, err) => {
@@ -669,7 +673,7 @@ const validateUser = (userLogin, password) => {
         });
       } else reject({
         succes: false,
-        message: "El usuario no existe."
+        message: "El usuario no existe, o esta deshabilitado."
       });
     });
   });
@@ -711,7 +715,8 @@ exports.checkAuth = async (req, res, next) => {
   } catch (err) {
     console.log("error", err);
     res.status("404").json({
-      token: null
+      token: null,
+      message: err
     });
   }
 };
@@ -725,12 +730,17 @@ exports.getTokenByFacebookId = async (req, res) => {
     let validCaptcha = await validateRecaptcha(captchaToken);
 
     if (validCaptcha) {
-      let usr = await User.getUserByFacebookId(id); //.then((usr) => {
+      let usr = await User.getUserByFacebookId(id);
 
       if (usr) {
-        let token = usr.generateUserToken();
-        res.status("200").json({
-          token
+        if (validateActiveUser(usr._doc)) {
+          let token = usr.generateUserToken();
+          res.status("200").json({
+            token
+          });
+        } else res.status("401").json({
+          token: null,
+          message: "Tu usuario esta desactivado, para mayor información contacta el administrador de tu fraccionamiento."
         });
       } else {
         res.status("404").json({
@@ -760,9 +770,14 @@ exports.getTokenByGoogleId = async (req, res) => {
       let usr = await User.getUserByGoogleId(id);
 
       if (usr) {
-        let token = usr.generateUserToken();
-        res.status("200").json({
-          token
+        if (validateActiveUser(usr._doc)) {
+          let token = usr.generateUserToken();
+          res.status("200").json({
+            token
+          });
+        } else res.status("401").json({
+          token: null,
+          message: "Tu usuario esta desactivado, para mayor información contacta el administrador de tu fraccionamiento."
         });
       } else {
         res.status("404").json({
@@ -792,9 +807,14 @@ exports.getTokenByAppleId = async (req, res) => {
       let usr = await User.getUserByAppleId(id);
 
       if (usr) {
-        let token = usr.generateUserToken();
-        res.status("200").json({
-          token
+        if (validateActiveUser(usr._doc)) {
+          let token = usr.generateUserToken();
+          res.status("200").json({
+            token
+          });
+        } else res.status("401").json({
+          token: null,
+          message: "Tu usuario esta desactivado, para mayor información contacta el administrador de tu fraccionamiento."
         });
       } else {
         res.status("404").json({
@@ -1609,6 +1629,37 @@ exports.deleteUserInfo = async (req, res, next) => {
   }
 };
 
+exports.getSignedUserTerms = async (req, res) => {
+  try {
+    let {
+      userId
+    } = req.query;
+    let signedUserTerms = await userService.getSignedUserTerms(userId);
+    res.status("200").json(signedUserTerms);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
+exports.signUserTerms = async (req, res) => {
+  try {
+    let {
+      userId,
+      termsVersion
+    } = req.body;
+    let update = await userService.signUserTerms(userId, termsVersion);
+    res.status("200").json(update);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
 /***/ }),
 
 /***/ "./src/logic/auth.js":
@@ -1624,11 +1675,10 @@ const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants
 
 const axios = __webpack_require__(/*! axios */ "axios").default;
 
-const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/auth/appletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveAppleUser", "/api/saveEmailUser", "/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", "/api/suburb/getInviteByCode", "/api/notification/test", "/api/suburb/updateConfig", // remover esta api de esta lista
+const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/auth/appletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveAppleUser", "/api/saveEmailUser", "/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", "/api/suburb/getInviteByCode", "/api/notification/test", "/api/suburb/getAllStreets", "/api/suburb/updateConfig", // remover esta api de esta lista
 "/api/suburb/getConfig", //remover esta api de esta lista
-"/api/suburb/saveStreet", //remover esta api de la lista
-"/api/suburb/getAllStreets", //remover este endpoint de la lista
-"/api/deleteUserInfo"];
+"/api/userInfo/getSignedUserTerms", //remover
+"/api/userInfo/signUserTerms"];
 const protectedApi = ["/api/suburb/approveReject"];
 exports.Auth = class Auth {
   validateToken(token) {
@@ -2193,6 +2243,8 @@ const User = __webpack_require__(/*! ../models/user */ "./src/models/user.js");
 
 const request = __webpack_require__(/*! request */ "request");
 
+const GlobalConfig = __webpack_require__(/*! ../models/globalConfig */ "./src/models/globalConfig.js");
+
 const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants/types.js").userTypes;
 
 const saveUser = userObj => {
@@ -2406,6 +2458,31 @@ const deleteUserInfo = async userId => {
   }
 };
 
+const getSignedUserTerms = async userId => {
+  try {
+    let user = await User.getUserLeanById(userId);
+    let terms = await GlobalConfig.GetTermsAndCons();
+    let userTerms = user.signedTerms || []; //logic to check if the latest term is signed
+
+    let latestTerms = terms.map(t => parseFloat(t)).reduce((i, n) => i > n ? i : n);
+    return {
+      signed: userTerms.indexOf(latestTerms) !== -1,
+      termsVersion: latestTerms
+    };
+  } catch (ex) {
+    throw ex;
+  }
+};
+
+const signUserTerms = async (userId, termsVersion) => {
+  try {
+    let updateTerms = await User.updateUserTerms(userId, termsVersion);
+    return updateTerms;
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -2422,7 +2499,9 @@ module.exports = {
   getUsersBySuburbStreet,
   getUsersByAddress,
   updateUserPicture,
-  deleteUserInfo
+  deleteUserInfo,
+  getSignedUserTerms,
+  signUserTerms
 };
 
 /***/ }),
@@ -2523,6 +2602,47 @@ exports.checkApiAuth = (req, res, next) => {
 
 /***/ }),
 
+/***/ "./src/models/globalConfig.js":
+/*!************************************!*\
+  !*** ./src/models/globalConfig.js ***!
+  \************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
+
+const moment = __webpack_require__(/*! moment */ "moment");
+
+const GlobalConfigSchema = new mongoose.Schema({
+  termsAndConditions: [mongoose.Decimal128]
+});
+GlobalConfigSchema.statics = {
+  SaveInitialConfig: function () {
+    let terms = new this({
+      termsAndConditions: [1.0]
+    });
+    return terms.save();
+  },
+  GetTermsAndCons: function () {
+    return new Promise((resolve, reject) => {
+      this.findOne({}).lean().exec((err, result) => {
+        if (err) reject(err);
+
+        if (!result) {
+          this.SaveInitialConfig();
+        }
+
+        let terms = result ? result.termsAndConditions : [1.0];
+        resolve(terms || [1.0]);
+      });
+    });
+  }
+};
+const GlobalConfig = mongoose.model("GlobalConfig", GlobalConfigSchema);
+module.exports = GlobalConfig;
+
+/***/ }),
+
 /***/ "./src/models/index.js":
 /*!*****************************!*\
   !*** ./src/models/index.js ***!
@@ -2546,6 +2666,8 @@ const SuburbStreet = __webpack_require__(/*! ./suburbStreet */ "./src/models/sub
 
 const PostalCode = __webpack_require__(/*! ./postalCode */ "./src/models/postalCode.js");
 
+const GlobalConfig = __webpack_require__(/*! ./globalConfig */ "./src/models/globalConfig.js");
+
 const models = {
   Menu,
   Role,
@@ -2553,7 +2675,8 @@ const models = {
   PostalCode,
   SuburbInvite,
   SuburbConfig,
-  SuburbStreet
+  SuburbStreet,
+  GlobalConfig
 };
 
 const connectDb = () => {
@@ -3622,7 +3745,8 @@ const UserSchema = new mongoose.Schema({
     ref: "Suburb"
   },
   favorites: [GuestSchema],
-  pushTokens: [PushTokenSchema]
+  pushTokens: [PushTokenSchema],
+  signedTerms: [Number]
 });
 /**
  * Private attributes
@@ -3856,7 +3980,11 @@ UserSchema.statics = {
   getLogin: function (_loginName) {
     return new Promise((resolve, reject) => {
       this.findOne({
-        loginName: _loginName
+        $and: [{
+          loginName: _loginName
+        }, {
+          active: true
+        }]
       })
       /*.populate({
              path: 'roles',
@@ -4090,6 +4218,16 @@ UserSchema.statics = {
       });
     });
   },
+  getUserLeanById: function (id) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: id
+      }).populate("suburb", "name").lean().exec((err, result) => {
+        if (err) reject(err);
+        resolve(result);
+      });
+    });
+  },
   getUsersBySuburb: function (suburbId) {
     return new Promise((resolve, reject) => {
       this.find({
@@ -4127,6 +4265,32 @@ UserSchema.statics = {
       }).exec((err, result) => {
         if (err) reject(err);
         resolve(extractUsersFromDoc(result));
+      });
+    });
+  },
+  updateUserTerms: function (userId, termsVersion) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: userId
+      }).lean().exec((err, result) => {
+        if (err) reject(err);
+        let terms = result.signedTerms || [];
+        terms = [...terms, termsVersion];
+        this.findOneAndUpdate({
+          _id: userId
+        }, {
+          $set: {
+            signedTerms: terms
+          }
+        }, {
+          new: true
+        }, function (err, user) {
+          if (err) reject(err);
+          resolve({
+            signed: true,
+            termsVersion: terms
+          });
+        });
       });
     });
   }
@@ -4185,6 +4349,8 @@ router.post("/api/userInfo/removeFavorites", userAdmin.removeUserFavs);
 router.post("/api/userInfo/addUserPushToken", userAdmin.addUserPushToken);
 router.get("/api/userInfo/getUsersByAddress", userAdmin.getUsersByAddress);
 router.post("/api/userInfo/updatePicture", userAdmin.updateUserPicture);
+router.get("/api/userInfo/getSignedUserTerms", userAdmin.getSignedUserTerms);
+router.post("/api/userInfo/signUserTerms", userAdmin.signUserTerms);
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
 router.post("/api/saveAppleUser", userAdmin.saveAppleUser);
