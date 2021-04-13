@@ -1,5 +1,6 @@
 const User = require("../models/user");
 const userTypes = require("../constants/types").userTypes;
+const axios = require("axios").default;
 
 const openApi = [
   "/api/checkAuth",
@@ -17,16 +18,16 @@ const openApi = [
   "/api/file/upload",
   "/api/suburb/getInviteByCode",
   "/api/notification/test",
+  "/api/suburb/getAllStreets",
   "/api/suburb/updateConfig", // remover esta api de esta lista
   "/api/suburb/getConfig", //remover esta api de esta lista
-  "/api/suburb/saveStreet", //remover esta api de la lista
-  "/api/suburb/getAllStreets", //remover este endpoint de la lista
-  "/api/deleteUserInfo", //remover este endpoint de la lista
+  "/api/userInfo/getSignedUserTerms", //remover
+  "/api/userInfo/signUserTerms", //remove
 ];
 
 const protectedApi = ["/api/suburb/approveReject"];
 
-module.exports = class Auth {
+exports.Auth = class Auth {
   validateToken(token) {
     let user = User;
 
@@ -100,5 +101,26 @@ module.exports = class Auth {
     } else {
       return this.validateToken(token);
     }
+  }
+};
+
+exports.validateRecaptcha = async (token) => {
+  try {
+    const secretKey = process.env.RECAPTCHA_SECRET;
+    const verificationURL = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`;
+    let response = await axios.post(
+      verificationURL,
+      {},
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
+        },
+      }
+    );
+
+    let captchaResult = response.data;
+    return captchaResult.success;
+  } catch (err) {
+    throw err;
   }
 };

@@ -94,6 +94,7 @@ const UserSchema = new mongoose.Schema({
   },
   favorites: [GuestSchema],
   pushTokens: [PushTokenSchema],
+  signedTerms: [Number],
 });
 
 /**
@@ -346,7 +347,12 @@ UserSchema.statics = {
   getLogin: function (_loginName) {
     return new Promise((resolve, reject) => {
       this.findOne({
-        loginName: _loginName,
+        $and: [
+          {
+            loginName: _loginName,
+          },
+          { active: true },
+        ],
       }) /*.populate({
                 path: 'roles',
                 populate: {
@@ -549,6 +555,19 @@ UserSchema.statics = {
         });
     });
   },
+  getUserLeanById: function (id) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: id,
+      })
+        .populate("suburb", "name")
+        .lean()
+        .exec((err, result) => {
+          if (err) reject(err);
+          resolve(result);
+        });
+    });
+  },
   getUsersBySuburb: function (suburbId) {
     return new Promise((resolve, reject) => {
       this.find({ suburb: suburbId }).exec((err, result) => {
@@ -579,6 +598,26 @@ UserSchema.statics = {
         if (err) reject(err);
         resolve(extractUsersFromDoc(result));
       });
+    });
+  },
+  updateUserTerms: function (userId, termsVersion) {
+    return new Promise((resolve, reject) => {
+      this.findOne({ _id: userId })
+        .lean()
+        .exec((err, result) => {
+          if (err) reject(err);
+          let terms = result.signedTerms || [];
+          terms = [...terms, termsVersion];
+          this.findOneAndUpdate(
+            { _id: userId },
+            { $set: { signedTerms: terms } },
+            { new: true },
+            function (err, user) {
+              if (err) reject(err);
+              resolve({ signed: true, termsVersion: terms });
+            }
+          );
+        });
     });
   },
 };

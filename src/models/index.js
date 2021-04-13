@@ -6,6 +6,7 @@ const SuburbInvite = require("./suburbInvite");
 const SuburbConfig = require("./suburbConfig");
 const SuburbStreet = require("./suburbStreet");
 const PostalCode = require("./postalCode");
+const GlobalConfig = require("./globalConfig");
 
 const models = {
   Menu,
@@ -15,6 +16,7 @@ const models = {
   SuburbInvite,
   SuburbConfig,
   SuburbStreet,
+  GlobalConfig,
 };
 
 const connectDb = () => {

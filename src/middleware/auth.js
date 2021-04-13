@@ -1,4 +1,4 @@
-const Auth = require("../logic/auth");
+const Auth = require("../logic/auth").Auth;
 
 const validApiRequest = (apiPath, token) => {
   return new Promise((resolve, reject) => {
