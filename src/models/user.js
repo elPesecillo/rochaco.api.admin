@@ -104,7 +104,7 @@ const _secretKey = process.env.JWT_SECRET;
 
 let _getExpDate = () => {
   var expTimeByMin =
-    process.env.exptoken != null ? process.env.exptoken : "1440";
+    process.env.EXP_TOKEN != null ? process.env.EXP_TOKEN : "1440";
   return moment().add(expTimeByMin, "minutes").unix();
 };
 
