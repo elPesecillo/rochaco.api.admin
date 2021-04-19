@@ -2109,6 +2109,8 @@ const addSuburbInvite = (suburbId, name, street, streetNumber, userType) => {
   });
 };
 
+
+
 const getSuburbInvite = code => {
   return new Promise((resolve, reject) => {
     SuburbInvite.GetInviteByCode(code).then((subInvite, err) => {
@@ -2215,6 +2217,8 @@ const getSuburbStreets = async suburbId => {
   }
 };
 
+
+
 module.exports = {
   saveSuburb,
   suburbAddStatus,
@@ -2227,7 +2231,7 @@ module.exports = {
   saveSuburbConfig,
   getSuburbConfig,
   saveSuburbStreet,
-  getSuburbStreets
+  getSuburbStreets,
 };
 
 /***/ }),
@@ -4013,6 +4017,16 @@ UserSchema.statics = {
     return new Promise((resolve, reject) => {
       this.findOne({
         googleId: _googleId
+      }).exec((err, result) => {
+        if (err) reject(err);
+        resolve(result);
+      });
+    });
+  },
+  getUserByEmail: function (_email) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        email: _email
       }).exec((err, result) => {
         if (err) reject(err);
         resolve(result);
