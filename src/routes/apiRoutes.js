@@ -56,7 +56,7 @@ router.post("/api/saveAppleUser", userAdmin.saveAppleUser);
 router.post("/api/saveEmailUser", userAdmin.saveEmailUser);
 router.post("/api/saveUserBySuburb", userAdmin.saveUserBySuburbId);
 router.post("/api/deleteUserInfo", userAdmin.deleteUserInfo);
-
+router.post("/api/generateTempPassword", userAdmin.generateTempPassword);
 //logged user APIs
 router.get("/api/me/menu", menus.getMenusByUser);
 

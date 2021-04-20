@@ -254,6 +254,16 @@ const signUserTerms = async (userId, termsVersion) => {
   }
 };
 
+const updateTempPassword = async (email) => {
+  try {
+    let updatePass = await User.updateTempPassword(email);
+
+    return updatePass;
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -273,4 +283,5 @@ module.exports = {
   deleteUserInfo,
   getSignedUserTerms,
   signUserTerms,
+  updateTempPassword,
 };

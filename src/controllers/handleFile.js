@@ -164,3 +164,21 @@ exports.uploadFile = async (req, res, next) => {
       .json({ message: ex.message || "No se pudo completar el registro." });
   }
 };
+
+exports.sendTempPassEmail = async (email, tempPassword, files = []) => {
+  try {
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    const msg = {
+      to: email, //process.env.OWNER_EMAILS.split(","),
+      from: "support@neighby.com",
+      subject: "Solicitud de cambio de contraseña.",
+      text: `Solicitud de cambio de contraseña.`,
+      html: `<strong>La nueva contraseña temporal es: ${tempPassword} </strong>`,
+      attachments: getEmailAttachments(files),
+    };
+    await sgMail.send(msg);
+  } catch (ex) {
+    throw ex;
+  }
+};

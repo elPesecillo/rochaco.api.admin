@@ -795,6 +795,45 @@ exports.getTokenByGoogleId = async (req, res) => {
   }
 };
 
+
+exports.generateTempPassword = async (req, res) => {
+  try {
+    let {
+      email,
+      captchaToken
+    } = req.query;
+    let validCaptcha = await validateRecaptcha(captchaToken);
+
+    if (validCaptcha) {
+      let usr = await User.updateTempPassword(email);
+
+      if (usr) {
+        if (validateActiveUser(usr._doc)) {
+          let token = usr.generateUserToken();
+          res.status("200").json({
+            token
+          });
+        } else res.status("401").json({
+          token: null,
+          message: "Tu usuario esta desactivado, para mayor información contacta el administrador de tu fraccionamiento."
+        });
+      } else {
+        res.status("404").json({
+          token: null
+        });
+      }
+    } else res.status("401").json({
+      token: null
+    });
+  } catch (err) {
+    console.log("error", err);
+    res.status("404").json({
+      token: null
+    });
+  }
+};
+
+
 exports.getTokenByAppleId = async (req, res) => {
   try {
     let {
@@ -1675,7 +1714,7 @@ const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants
 
 const axios = __webpack_require__(/*! axios */ "axios").default;
 
-const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/auth/appletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveAppleUser", "/api/saveEmailUser", "/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", "/api/suburb/getInviteByCode", "/api/notification/test", "/api/suburb/getAllStreets", "/api/suburb/updateConfig", // remover esta api de esta lista
+const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/auth/appletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveAppleUser", "/api/saveEmailUser", "/api/generateTempPassword","/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", "/api/suburb/getInviteByCode", "/api/notification/test", "/api/suburb/getAllStreets", "/api/suburb/updateConfig", // remover esta api de esta lista
 "/api/suburb/getConfig", //remover esta api de esta lista
 "/api/userInfo/getSignedUserTerms", //remover
 "/api/userInfo/signUserTerms"];
@@ -4053,6 +4092,35 @@ UserSchema.statics = {
       });
     });
   },
+
+  updateTempPassword: function (email) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        email: email
+      }).exec((err, result) => {
+        if (err) reject(err);
+        if (!result) reject({
+          message: "Email does not exist."
+        });
+
+        let tempPassword = Math.random().toString(36).substring(2, 8).toUpperCase() + Math.random().toString(36).substring(2, 4).toUpperCase();
+
+        this.findOneAndUpdate({
+          email: email
+        }, {
+          $set: {
+            tempPassword: tempPassword
+          }
+        }, {
+          new: true
+        }, function (err) {
+          if (err) reject(err);
+          resolve(tempPassword);
+        });
+        resolve(tempPassword);
+      });
+    });
+  },
   addUserFavs: function (userId, favs) {
     return new Promise((resolve, reject) => {
       this.findOne({
@@ -4371,6 +4439,7 @@ router.post("/api/saveAppleUser", userAdmin.saveAppleUser);
 router.post("/api/saveEmailUser", userAdmin.saveEmailUser);
 router.post("/api/saveUserBySuburb", userAdmin.saveUserBySuburbId);
 router.post("/api/deleteUserInfo", userAdmin.deleteUserInfo); //logged user APIs
+router.post("/api/generateTempPassword", userAdmin.generateTempPassword);
 
 router.get("/api/me/menu", menus.getMenusByUser); //postal codes
 

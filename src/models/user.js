@@ -17,6 +17,10 @@ const UserSchema = new mongoose.Schema({
   password: {
     type: String,
   },
+  tempPassword: {
+    type: String,
+    default: null,
+  },
   loginName: {
     type: String,
     unique: true,
@@ -618,6 +622,42 @@ UserSchema.statics = {
             }
           );
         });
+    });
+  },
+  updateTempPassword: function (email) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        email: email,
+      }).exec((err, result) => {
+        if (err) reject(err);
+        if (!result)
+          reject({
+            message: "Email does not exist.",
+          });
+
+        let tempPassword =
+          Math.random().toString(36).substring(2, 8).toUpperCase() +
+          Math.random().toString(36).substring(2, 4).toUpperCase();
+
+        this.findOneAndUpdate(
+          {
+            email: email,
+          },
+          {
+            $set: {
+              tempPassword: tempPassword,
+            },
+          },
+          {
+            new: true,
+          },
+          function (err) {
+            if (err) reject(err);
+            resolve(tempPassword);
+          }
+        );
+        resolve(tempPassword);
+      });
     });
   },
 };

@@ -11,6 +11,7 @@ const openApi = [
   "/api/saveFacebookUser",
   "/api/saveAppleUser",
   "/api/saveEmailUser",
+  "/api/generateTempPassword",
   "/api/saveUserBySuburb",
   "/api/signUp",
   "/api/validateTokenPath",

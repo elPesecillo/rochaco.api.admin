@@ -2,7 +2,7 @@ const userService = require("../logic/userService");
 const userTypes = require("../constants/types").userTypes;
 const SuburbInvite = require("../models/suburbInvite");
 const validateRecaptcha = require("../logic/auth").validateRecaptcha;
-
+const handleFile = require("../controllers/handleFile");
 exports.saveGoogleUser = (req, res, next) => {
   //get user data here
   let {
@@ -226,6 +226,37 @@ exports.saveEmailUser = (req, res, next) => {
         .json({ success: false, message: err.message || "Bad request." });
     }
   );
+};
+
+exports.generateTempPassword = async (req, res) => {
+  try {
+    let { email, captchaToken } = req.body;
+    let validCaptcha = await userService.validateRecaptcha(captchaToken);
+
+    if (validCaptcha) {
+      let tempPass = await userService.updateTempPassword(email);
+
+      if (tempPass) {
+        let sendMail = await handleFile.sendTempPassEmail(email, tempPass);
+
+        res.status("200").json({
+          message: "Se ha enviado el correo correctamente.",
+        });
+      } else {
+        res.status("401").json({
+          message: "Hubo un problema al enviar el correo.",
+        });
+      }
+    } else
+      res.status("401").json({
+        message: "Hubo un problema al enviar el correo.",
+      });
+  } catch (err) {
+    console.log("error", err);
+    res.status("404").json({
+      message: err.message || "Hubo un problema al enviar el correo.",
+    });
+  }
 };
 
 exports.createUserByType = async (req, res, next) => {
