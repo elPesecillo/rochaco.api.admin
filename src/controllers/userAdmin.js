@@ -231,7 +231,7 @@ exports.saveEmailUser = (req, res, next) => {
 exports.generateTempPassword = async (req, res) => {
   try {
     let { email, captchaToken } = req.body;
-    let validCaptcha = await userService.validateRecaptcha(captchaToken);
+    let validCaptcha = await validateRecaptcha(captchaToken);
 
     if (validCaptcha) {
       let tempPass = await userService.updateTempPassword(email);
@@ -495,6 +495,36 @@ exports.getSignedUserTerms = async (req, res) => {
     res
       .status("400")
       .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.isPasswordTemp = async (req, res) => {
+  try {
+    let { user, password } = req.query;
+    let buff = Buffer.from(password, "base64");
+    let decodedPassword = buff.toString("utf-8");
+    let isPassTemp = await userService.isPasswordTemp(user, decodedPassword);
+    res.status("200").json(isPassTemp);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request.",
+    });
+  }
+};
+
+exports.updatePassword = async (req, res) => {
+  try {
+    let { userId, password } = req.body;
+    let buff = Buffer.from(password, "base64");
+    let decodedPassword = buff.toString("utf-8");
+    let isPassTemp = await userService.updatePassword(userId, decodedPassword);
+    res.status("200").json(isPassTemp);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request.",
+    });
   }
 };
 

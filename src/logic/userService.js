@@ -218,6 +218,24 @@ const getUsersByAddress = async (suburbId, street, streetNumber) => {
   }
 };
 
+const isPasswordTemp = async (user, password) => {
+  try {
+    let isPasTemp = await User.isPasswordTemp(user, password);
+    return isPasTemp;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const updatePassword = async (user, password) => {
+  try {
+    let updatePass = await User.updatePassword(user, password);
+    return updatePass;
+  } catch (err) {
+    throw err;
+  }
+};
+
 const deleteUserInfo = async (userId) => {
   try {
     let payload = await User.deleteUserInfo(userId);
@@ -284,4 +302,6 @@ module.exports = {
   getSignedUserTerms,
   signUserTerms,
   updateTempPassword,
+  isPasswordTemp,
+  updatePassword,
 };

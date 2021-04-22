@@ -48,8 +48,10 @@ router.post("/api/userInfo/addUserPushToken", userAdmin.addUserPushToken);
 router.get("/api/userInfo/getUsersByAddress", userAdmin.getUsersByAddress);
 router.post("/api/userInfo/updatePicture", userAdmin.updateUserPicture);
 router.get("/api/userInfo/getSignedUserTerms", userAdmin.getSignedUserTerms);
-router.post("/api/userInfo/signUserTerms", userAdmin.signUserTerms);
+router.get("/api/userInfo/isPasswordTemp", userAdmin.isPasswordTemp);
 
+router.post("/api/userInfo/updatePassword", userAdmin.updatePassword);
+router.post("/api/userInfo/signUserTerms", userAdmin.signUserTerms);
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
 router.post("/api/saveAppleUser", userAdmin.saveAppleUser);
