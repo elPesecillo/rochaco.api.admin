@@ -227,9 +227,9 @@ const isPasswordTemp = async (user, password) => {
   }
 };
 
-const updatePassword = async (user, password) => {
+const updatePassword = async (user, password, tempPassword) => {
   try {
-    let updatePass = await User.updatePassword(user, password);
+    let updatePass = await User.updatePassword(user, password, tempPassword);
     return updatePass;
   } catch (err) {
     throw err;

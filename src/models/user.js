@@ -634,36 +634,58 @@ UserSchema.statics = {
       }).exec((err, result) => {
         if (err) reject(err);
 
+        if (result.tempPassword == "" || result.tempPassword == null) {
+          resolve(false);
+        } else {
+          bcrypt.compare(password, result.tempPassword).then((valid) => {
+            if (valid) {
+              resolve(true);
+            } else {
+              resolve(false);
+            }
+          });
+        }
+      });
+    });
+  },
+  updatePassword: function (userId, password, tempPassword) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: userId,
+      }).exec((err, result) => {
+        if (err) reject(err);
+
         if (result.tempPassword == "") {
           resolve(false);
         }
 
-        bcrypt.compare(password, result.tempPassword).then((valid) => {
+        bcrypt.compare(tempPassword, result.tempPassword).then((valid) => {
           if (valid) {
-            resolve(true);
+            let HashPassword = "";
+
+            this.encryptPassword(base64.encode(password)).then((resEncrypt) => {
+              HashPassword = resEncrypt.hash;
+
+              this.findOneAndUpdate(
+                { _id: userId },
+                { $set: { tempPassword: null, password: HashPassword } },
+                { new: true },
+                function (err, user) {
+                  if (err) reject(err);
+                  resolve({
+                    success: true,
+                    message: "La contrasena fue actualizada exitosamente.",
+                  });
+                }
+              );
+            });
           } else {
-            resolve(false);
+            reject({
+              success: false,
+              message: "Hubo un problema al actualizar la contrasena.",
+            });
           }
         });
-      });
-    });
-  },
-  updatePassword: function (userId, password) {
-    return new Promise((resolve, reject) => {
-      let HashPassword = "";
-
-      this.encryptPassword(base64.encode(password)).then((resEncrypt) => {
-        HashPassword = resEncrypt.hash;
-
-        this.findOneAndUpdate(
-          { _id: userId },
-          { $set: { tempPassword: null, password: HashPassword } },
-          { new: true },
-          function (err, user) {
-            if (err) reject(err);
-            resolve({ success: true });
-          }
-        );
       });
     });
   },

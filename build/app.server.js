@@ -1917,11 +1917,18 @@
 
         exports.updatePassword = async (req, res) => {
           try {
-            let { user, password } = req.body;
-            // let validCaptcha = await validateRecaptcha(captchaToken);
+            let { userId, password, tempPassword } = req.body;
             let buff = Buffer.from(password, "base64");
             let decodedPassword = buff.toString("utf-8");
-            let updatePass = await userService.updatePassword(user, decodedPassword);
+        
+            let buff2 = Buffer.from(tempPassword, "base64");
+            let decodedTempPassword = buff2.toString("utf-8");
+        
+            let isPassTemp = await userService.updatePassword(
+              userId,
+              decodedPassword,
+              decodedTempPassword
+            );
             res.status("200").json(updatePass);
           } catch (err) {
             res.status("400").json({
