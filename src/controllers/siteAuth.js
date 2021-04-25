@@ -7,11 +7,11 @@ const validateActiveUser = (user) => {
   return user.active;
 };
 
-const validateUser = (userLogin, password) => {
+const validateUser = (userLogin, password, isTemporary = false) => {
   return new Promise((resolve, reject) => {
     User.getLogin(userLogin).then((login, err) => {
       if (login) {
-        let validPass = login.validatePassword(password);
+        let validPass = login.validatePassword(password, isTemporary);
         validPass.then(
           (result) => {
             //generate jwt token
@@ -25,7 +25,11 @@ const validateUser = (userLogin, password) => {
             });
           }
         );
-      } else reject({ succes: false, message: "El usuario no existe, o esta deshabilitado." });
+      } else
+        reject({
+          succes: false,
+          message: "El usuario no existe, o esta deshabilitado.",
+        });
     });
   });
 };
@@ -33,11 +37,11 @@ const validateUser = (userLogin, password) => {
 exports.checkAuth = async (req, res, next) => {
   try {
     //over here check the db to know if the auth is valid
-    let { user, password, captchaToken } = req.body;
+    let { user, password, captchaToken, isTemporary = false } = req.body;
 
     let validCaptcha = await validateRecaptcha(captchaToken);
     if (validCaptcha) {
-      let usr = await validateUser(user, password); //.then(
+      let usr = await validateUser(user, password, isTemporary); //.then(
 
       if (usr) {
         if (usr.success) {

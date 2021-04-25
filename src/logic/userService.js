@@ -218,6 +218,24 @@ const getUsersByAddress = async (suburbId, street, streetNumber) => {
   }
 };
 
+const isPasswordTemp = async (user, password) => {
+  try {
+    let isPasTemp = await User.isPasswordTemp(user, password);
+    return isPasTemp;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const updatePassword = async (user, password, tempPassword) => {
+  try {
+    let updatePass = await User.updatePassword(user, password, tempPassword);
+    return updatePass;
+  } catch (err) {
+    throw err;
+  }
+};
+
 const deleteUserInfo = async (userId) => {
   try {
     let payload = await User.deleteUserInfo(userId);
@@ -254,6 +272,16 @@ const signUserTerms = async (userId, termsVersion) => {
   }
 };
 
+const updateTempPassword = async (email) => {
+  try {
+    let updatePass = await User.updateTempPassword(email);
+
+    return updatePass;
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -273,4 +301,7 @@ module.exports = {
   deleteUserInfo,
   getSignedUserTerms,
   signUserTerms,
+  updateTempPassword,
+  isPasswordTemp,
+  updatePassword,
 };
