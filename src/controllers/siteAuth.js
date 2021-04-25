@@ -25,7 +25,11 @@ const validateUser = (userLogin, password) => {
             });
           }
         );
-      } else reject({ succes: false, message: "El usuario no existe, o esta deshabilitado." });
+      } else
+        reject({
+          succes: false,
+          message: "El usuario no existe, o esta deshabilitado.",
+        });
     });
   });
 };
@@ -48,14 +52,9 @@ exports.checkAuth = async (req, res, next) => {
         } else
           res.status("401").json({ success: false, message: "Unauthorized" });
       } else {
-        res
-          .status("401")
-          .json({ success: false, message: err.message || "Unauthorized" });
+        res.status("401").json({ success: false, message: "Unauthorized" });
       }
-    } else
-      res
-        .status("401")
-        .json({ success: false, message: err.message || "Unauthorized" });
+    } else res.status("401").json({ success: false, message: "Unauthorized" });
   } catch (err) {
     console.log("error", err);
     res.status("404").json({ token: null, message: err });

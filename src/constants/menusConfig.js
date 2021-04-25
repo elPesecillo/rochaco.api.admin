@@ -19,6 +19,19 @@ exports.menus = [
     order: 5,
   },
   {
+    name: "Reporte",
+    path: "/admin/reporte",
+    icon: "icon icon-dashboard2",
+    visible: true,
+    validUserTypes: [
+      userType.guard,
+      userType.suburbAdmin,
+      userType.admin,
+      userType.guest,
+    ],
+    order: 5,
+  },
+  {
     name: "Guardias",
     path: "/admin/guardias",
     icon: "icon icon-shield",
@@ -39,7 +52,7 @@ exports.menus = [
     path: "/admin/vecinos",
     icon: "icon icon-users",
     visible: true,
-    validUserTypes: [userType.guard, userType.suburbAdmin, userType.admin],
+    validUserTypes: [userType.suburbAdmin, userType.admin],
     order: 3,
   },
   {
@@ -47,7 +60,7 @@ exports.menus = [
     path: "/admin/colonias",
     icon: "icon icon-building",
     visible: true,
-    validUserTypes: [userType.admin, userType.suburbAdmin, userType.guest],
+    validUserTypes: [userType.admin],
     order: 4,
   },
   {
