@@ -17,6 +17,10 @@ const UserSchema = new mongoose.Schema({
   password: {
     type: String,
   },
+  tempPassword: {
+    type: String,
+    default: null,
+  },
   loginName: {
     type: String,
     unique: true,
@@ -128,9 +132,12 @@ let _validateExpDate = function (expDate) {
 };
 
 UserSchema.methods = {
-  validatePassword: function (_password) {
+  validatePassword: function (_password, isTemporary = false) {
     var _this = this;
     let pass = base64.decode(_password);
+
+    let compareValue = isTemporary ? _this.tempPassword : _this.password;
+
     return new Promise(
       (resolve, reject) => {
         if (_this.temporaryDisabled) {
@@ -148,7 +155,7 @@ UserSchema.methods = {
               );
             });
         } else
-          bcrypt.compare(pass, _this.password).then((valid) => {
+          bcrypt.compare(pass, compareValue).then((valid) => {
             if (valid) {
               //reset logint attempts
               this.increaseLoginAttempts(true).then(
@@ -618,6 +625,110 @@ UserSchema.statics = {
             }
           );
         });
+    });
+  },
+  isPasswordTemp: function (user, password) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        loginName: user,
+      }).exec((err, result) => {
+        if (err) reject(err);
+
+        if (result.tempPassword == "" || result.tempPassword == null) {
+          resolve(false);
+        } else {
+          bcrypt.compare(password, result.tempPassword).then((valid) => {
+            if (valid) {
+              resolve(true);
+            } else {
+              resolve(false);
+            }
+          });
+        }
+      });
+    });
+  },
+  updatePassword: function (userId, password, tempPassword) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: userId,
+      }).exec((err, result) => {
+        if (err) reject(err);
+
+        if (result.tempPassword == "") {
+          resolve(false);
+        }
+
+        bcrypt.compare(tempPassword, result.tempPassword).then((valid) => {
+          if (valid) {
+            let HashPassword = "";
+
+            this.encryptPassword(base64.encode(password)).then((resEncrypt) => {
+              HashPassword = resEncrypt.hash;
+
+              this.findOneAndUpdate(
+                { _id: userId },
+                { $set: { tempPassword: null, password: HashPassword } },
+                { new: true },
+                function (err, user) {
+                  if (err) reject(err);
+                  resolve({
+                    success: true,
+                    message: "La contrasena fue actualizada exitosamente.",
+                  });
+                }
+              );
+            });
+          } else {
+            reject({
+              success: false,
+              message: "Hubo un problema al actualizar la contrasena.",
+            });
+          }
+        });
+      });
+    });
+  },
+  updateTempPassword: function (email) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        email: email,
+      }).exec((err, result) => {
+        if (err) reject(err);
+        if (!result)
+          reject({
+            message: "Email does not exist.",
+          });
+
+        let tempPassword =
+          Math.random().toString(36).substring(2, 8).toUpperCase() +
+          Math.random().toString(36).substring(2, 4).toUpperCase();
+
+        let tempHashPassword = "";
+
+        this.encryptPassword(base64.encode(tempPassword)).then((resEncrypt) => {
+          tempHashPassword = resEncrypt.hash;
+
+          this.findOneAndUpdate(
+            {
+              email: email,
+            },
+            {
+              $set: {
+                tempPassword: tempHashPassword,
+              },
+            },
+            {
+              new: true,
+            },
+            function (err) {
+              if (err) reject(err);
+              resolve(tempPassword);
+            }
+          );
+          resolve(tempPassword);
+        });
+      });
     });
   },
 };

@@ -2,7 +2,7 @@ const userService = require("../logic/userService");
 const userTypes = require("../constants/types").userTypes;
 const SuburbInvite = require("../models/suburbInvite");
 const validateRecaptcha = require("../logic/auth").validateRecaptcha;
-
+const handleFile = require("../controllers/handleFile");
 exports.saveGoogleUser = (req, res, next) => {
   //get user data here
   let {
@@ -226,6 +226,37 @@ exports.saveEmailUser = (req, res, next) => {
         .json({ success: false, message: err.message || "Bad request." });
     }
   );
+};
+
+exports.generateTempPassword = async (req, res) => {
+  try {
+    let { email, captchaToken } = req.body;
+    let validCaptcha = await validateRecaptcha(captchaToken);
+
+    if (validCaptcha) {
+      let tempPass = await userService.updateTempPassword(email);
+
+      if (tempPass) {
+        let sendMail = await handleFile.sendTempPassEmail(email, tempPass);
+
+        res.status("200").json({
+          message: "Se ha enviado el correo correctamente.",
+        });
+      } else {
+        res.status("401").json({
+          message: "Hubo un problema al enviar el correo.",
+        });
+      }
+    } else
+      res.status("401").json({
+        message: "Hubo un problema al enviar el correo.",
+      });
+  } catch (err) {
+    console.log("error", err);
+    res.status("404").json({
+      message: err.message || "Hubo un problema al enviar el correo.",
+    });
+  }
 };
 
 exports.createUserByType = async (req, res, next) => {
@@ -464,6 +495,44 @@ exports.getSignedUserTerms = async (req, res) => {
     res
       .status("400")
       .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.isPasswordTemp = async (req, res) => {
+  try {
+    let { user, password } = req.query;
+    let buff = Buffer.from(password, "base64");
+    let decodedPassword = buff.toString("utf-8");
+    let isPassTemp = await userService.isPasswordTemp(user, decodedPassword);
+    res.status("200").json(isPassTemp);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request.",
+    });
+  }
+};
+
+exports.updatePassword = async (req, res) => {
+  try {
+    let { userId, password, tempPassword } = req.body;
+    let buff = Buffer.from(password, "base64");
+    let decodedPassword = buff.toString("utf-8");
+
+    let buff2 = Buffer.from(tempPassword, "base64");
+    let decodedTempPassword = buff2.toString("utf-8");
+
+    let isPassTemp = await userService.updatePassword(
+      userId,
+      decodedPassword,
+      decodedTempPassword
+    );
+    res.status("200").json(isPassTemp);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request.",
+    });
   }
 };
 
