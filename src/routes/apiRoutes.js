@@ -16,6 +16,8 @@ const suburb = require("../controllers/suburb");
 
 const pushNotification = require("../controllers/pushNotification");
 
+const analytics = require("../controllers/analytics");
+
 let upload = multer({ dest: "./uploads/" });
 
 router.post("/api/checkAuth", siteAuth.checkAuth);
@@ -97,5 +99,7 @@ router.post(
   "/api/notification/arrive",
   pushNotification.sendArriveNotification
 );
+
+router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
 
 module.exports = router;
