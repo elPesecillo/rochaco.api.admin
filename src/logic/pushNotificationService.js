@@ -103,6 +103,7 @@ const sendPushNotification = async (pushTokens, message) => {
     let tickets = await sendExpoNotification(chunks);
     await checkTickets(tickets);
   } catch (ex) {
+    console.log("notification error details:", ex);
     throw ex;
   }
 };
