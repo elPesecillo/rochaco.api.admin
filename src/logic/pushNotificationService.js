@@ -16,26 +16,31 @@ const getMessagesBatches = (pushTokens, message) => {
 };
 
 const sendExpoNotification = async (chunks) => {
-  //(async () => {
-  // Send the chunks to the Expo push notification service. There are
-  // different strategies you could use. A simple one is to send one chunk at a
-  // time, which nicely spreads the load out over time:
-  let tickets = [];
-  for (let chunk of chunks) {
-    try {
-      let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-      console.log(ticketChunk);
-      tickets.push(...ticketChunk);
-      // NOTE: If a ticket contains an error code in ticket.details.error, you
-      // must handle it appropriately. The error codes are listed in the Expo
-      // documentation:
-      // https://docs.expo.io/push-notifications/sending-notifications/#individual-errors
-    } catch (error) {
-      console.error(error);
+  try {
+    //(async () => {
+    // Send the chunks to the Expo push notification service. There are
+    // different strategies you could use. A simple one is to send one chunk at a
+    // time, which nicely spreads the load out over time:
+    let tickets = [];
+    for (let chunk of chunks) {
+      try {
+        let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+        console.log(ticketChunk);
+        tickets.push(...ticketChunk);
+        // NOTE: If a ticket contains an error code in ticket.details.error, you
+        // must handle it appropriately. The error codes are listed in the Expo
+        // documentation:
+        // https://docs.expo.io/push-notifications/sending-notifications/#individual-errors
+      } catch (error) {
+        console.error(error);
+      }
     }
+    return tickets;
+    //})();
+  } catch (err) {
+    console.log("send expo notification error", err);
+    throw err;
   }
-  return tickets;
-  //})();
 };
 
 const checkTickets = async (tickets) => {
@@ -99,8 +104,13 @@ const checkTickets = async (tickets) => {
 
 const sendPushNotification = async (pushTokens, message) => {
   try {
+    console.log("getting chunks...");
     let chunks = getMessagesBatches(pushTokens, message);
+    console.log("chunks", chunks);
+
+    console.log("send push notifications");
     let tickets = await sendExpoNotification(chunks);
+    console.log("await check tickets");
     await checkTickets(tickets);
   } catch (ex) {
     console.log("notification error details:", ex);
