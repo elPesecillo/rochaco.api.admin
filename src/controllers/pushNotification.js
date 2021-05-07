@@ -22,8 +22,13 @@ exports.sendTestNotification = async (req, res, next) => {
 exports.sendArriveNotification = async (req, res) => {
   try {
     let { userId, guest } = req.body;
+    console.log("getting user");
     let user = await getUserById(userId);
+    console.log("user", user._doc);
     let pushTokens = user.pushTokens.map((t) => t._doc.token);
+    console.log("push tokens", pushTokens);
+
+    console.log("send notifications...");
     let result = await pushNotificationService.sendPushNotification(
       pushTokens,
       {
@@ -35,8 +40,9 @@ exports.sendArriveNotification = async (req, res) => {
         title: `Hola ${user.name}`,
       }
     );
-    return result;
+    res.status(200).json(result);
   } catch (err) {
+    console.log("notification error details: ", err);
     res.status(400).json(err);
   }
 };
