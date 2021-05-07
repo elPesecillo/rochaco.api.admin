@@ -660,7 +660,7 @@ exports.sendArriveNotification = async (req, res) => {
       },
       title: `Hola ${user.name}`
     });
-    return result;
+    res.status(200).json(result);
   } catch (err) {
     console.log("notification error details: ", err);
     res.status(400).json(err);
