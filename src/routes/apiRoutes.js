@@ -93,6 +93,8 @@ router.post("/api/suburb/saveStreet", suburb.saveSuburbStreet);
 
 router.get("/api/suburb/getAllStreets", suburb.getSuburbStreets);
 
+router.get("/api/suburb/getUsers", suburb.getUsersBySuburb);
+
 //push notifications
 router.post("/api/notification/test", pushNotification.sendTestNotification);
 router.post(

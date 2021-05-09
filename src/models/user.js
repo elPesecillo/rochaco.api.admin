@@ -577,10 +577,21 @@ UserSchema.statics = {
   },
   getUsersBySuburb: function (suburbId) {
     return new Promise((resolve, reject) => {
-      this.find({ suburb: suburbId }).exec((err, result) => {
-        if (err) reject(err);
-        resolve(extractUsersFromDoc(result));
-      });
+      this.find({ suburb: suburbId })
+        .lean()
+        .select({
+          _id: 1,
+          name: 1,
+          lastName: 2,
+          street: 3,
+          streetNumber: 4,
+          active: 5,
+          userType: 6,
+        })
+        .exec((err, result) => {
+          if (err) reject(err);
+          resolve(result);
+        });
     });
   },
   getUsersBySuburbStreet: function (suburbId, street) {
