@@ -502,6 +502,12 @@ UserSchema.statics = {
   updateUserPicture: function (userId, photoUrl) {
     return this.updateOne({ _id: userId }, { $set: { photoUrl: photoUrl } });
   },
+  updateUserType: function (userId, userType) {
+    return this.updateOne({ _id: userId }, { $set: { userType: userType } });
+  },
+  enableDisableUser: function (userId, enabled) {
+    return this.updateOne({ _id: userId }, { $set: { active: enabled } });
+  },
   /**
    * Validate if the user token is active
    */

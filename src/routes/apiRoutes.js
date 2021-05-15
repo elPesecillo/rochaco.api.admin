@@ -51,6 +51,8 @@ router.get("/api/userInfo/getUsersByAddress", userAdmin.getUsersByAddress);
 router.post("/api/userInfo/updatePicture", userAdmin.updateUserPicture);
 router.get("/api/userInfo/getSignedUserTerms", userAdmin.getSignedUserTerms);
 router.get("/api/userInfo/isPasswordTemp", userAdmin.isPasswordTemp);
+router.post("/api/userInfo/updateType", userAdmin.updateUserType);
+router.post("/api/userInfo/enableDisable", userAdmin.enableDisableUser);
 
 router.post("/api/userInfo/updatePassword", userAdmin.updatePassword);
 router.post("/api/userInfo/signUserTerms", userAdmin.signUserTerms);
