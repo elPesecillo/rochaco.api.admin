@@ -502,6 +502,12 @@ UserSchema.statics = {
   updateUserPicture: function (userId, photoUrl) {
     return this.updateOne({ _id: userId }, { $set: { photoUrl: photoUrl } });
   },
+  updateUserType: function (userId, userType) {
+    return this.updateOne({ _id: userId }, { $set: { userType: userType } });
+  },
+  enableDisableUser: function (userId, enabled) {
+    return this.updateOne({ _id: userId }, { $set: { active: enabled } });
+  },
   /**
    * Validate if the user token is active
    */
@@ -577,10 +583,21 @@ UserSchema.statics = {
   },
   getUsersBySuburb: function (suburbId) {
     return new Promise((resolve, reject) => {
-      this.find({ suburb: suburbId }).exec((err, result) => {
-        if (err) reject(err);
-        resolve(extractUsersFromDoc(result));
-      });
+      this.find({ suburb: suburbId })
+        .lean()
+        .select({
+          _id: 1,
+          name: 1,
+          lastName: 2,
+          street: 3,
+          streetNumber: 4,
+          active: 5,
+          userType: 6,
+        })
+        .exec((err, result) => {
+          if (err) reject(err);
+          resolve(result);
+        });
     });
   },
   getUsersBySuburbStreet: function (suburbId, street) {

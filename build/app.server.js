@@ -1309,6 +1309,26 @@ exports.getSuburbStreets = (req, res) => {
   });
 };
 
+exports.getUsersBySuburb = async (req, res) => {
+  try {
+    let {
+      suburbId
+    } = req.query;
+
+    if (ObjectId.isValid(suburbId)) {
+      let users = await suburbService.getUsersBySuburb(suburbId);
+      res.status(200).json(users);
+    } else res.status(400).json({
+      success: false,
+      message: "Por favor indique el fraccionamiento."
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: err.message || "An unknown error occurs while trying to get the users."
+    });
+  }
+};
+
 /***/ }),
 
 /***/ "./src/controllers/userAdmin.js":
@@ -1903,6 +1923,38 @@ exports.signUserTerms = async (req, res) => {
   }
 };
 
+exports.updateUserType = async (req, res) => {
+  try {
+    let {
+      userId,
+      userType
+    } = req.body;
+    let update = await userService.updateUserType(userId, userType);
+    res.status("200").json(update);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
+exports.enableDisableUser = async (req, res) => {
+  try {
+    let {
+      userId,
+      enabled
+    } = req.body;
+    let update = await userService.enableDisableUser(userId, enabled);
+    res.status("200").json(update);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
 /***/ }),
 
 /***/ "./src/logic/auth.js":
@@ -2468,6 +2520,14 @@ const getSuburbStreets = async suburbId => {
   }
 };
 
+const getUsersBySuburb = async suburbId => {
+  try {
+    return await User.getUsersBySuburb(suburbId);
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports = {
   saveSuburb,
   suburbAddStatus,
@@ -2480,7 +2540,8 @@ module.exports = {
   saveSuburbConfig,
   getSuburbConfig,
   saveSuburbStreet,
-  getSuburbStreets
+  getSuburbStreets,
+  getUsersBySuburb
 };
 
 /***/ }),
@@ -2763,6 +2824,23 @@ const updateTempPassword = async email => {
   }
 };
 
+const updateUserType = async (userId, userType) => {
+  try {
+    if (["neighbor", "guard", "suburbAdmin"].indexOf(userType) === -1) throw `The user type ${userType} is not valid.`;
+    return await User.updateUserType(userId, userType);
+  } catch (ex) {
+    throw ex;
+  }
+};
+
+const enableDisableUser = async (userId, enabled) => {
+  try {
+    return await User.enableDisableUser(userId, enabled);
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -2784,7 +2862,9 @@ module.exports = {
   signUserTerms,
   updateTempPassword,
   isPasswordTemp,
-  updatePassword
+  updatePassword,
+  updateUserType,
+  enableDisableUser
 };
 
 /***/ }),
@@ -4443,6 +4523,24 @@ UserSchema.statics = {
       }
     });
   },
+  updateUserType: function (userId, userType) {
+    return this.updateOne({
+      _id: userId
+    }, {
+      $set: {
+        userType: userType
+      }
+    });
+  },
+  enableDisableUser: function (userId, enabled) {
+    return this.updateOne({
+      _id: userId
+    }, {
+      $set: {
+        active: enabled
+      }
+    });
+  },
 
   /**
    * Validate if the user token is active
@@ -4520,9 +4618,17 @@ UserSchema.statics = {
     return new Promise((resolve, reject) => {
       this.find({
         suburb: suburbId
+      }).lean().select({
+        _id: 1,
+        name: 1,
+        lastName: 2,
+        street: 3,
+        streetNumber: 4,
+        active: 5,
+        userType: 6
       }).exec((err, result) => {
         if (err) reject(err);
-        resolve(extractUsersFromDoc(result));
+        resolve(result);
       });
     });
   },
@@ -4735,6 +4841,8 @@ router.get("/api/userInfo/getUsersByAddress", userAdmin.getUsersByAddress);
 router.post("/api/userInfo/updatePicture", userAdmin.updateUserPicture);
 router.get("/api/userInfo/getSignedUserTerms", userAdmin.getSignedUserTerms);
 router.get("/api/userInfo/isPasswordTemp", userAdmin.isPasswordTemp);
+router.post("/api/userInfo/updateType", userAdmin.updateUserType);
+router.post("/api/userInfo/enableDisable", userAdmin.enableDisableUser);
 router.post("/api/userInfo/updatePassword", userAdmin.updatePassword);
 router.post("/api/userInfo/signUserTerms", userAdmin.signUserTerms);
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
@@ -4761,7 +4869,8 @@ router.get("/api/suburb/getStreetNumbers", suburb.getStreetNumbers);
 router.post("/api/suburb/updateConfig", suburb.saveSuburbConfig);
 router.get("/api/suburb/getConfig", suburb.getSuburbConfig);
 router.post("/api/suburb/saveStreet", suburb.saveSuburbStreet);
-router.get("/api/suburb/getAllStreets", suburb.getSuburbStreets); //push notifications
+router.get("/api/suburb/getAllStreets", suburb.getSuburbStreets);
+router.get("/api/suburb/getUsers", suburb.getUsersBySuburb); //push notifications
 
 router.post("/api/notification/test", pushNotification.sendTestNotification);
 router.post("/api/notification/arrive", pushNotification.sendArriveNotification);

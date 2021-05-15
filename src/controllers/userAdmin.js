@@ -547,3 +547,27 @@ exports.signUserTerms = async (req, res) => {
       .json({ success: false, message: err.message || "Bad request." });
   }
 };
+
+exports.updateUserType = async (req, res) => {
+  try {
+    let { userId, userType } = req.body;
+    let update = await userService.updateUserType(userId, userType);
+    res.status("200").json(update);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.enableDisableUser = async (req, res) => {
+  try {
+    let { userId, enabled } = req.body;
+    let update = await userService.enableDisableUser(userId, enabled);
+    res.status("200").json(update);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
