@@ -259,3 +259,22 @@ exports.getSuburbStreets = (req, res) => {
       message: "Por favor indique el fraccionamiento.",
     });
 };
+
+exports.getUsersBySuburb = async (req, res) => {
+  try {
+    let { suburbId } = req.query;
+    if (ObjectId.isValid(suburbId)) {
+      let users = await suburbService.getUsersBySuburb(suburbId);
+      res.status(200).json(users);
+    } else
+      res.status(400).json({
+        success: false,
+        message: "Por favor indique el fraccionamiento.",
+      });
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to get the users.",
+    });
+  }
+};

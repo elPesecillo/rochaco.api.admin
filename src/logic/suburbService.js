@@ -272,6 +272,14 @@ const getSuburbStreets = async (suburbId) => {
   }
 };
 
+const getUsersBySuburb = async (suburbId) => {
+  try {
+    return await User.getUsersBySuburb(suburbId);
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports = {
   saveSuburb,
   suburbAddStatus,
@@ -285,4 +293,5 @@ module.exports = {
   getSuburbConfig,
   saveSuburbStreet,
   getSuburbStreets,
+  getUsersBySuburb,
 };

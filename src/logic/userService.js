@@ -282,6 +282,24 @@ const updateTempPassword = async (email) => {
   }
 };
 
+const updateUserType = async (userId, userType) => {
+  try {
+    if (["neighbor", "guard", "suburbAdmin"].indexOf(userType) === -1)
+      throw `The user type ${userType} is not valid.`;
+    return await User.updateUserType(userId, userType);
+  } catch (ex) {
+    throw ex;
+  }
+};
+
+const enableDisableUser = async (userId, enabled) => {
+  try {
+    return await User.enableDisableUser(userId, enabled);
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -304,4 +322,6 @@ module.exports = {
   updateTempPassword,
   isPasswordTemp,
   updatePassword,
+  updateUserType,
+  enableDisableUser,
 };
