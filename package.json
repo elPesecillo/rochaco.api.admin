@@ -24,6 +24,8 @@
   "author": "Pascual Hernandez",
   "license": "ISC",
   "dependencies": {
+    "@azure/cognitiveservices-computervision": "^8.0.0",
+    "@azure/ms-rest-azure-js": "^2.1.0",
     "@sendgrid/mail": "^6.5.4",
     "axios": "^0.21.1",
     "base-64": "^0.1.0",

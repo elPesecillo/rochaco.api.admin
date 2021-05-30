@@ -18,6 +18,8 @@ const pushNotification = require("../controllers/pushNotification");
 
 const analytics = require("../controllers/analytics");
 
+const vision = require("../controllers/vision");
+
 let upload = multer({ dest: "./uploads/" });
 
 router.post("/api/checkAuth", siteAuth.checkAuth);
@@ -105,5 +107,10 @@ router.post(
 );
 
 router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
+
+
+const upload2= multer();
+
+router.post("/api/vision/ocr", upload2.any(), vision.processOCR);
 
 module.exports = router;
