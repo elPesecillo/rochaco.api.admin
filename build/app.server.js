@@ -93,7 +93,7 @@
 /*! exports provided: name, version, cryptoKey, description, main, scripts, repository, keywords, author, license, dependencies, devDependencies, default */
 /***/ (function(module) {
 
-module.exports = JSON.parse("{\"name\":\"rochaco_api\",\"version\":\"1.0.0\",\"cryptoKey\":\"secretKey123\",\"description\":\"rochaco management apis\",\"main\":\"index.js\",\"scripts\":{\"test\":\"echo \\\"Error: no test specified\\\" && exit 1\",\"heroku-prebuild\":\"npm install --dev\",\"build:server\":\"webpack --config webpack.config.js \",\"start\":\"node build/app.server.js\",\"heroku-postbuild\":\"npm run build:server\",\"start-all\":\"npm build:server & npm start\"},\"repository\":{\"type\":\"git\",\"url\":\"https://phdez@dev.azure.com/phdez/rochaco_web/_git/rochaco_api\"},\"keywords\":[\"rochaco\",\"api\",\"nodejs\"],\"author\":\"Pascual Hernandez\",\"license\":\"ISC\",\"dependencies\":{\"@sendgrid/mail\":\"^6.5.4\",\"axios\":\"^0.21.1\",\"base-64\":\"^0.1.0\",\"bcryptjs\":\"^2.4.3\",\"body-parser\":\"^1.19.0\",\"cors\":\"^2.8.5\",\"crypto-js\":\"^4.0.0\",\"dotenv\":\"^8.1.0\",\"dropbox-v2-api\":\"^2.4.13\",\"expo-server-sdk\":\"^3.6.0\",\"express\":\"^4.17.1\",\"fs\":\"0.0.1-security\",\"jsonwebtoken\":\"^8.5.1\",\"moment\":\"^2.24.0\",\"mongoose\":\"^5.6.11\",\"morgan\":\"^1.9.1\",\"multer\":\"^1.4.2\",\"request\":\"^2.88.0\"},\"devDependencies\":{\"@babel/core\":\"^7.5.5\",\"babel-loader\":\"^8.0.6\",\"babel-plugin-transform-class-properties\":\"^6.24.1\",\"path\":\"^0.12.7\",\"source-map\":\"^0.7.3\",\"webpack\":\"^4.42.1\",\"webpack-cli\":\"^3.3.11\",\"webpack-node-externals\":\"^1.7.2\"}}");
+module.exports = JSON.parse("{\"name\":\"rochaco_api\",\"version\":\"1.0.0\",\"cryptoKey\":\"secretKey123\",\"description\":\"rochaco management apis\",\"main\":\"index.js\",\"scripts\":{\"test\":\"echo \\\"Error: no test specified\\\" && exit 1\",\"heroku-prebuild\":\"npm install --dev\",\"build:server\":\"webpack --config webpack.config.js \",\"start\":\"node build/app.server.js\",\"heroku-postbuild\":\"npm run build:server\",\"start-all\":\"npm build:server & npm start\"},\"repository\":{\"type\":\"git\",\"url\":\"https://phdez@dev.azure.com/phdez/rochaco_web/_git/rochaco_api\"},\"keywords\":[\"rochaco\",\"api\",\"nodejs\"],\"author\":\"Pascual Hernandez\",\"license\":\"ISC\",\"dependencies\":{\"@azure/cognitiveservices-computervision\":\"^8.0.0\",\"@azure/ms-rest-azure-js\":\"^2.1.0\",\"@sendgrid/mail\":\"^6.5.4\",\"axios\":\"^0.21.1\",\"base-64\":\"^0.1.0\",\"bcryptjs\":\"^2.4.3\",\"body-parser\":\"^1.19.0\",\"cors\":\"^2.8.5\",\"crypto-js\":\"^4.0.0\",\"dotenv\":\"^8.1.0\",\"dropbox-v2-api\":\"^2.4.13\",\"expo-server-sdk\":\"^3.6.0\",\"express\":\"^4.17.1\",\"fs\":\"0.0.1-security\",\"jsonwebtoken\":\"^8.5.1\",\"moment\":\"^2.24.0\",\"mongoose\":\"^5.6.11\",\"morgan\":\"^1.9.1\",\"multer\":\"^1.4.2\",\"request\":\"^2.88.0\"},\"devDependencies\":{\"@babel/core\":\"^7.5.5\",\"babel-loader\":\"^8.0.6\",\"babel-plugin-transform-class-properties\":\"^6.24.1\",\"path\":\"^0.12.7\",\"source-map\":\"^0.7.3\",\"webpack\":\"^4.42.1\",\"webpack-cli\":\"^3.3.11\",\"webpack-node-externals\":\"^1.7.2\"}}");
 
 /***/ }),
 
@@ -1957,6 +1957,45 @@ exports.enableDisableUser = async (req, res) => {
 
 /***/ }),
 
+/***/ "./src/controllers/vision.js":
+/*!***********************************!*\
+  !*** ./src/controllers/vision.js ***!
+  \***********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const {
+  ComputerVisionClient
+} = __webpack_require__(/*! @azure/cognitiveservices-computervision */ "@azure/cognitiveservices-computervision");
+
+const {
+  CognitiveServicesCredentials
+} = __webpack_require__(/*! @azure/ms-rest-azure-js */ "@azure/ms-rest-azure-js");
+
+const computerVisionKey = process.env.VISION_KEY;
+const computerVisionEndPoint = process.env.VISION_ENDPOINT;
+
+exports.processOCR = async (req, res) => {
+  try {
+    let data = req.files[0];
+    const cognitiveServiceCredentials = new CognitiveServicesCredentials(computerVisionKey);
+    const client = new ComputerVisionClient(cognitiveServiceCredentials, computerVisionEndPoint);
+    const options = {//   maxCandidates: 5,
+      //   language: "en",
+    };
+    let response = await client.recognizePrintedTextInStream(true, data.buffer, options);
+    res.status("200").json(response);
+  } catch (err) {
+    console.error(err);
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
+/***/ }),
+
 /***/ "./src/logic/auth.js":
 /*!***************************!*\
   !*** ./src/logic/auth.js ***!
@@ -3433,6 +3472,9 @@ const ScreenSchema = new mongoose.Schema({
   title: {
     type: String
   },
+  options: {
+    type: mongoose.Schema.Types.Mixed
+  },
   fields: [FieldSchema]
 });
 module.exports = ScreenSchema;
@@ -4815,6 +4857,8 @@ const pushNotification = __webpack_require__(/*! ../controllers/pushNotification
 
 const analytics = __webpack_require__(/*! ../controllers/analytics */ "./src/controllers/analytics.js");
 
+const vision = __webpack_require__(/*! ../controllers/vision */ "./src/controllers/vision.js");
+
 let upload = multer({
   dest: "./uploads/"
 });
@@ -4875,6 +4919,8 @@ router.get("/api/suburb/getUsers", suburb.getUsersBySuburb); //push notification
 router.post("/api/notification/test", pushNotification.sendTestNotification);
 router.post("/api/notification/arrive", pushNotification.sendArriveNotification);
 router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
+const upload2 = multer();
+router.post("/api/vision/ocr", upload2.any(), vision.processOCR);
 module.exports = router;
 
 /***/ }),
@@ -4992,6 +5038,28 @@ function onListening() {
   var bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
   debug('Listening on ' + bind);
 }
+
+/***/ }),
+
+/***/ "@azure/cognitiveservices-computervision":
+/*!**********************************************************!*\
+  !*** external "@azure/cognitiveservices-computervision" ***!
+  \**********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("@azure/cognitiveservices-computervision");
+
+/***/ }),
+
+/***/ "@azure/ms-rest-azure-js":
+/*!******************************************!*\
+  !*** external "@azure/ms-rest-azure-js" ***!
+  \******************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("@azure/ms-rest-azure-js");
 
 /***/ }),
 
