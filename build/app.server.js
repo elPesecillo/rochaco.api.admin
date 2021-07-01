@@ -357,12 +357,14 @@ exports.getSuburbVisits = async (req, res) => {
   try {
     let {
       suburbId,
-      startDate
+      startDate,
+      endDate
     } = req.query;
     let response = await Api.get(`${apiAnalytics}/GetVisitsInfo`, {
       code: apiKey,
       suburbId,
-      startDate
+      startDate,
+      endDate
     });
     res.status("200").json(response);
   } catch (err) {
