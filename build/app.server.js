@@ -358,13 +358,16 @@ exports.getSuburbVisits = async (req, res) => {
     let {
       suburbId,
       startDate,
-      endDate
+      endDate,
+      offset
     } = req.query;
+    if (!offset) offset = 5;
     let response = await Api.get(`${apiAnalytics}/GetVisitsInfo`, {
       code: apiKey,
       suburbId,
       startDate,
-      endDate
+      endDate,
+      offset
     });
     res.status("200").json(response);
   } catch (err) {
@@ -4739,7 +4742,7 @@ UserSchema.statics = {
       }).exec((err, result) => {
         if (err) reject(err);
 
-        if (result.tempPassword == "" || result.tempPassword == null) {
+        if (!result || result.tempPassword == "" || result.tempPassword == null) {
           resolve(false);
         } else {
           bcrypt.compare(password, result.tempPassword).then(valid => {
