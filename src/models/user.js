@@ -651,7 +651,11 @@ UserSchema.statics = {
       }).exec((err, result) => {
         if (err) reject(err);
 
-        if (result.tempPassword == "" || result.tempPassword == null) {
+        if (
+          !result ||
+          result.tempPassword == "" ||
+          result.tempPassword == null
+        ) {
           resolve(false);
         } else {
           bcrypt.compare(password, result.tempPassword).then((valid) => {
