@@ -99,6 +99,8 @@ router.get("/api/suburb/getAllStreets", suburb.getSuburbStreets);
 
 router.get("/api/suburb/getUsers", suburb.getUsersBySuburb);
 
+router.get("/api/suburb/migrateAddresses", suburb.migrateAddresses);
+
 //push notifications
 router.post("/api/notification/test", pushNotification.sendTestNotification);
 router.post(
@@ -108,8 +110,7 @@ router.post(
 
 router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
 
-
-const upload2= multer();
+const upload2 = multer();
 
 router.post("/api/vision/ocr", upload2.any(), vision.processOCR);
 

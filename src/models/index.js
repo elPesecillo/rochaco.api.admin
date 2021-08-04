@@ -6,6 +6,7 @@ const SuburbInvite = require("./suburbInvite");
 const SuburbConfig = require("./suburbConfig");
 const SuburbStreet = require("./suburbStreet");
 const PostalCode = require("./postalCode");
+const Address = require("./Address");
 const GlobalConfig = require("./globalConfig");
 
 const models = {
@@ -16,6 +17,7 @@ const models = {
   SuburbInvite,
   SuburbConfig,
   SuburbStreet,
+  Address,
   GlobalConfig,
 };
 

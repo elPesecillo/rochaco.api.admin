@@ -99,6 +99,10 @@ const UserSchema = new mongoose.Schema({
   favorites: [GuestSchema],
   pushTokens: [PushTokenSchema],
   signedTerms: [Number],
+  addressId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Address",
+  },
 });
 
 /**
@@ -233,6 +237,7 @@ UserSchema.methods = {
       pushTokens: this.pushTokens,
       street: this.street,
       streetNumber: this.streetNumber,
+      addressId: this.addressId,
       //validMenus: _getValidMenus(this._id) //verify if is better put this in another schema i.e. suburb
     };
     let token = jwt.sign(payload, _secretKey);
@@ -488,6 +493,7 @@ UserSchema.statics = {
           active: objUser.active,
           userType: objUser.userType,
           transtime: moment.utc(),
+          addressId: objUser.addressId,
         },
       }
     );
@@ -610,14 +616,10 @@ UserSchema.statics = {
       );
     });
   },
-  getUsersByAddress: function (suburbId, street, streetNumber) {
+  getUsersByAddress: function (suburbId, addressId) {
     return new Promise((resolve, reject) => {
       this.find({
-        $and: [
-          { suburb: suburbId },
-          { street: street },
-          { streetNumber: streetNumber },
-        ],
+        $and: [{ suburb: suburbId }, { addressId: addressId }],
       }).exec((err, result) => {
         if (err) reject(err);
         resolve(extractUsersFromDoc(result));

@@ -25,6 +25,7 @@ const openApi = [
   "/api/userInfo/getSignedUserTerms", //remover
   "/api/userInfo/isPasswordTemp",
   "/api/userInfo/signUserTerms", //remove
+  "/api/suburb/migrateAddresses", // remove
 ];
 
 const protectedApi = ["/api/suburb/approveReject"];

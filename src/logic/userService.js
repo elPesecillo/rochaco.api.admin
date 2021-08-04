@@ -2,22 +2,29 @@ const User = require("../models/user");
 const request = require("request");
 const GlobalConfig = require("../models/globalConfig");
 const userTypes = require("../constants/types").userTypes;
+const AddressService = require("../logic/addressService");
 
 const saveUser = (userObj) => {
   return new Promise((resolve, reject) => {
     User.getLogin(userObj.loginName).then(
-      (login) => {
+      async (login) => {
         if (login) {
           reject({
             success: false,
             message: "El usuario existe actualmente en la base de datos.",
           });
         } else {
+          let addressId = (
+            await AddressService.getAddressByNameAndNumber(
+              userObj.street,
+              userObj.streetNumber
+            )
+          )._id.toString();
           //create the user
           User.saveUser(
             userObj.userType
-              ? userObj
-              : { ...userObj, userType: userTypes.guest }
+              ? { ...userObj, addressId }
+              : { ...userObj, userType: userTypes.guest, addressId }
           ).then(
             (usr, err) => {
               //check if there is an error
@@ -109,17 +116,31 @@ const saveUserWithPassword = async (userObj) => {
   const { password } = userObj;
   return new Promise((resolve, reject) => {
     User.encryptPassword(password).then(
-      (resEncrypt) => {
-        let encryptedPassword = resEncrypt.hash;
-        userObj.password = encryptedPassword;
-        saveUser(userObj).then(
-          (result) => {
-            resolve(result);
-          },
-          (err) => {
-            reject(err);
-          }
-        );
+      async (resEncrypt) => {
+        try {
+          let encryptedPassword = resEncrypt.hash;
+          userObj.password = encryptedPassword;
+
+          let addressId = (
+            await AddressService.getAddressByNameAndNumber(
+              userObj.street,
+              userObj.streetNumber
+            )
+          )._id.toString();
+          saveUser({ ...userObj, addressId }).then(
+            (result) => {
+              resolve(result);
+            },
+            (err) => {
+              reject(err);
+            }
+          );
+        } catch (err) {
+          reject({
+            success: false,
+            message: err.message || "No se pudo obtener la direccion",
+          });
+        }
       },
       (err) => {
         reject({ success: false, message: err.message || "Bad request." });
@@ -211,7 +232,10 @@ const getUsersBySuburbStreet = async (suburbId, street) => {
 
 const getUsersByAddress = async (suburbId, street, streetNumber) => {
   try {
-    let users = await User.getUsersByAddress(suburbId, street, streetNumber);
+    let addressId = (
+      await AddressService.getAddressByNameAndNumber(street, streetNumber)
+    )._id.toString();
+    let users = await User.getUsersByAddress(suburbId, addressId);
     return users;
   } catch (err) {
     throw err;
