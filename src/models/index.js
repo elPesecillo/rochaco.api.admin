@@ -25,6 +25,7 @@ const connectDb = () => {
   //setup the mongo connection
   let mConn = mongoose.connect(process.env.DB_CONNECTION, {
     useNewUrlParser: true,
+    useUnifiedTopology: true,
   });
 
   mongoose.connection.on(

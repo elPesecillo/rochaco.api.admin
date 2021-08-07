@@ -754,6 +754,9 @@ UserSchema.statics = {
       });
     });
   },
+  getAdminUsers: function (suburbId) {
+    return this.find({ suburb: suburbId, userType: "suburbAdmin" }).lean();
+  },
 };
 
 const User = mongoose.model("User", UserSchema);

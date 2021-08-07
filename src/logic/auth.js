@@ -26,6 +26,7 @@ const openApi = [
   "/api/userInfo/isPasswordTemp",
   "/api/userInfo/signUserTerms", //remove
   "/api/suburb/migrateAddresses", // remove
+  "/api/notification/newPayment", // add api key for this kind of requests
 ];
 
 const protectedApi = ["/api/suburb/approveReject"];

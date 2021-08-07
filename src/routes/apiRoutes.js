@@ -107,6 +107,10 @@ router.post(
   "/api/notification/arrive",
   pushNotification.sendArriveNotification
 );
+router.post(
+  "/api/notification/newPayment",
+  pushNotification.sendUploadPaymentNotification
+);
 
 router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
 

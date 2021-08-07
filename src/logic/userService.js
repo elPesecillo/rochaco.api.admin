@@ -242,6 +242,15 @@ const getUsersByAddress = async (suburbId, street, streetNumber) => {
   }
 };
 
+const getAdminUsers = async (suburbId) => {
+  try {
+    let adminUsers = await User.getAdminUsers(suburbId);
+    return adminUsers;
+  } catch (err) {
+    throw err;
+  }
+};
+
 const isPasswordTemp = async (user, password) => {
   try {
     let isPasTemp = await User.isPasswordTemp(user, password);
@@ -324,6 +333,14 @@ const enableDisableUser = async (userId, enabled) => {
   }
 };
 
+const getUserLeanById = async (userId) => {
+  try {
+    return await User.getUserLeanById(userId);
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -348,4 +365,6 @@ module.exports = {
   updatePassword,
   updateUserType,
   enableDisableUser,
+  getAdminUsers,
+  getUserLeanById,
 };

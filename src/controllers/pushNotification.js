@@ -1,5 +1,5 @@
 const pushNotificationService = require("../logic/pushNotificationService");
-const { getUserById } = require("../logic/userService");
+const { getUserLeanById, getAdminUsers } = require("../logic/userService");
 
 exports.sendTestNotification = async (req, res, next) => {
   try {
@@ -41,6 +41,43 @@ exports.sendArriveNotification = async (req, res) => {
       }
     );
     res.status(200).json(result);
+  } catch (err) {
+    console.log("notification error details: ", err);
+    res.status(400).json(err);
+  }
+};
+
+exports.sendUploadPaymentNotification = async (req, res) => {
+  try {
+    let { suburbId, userId, paymentType } = req.body;
+    let users = await getAdminUsers(suburbId);
+    let user = await getUserLeanById(userId);
+    let promises = [];
+    users.forEach((u) => {
+      promises.push(
+        pushNotificationService.sendPushNotification(
+          u.pushTokens.map((t) => t.token),
+          {
+            sound: "default",
+            body: `El usuario ${user.name} con la dirección ${user.street} ${user.streetNumber} realizo un pago de ${paymentType}.`,
+            data: { redirect: "paymentControl" },
+            title: `Nuevo pago realizado`,
+          }
+        )
+      );
+    });
+    let sendNotifications = await Promise.all(promises);
+    res.status(200).json(sendNotifications);
+  } catch (err) {
+    console.log("notification error details: ", err);
+    res.status(400).json(err);
+  }
+};
+
+exports.sendApproveRejectedPaymentNotification = async (req, res) => {
+  try {
+    let { suburbId, addressId, approved } = req.body;
+    //over here
   } catch (err) {
     console.log("notification error details: ", err);
     res.status(400).json(err);
