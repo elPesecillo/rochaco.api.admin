@@ -20,13 +20,10 @@ const openApi = [
   "/api/suburb/getInviteByCode",
   "/api/notification/test",
   "/api/suburb/getAllStreets",
-  "/api/suburb/updateConfig", // remover esta api de esta lista
   "/api/suburb/getConfig", //remover esta api de esta lista
-  "/api/userInfo/getSignedUserTerms", //remover
   "/api/userInfo/isPasswordTemp",
-  "/api/userInfo/signUserTerms", //remove
-  "/api/suburb/migrateAddresses", // remove
   "/api/notification/newPayment", // add api key for this kind of requests
+  "/api/notification/approveRejectPayment", // add api key for this kind of requests
 ];
 
 const protectedApi = ["/api/suburb/approveReject"];

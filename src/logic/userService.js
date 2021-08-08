@@ -242,6 +242,14 @@ const getUsersByAddress = async (suburbId, street, streetNumber) => {
   }
 };
 
+const getUsersByAddressId = async (suburbId, addressId) => {
+  try {
+    return await User.getUsersByAddress(suburbId, addressId);
+  } catch (err) {
+    throw err;
+  }
+};
+
 const getAdminUsers = async (suburbId) => {
   try {
     let adminUsers = await User.getAdminUsers(suburbId);
@@ -356,6 +364,7 @@ module.exports = {
   getUsersBySuburb,
   getUsersBySuburbStreet,
   getUsersByAddress,
+  getUsersByAddressId,
   updateUserPicture,
   deleteUserInfo,
   getSignedUserTerms,

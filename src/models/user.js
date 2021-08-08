@@ -346,8 +346,16 @@ const mergePushTokens = (currentPushTokens, newPushToken) => {
 
 const extractUsersFromDoc = (mUsers) => {
   let users = mUsers.map((u) => {
-    let { _id, name, lastName, street, streetNumber, active } = u._doc;
-    return { _id, name, lastName, street, streetNumber, active };
+    let {
+      _id,
+      name,
+      lastName,
+      street,
+      streetNumber,
+      active,
+      pushTokens,
+    } = u._doc;
+    return { _id, name, lastName, street, streetNumber, active, pushTokens };
   });
   return users;
 };

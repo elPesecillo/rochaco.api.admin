@@ -111,6 +111,10 @@ router.post(
   "/api/notification/newPayment",
   pushNotification.sendUploadPaymentNotification
 );
+router.post(
+  "/api/notification/approveRejectPayment",
+  pushNotification.sendApproveRejectedPaymentNotification
+);
 
 router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
 
