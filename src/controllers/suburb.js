@@ -295,3 +295,22 @@ exports.migrateAddresses = async (req, res) => {
     });
   }
 };
+
+exports.getAddressesBySuburbId = async (req, res) => {
+  try {
+    let { suburbId } = req.query;
+    if (ObjectId.isValid(suburbId)) {
+      let test = await addressService.getAddressesBySuburbId(suburbId);
+      res.status(200).json(test);
+    } else
+      res.status(400).json({
+        success: false,
+        message: "Por favor indique el fraccionamiento.",
+      });
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to get the users.",
+    });
+  }
+};

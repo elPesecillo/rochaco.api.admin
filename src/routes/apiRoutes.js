@@ -101,6 +101,8 @@ router.get("/api/suburb/getUsers", suburb.getUsersBySuburb);
 
 router.get("/api/suburb/migrateAddresses", suburb.migrateAddresses);
 
+router.get("/api/suburb/getAddressesBySuburbId", suburb.getAddressesBySuburbId);
+
 //push notifications
 router.post("/api/notification/test", pushNotification.sendTestNotification);
 router.post(

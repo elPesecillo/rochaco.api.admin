@@ -22,8 +22,15 @@ const openApi = [
   "/api/suburb/getAllStreets",
   "/api/suburb/getConfig", //remover esta api de esta lista
   "/api/userInfo/isPasswordTemp",
+  // "/api/notification/newPayment", // add api key for this kind of requests
+  // "/api/notification/approveRejectPayment", // add api key for this kind of requests
+  // "/api/suburb/getAddressesBySuburbId", // add api key for this kind of requests
+];
+
+const apiWithKey = [
   "/api/notification/newPayment", // add api key for this kind of requests
   "/api/notification/approveRejectPayment", // add api key for this kind of requests
+  "/api/suburb/getAddressesBySuburbId", // add api key for this kind of requests
 ];
 
 const protectedApi = ["/api/suburb/approveReject"];
@@ -74,19 +81,30 @@ exports.Auth = class Auth {
   }
 
   isOpenApi(apiPath) {
-    return openApi.indexOf(apiPath) !== -1 ? true : false;
+    return openApi.indexOf(apiPath) !== -1;
+  }
+
+  isApiWithKey(apiPath) {
+    return apiWithKey.indexOf(apiPath) !== -1;
   }
 
   isProtectedApi(apiPath) {
     return protectedApi.indexOf(apiPath) !== -1 ? true : false;
   }
 
-  validateApiRequest(apiPath, token) {
+  validateApiRequest(apiPath, token, apiKey) {
     if (this.isOpenApi(apiPath))
       return new Promise((resolve) =>
         resolve({ valid: true, message: "the api is open." })
       );
-    else if (this.isProtectedApi(apiPath)) {
+    else if (this.isApiWithKey(apiPath)) {
+      // check if the api key is valid
+      return new Promise((resolve) => {
+        process.env.PROTECTED_API_KEY === apiKey
+          ? resolve({ valid: true, message: "the api key is ok" })
+          : reject({ valid: false, message: "unknown api key" });
+      });
+    } else if (this.isProtectedApi(apiPath)) {
       return new Promise((resolve, reject) => {
         this.validateAdminUser(token)
           .then((res) => {
