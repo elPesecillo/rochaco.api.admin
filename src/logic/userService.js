@@ -349,6 +349,14 @@ const getUserLeanById = async (userId) => {
   }
 };
 
+const getIfUserIsLimited = async (userId) => {
+  try {
+    return await User.getIfUserIsLimited(userId);
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -376,4 +384,5 @@ module.exports = {
   enableDisableUser,
   getAdminUsers,
   getUserLeanById,
+  getIfUserIsLimited,
 };

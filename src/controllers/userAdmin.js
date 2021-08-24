@@ -571,3 +571,15 @@ exports.enableDisableUser = async (req, res) => {
       .json({ success: false, message: err.message || "Bad request." });
   }
 };
+
+exports.getIfUserIsLimited = async (req, res) => {
+  try {
+    let { userId } = req.query;
+    let isLimited = await userService.getIfUserIsLimited(userId);
+    res.status("200").json(isLimited);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};

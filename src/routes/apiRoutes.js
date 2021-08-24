@@ -55,6 +55,7 @@ router.get("/api/userInfo/getSignedUserTerms", userAdmin.getSignedUserTerms);
 router.get("/api/userInfo/isPasswordTemp", userAdmin.isPasswordTemp);
 router.post("/api/userInfo/updateType", userAdmin.updateUserType);
 router.post("/api/userInfo/enableDisable", userAdmin.enableDisableUser);
+router.get("/api/userInfo/getIfUserIsLimited", userAdmin.getIfUserIsLimited);
 
 router.post("/api/userInfo/updatePassword", userAdmin.updatePassword);
 router.post("/api/userInfo/signUserTerms", userAdmin.signUserTerms);

@@ -103,6 +103,16 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Address",
   },
+  limited: {
+    type: Boolean,
+    default: false,
+  },
+  limitedSince: {
+    type: Date,
+  },
+  limitedReason: {
+    type: String,
+  },
 });
 
 /**
@@ -238,6 +248,7 @@ UserSchema.methods = {
       street: this.street,
       streetNumber: this.streetNumber,
       addressId: this.addressId,
+      limited: typeof this.limited === "undefined" ? false : this.limited,
       //validMenus: _getValidMenus(this._id) //verify if is better put this in another schema i.e. suburb
     };
     let token = jwt.sign(payload, _secretKey);
@@ -764,6 +775,19 @@ UserSchema.statics = {
   },
   getAdminUsers: function (suburbId) {
     return this.find({ suburb: suburbId, userType: "suburbAdmin" }).lean();
+  },
+  getIfUserIsLimited(userId) {
+    return new Promise((resolve, reject) => {
+      this.findOne({ _id: userId })
+        .lean()
+        .exec((err, result) => {
+          if (err) reject(err);
+          resolve({
+            isLimited:
+              typeof result.limited === "undefined" ? false : result.limited,
+          });
+        });
+    });
   },
 };
 
