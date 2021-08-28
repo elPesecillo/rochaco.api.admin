@@ -323,6 +323,18 @@ const updateTempPassword = async (email) => {
   }
 };
 
+const updateCurrentPassword = async (userId, currentPassword, newPassword) => {
+  try {
+    return await User.updateCurrentPassword(
+      userId,
+      currentPassword,
+      newPassword
+    );
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 const updateUserType = async (userId, userType) => {
   try {
     if (["neighbor", "guard", "suburbAdmin"].indexOf(userType) === -1)
@@ -385,4 +397,5 @@ module.exports = {
   getAdminUsers,
   getUserLeanById,
   getIfUserIsLimited,
+  updateCurrentPassword,
 };

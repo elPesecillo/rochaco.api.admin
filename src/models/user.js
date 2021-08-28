@@ -789,6 +789,45 @@ UserSchema.statics = {
         });
     });
   },
+  updateCurrentPassword: function (userId, password, newPassword) {
+    return new Promise((resolve, reject) => {
+      this.findOne({ _id: userId })
+        .lean()
+        .exec((err, result) => {
+          if (err) reject(err);
+          bcrypt.compare(password, result.password).then((valid) => {
+            if (valid) {
+              this.encryptPassword(base64.encode(newPassword))
+                .then((resEncrypt) => {
+                  this.findOneAndUpdate(
+                    { _id: userId },
+                    { $set: { tempPassword: null, password: resEncrypt.hash } },
+                    { new: true },
+                    function (err, user) {
+                      if (err) reject(err);
+                      resolve({
+                        success: true,
+                        message: "La contrasena fue actualizada exitosamente.",
+                      });
+                    }
+                  );
+                })
+                .catch((err) => {
+                  reject({
+                    success: false,
+                    message: "La contraseña actual no es correcta.",
+                  });
+                });
+            } else {
+              reject({
+                success: false,
+                message: "La contraseña actual no es correcta.",
+              });
+            }
+          });
+        });
+    });
+  },
 };
 
 const User = mongoose.model("User", UserSchema);

@@ -58,6 +58,10 @@ router.post("/api/userInfo/enableDisable", userAdmin.enableDisableUser);
 router.get("/api/userInfo/getIfUserIsLimited", userAdmin.getIfUserIsLimited);
 
 router.post("/api/userInfo/updatePassword", userAdmin.updatePassword);
+router.post(
+  "/api/userInfo/updateCurrentPassword",
+  userAdmin.updateCurrentPassword
+);
 router.post("/api/userInfo/signUserTerms", userAdmin.signUserTerms);
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
