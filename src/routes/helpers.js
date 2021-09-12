@@ -46,6 +46,6 @@ exports.rewriteURL = (protocol, host, url, queryParams) => {
     );
     return Object.keys(queryParams).length > 0
       ? `${path.target}${replaced}${getQueryParams(queryParams)}`
-      : `${path.target}${replaced}`;
+      : `${path.target}${replaced}?code=${process.env.API_PAYMENTS_KEY}`;
   } else return completeUrl;
 };
