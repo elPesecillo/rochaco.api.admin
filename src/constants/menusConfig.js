@@ -56,6 +56,14 @@ exports.menus = [
     order: 3,
   },
   {
+    name: "Administracion de pagos",
+    path: "/admin/payments",
+    icon: "icon icon-users",
+    visible: true,
+    validUserTypes: [userType.suburbAdmin, userType.admin],
+    order: 3,
+  },
+  {
     name: "Colonia",
     path: "/admin/colonias",
     icon: "icon icon-building",

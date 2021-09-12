@@ -103,6 +103,16 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Address",
   },
+  limited: {
+    type: Boolean,
+    default: false,
+  },
+  limitedSince: {
+    type: Date,
+  },
+  limitedReason: {
+    type: String,
+  },
 });
 
 /**
@@ -238,6 +248,7 @@ UserSchema.methods = {
       street: this.street,
       streetNumber: this.streetNumber,
       addressId: this.addressId,
+      limited: typeof this.limited === "undefined" ? false : this.limited,
       //validMenus: _getValidMenus(this._id) //verify if is better put this in another schema i.e. suburb
     };
     let token = jwt.sign(payload, _secretKey);
@@ -522,6 +533,9 @@ UserSchema.statics = {
   enableDisableUser: function (userId, enabled) {
     return this.updateOne({ _id: userId }, { $set: { active: enabled } });
   },
+  changeLimited: function (userId, limited) {
+    return this.updateOne({ _id: userId }, { $set: { limited: limited } });
+  },
   /**
    * Validate if the user token is active
    */
@@ -605,8 +619,15 @@ UserSchema.statics = {
           lastName: 2,
           street: 3,
           streetNumber: 4,
-          active: 5,
-          userType: 6,
+          limited: 5,
+          active: 6,
+          userType: 7,
+          facebookId: 8,
+          appleId: 9,
+          googleId: 10,
+          email: 11,
+          loginName: 12,
+          addressId: 13,
         })
         .exec((err, result) => {
           if (err) reject(err);
@@ -764,6 +785,58 @@ UserSchema.statics = {
   },
   getAdminUsers: function (suburbId) {
     return this.find({ suburb: suburbId, userType: "suburbAdmin" }).lean();
+  },
+  getIfUserIsLimited(userId) {
+    return new Promise((resolve, reject) => {
+      this.findOne({ _id: userId })
+        .lean()
+        .exec((err, result) => {
+          if (err) reject(err);
+          resolve({
+            isLimited:
+              typeof result.limited === "undefined" ? false : result.limited,
+          });
+        });
+    });
+  },
+  updateCurrentPassword: function (userId, password, newPassword) {
+    return new Promise((resolve, reject) => {
+      this.findOne({ _id: userId })
+        .lean()
+        .exec((err, result) => {
+          if (err) reject(err);
+          bcrypt.compare(password, result.password).then((valid) => {
+            if (valid) {
+              this.encryptPassword(base64.encode(newPassword))
+                .then((resEncrypt) => {
+                  this.findOneAndUpdate(
+                    { _id: userId },
+                    { $set: { tempPassword: null, password: resEncrypt.hash } },
+                    { new: true },
+                    function (err, user) {
+                      if (err) reject(err);
+                      resolve({
+                        success: true,
+                        message: "La contrasena fue actualizada exitosamente.",
+                      });
+                    }
+                  );
+                })
+                .catch((err) => {
+                  reject({
+                    success: false,
+                    message: "La contraseña actual no es correcta.",
+                  });
+                });
+            } else {
+              reject({
+                success: false,
+                message: "La contraseña actual no es correcta.",
+              });
+            }
+          });
+        });
+    });
   },
 };
 

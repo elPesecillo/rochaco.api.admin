@@ -536,6 +536,25 @@ exports.updatePassword = async (req, res) => {
   }
 };
 
+exports.updateCurrentPassword = async (req, res) => {
+  try {
+    let { userId, currentPassword, newPassword } = req.body;
+    currentPassword = Buffer.from(currentPassword, "base64").toString("utf-8");
+    newPassword = Buffer.from(newPassword, "base64").toString("utf-8");
+    let result = await userService.updateCurrentPassword(
+      userId,
+      currentPassword,
+      newPassword
+    );
+    res.status("200").json(result);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request.",
+    });
+  }
+};
+
 exports.signUserTerms = async (req, res) => {
   try {
     let { userId, termsVersion } = req.body;
@@ -565,6 +584,30 @@ exports.enableDisableUser = async (req, res) => {
     let { userId, enabled } = req.body;
     let update = await userService.enableDisableUser(userId, enabled);
     res.status("200").json(update);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.changeLimited = async (req, res) => {
+  try {
+    let { userId, limited } = req.body;
+    let update = await userService.changeLimited(userId, limited);
+    res.status("200").json(update);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.getIfUserIsLimited = async (req, res) => {
+  try {
+    let { userId } = req.query;
+    let isLimited = await userService.getIfUserIsLimited(userId);
+    res.status("200").json(isLimited);
   } catch (err) {
     res
       .status("400")

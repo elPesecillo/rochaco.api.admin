@@ -323,6 +323,18 @@ const updateTempPassword = async (email) => {
   }
 };
 
+const updateCurrentPassword = async (userId, currentPassword, newPassword) => {
+  try {
+    return await User.updateCurrentPassword(
+      userId,
+      currentPassword,
+      newPassword
+    );
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 const updateUserType = async (userId, userType) => {
   try {
     if (["neighbor", "guard", "suburbAdmin"].indexOf(userType) === -1)
@@ -341,9 +353,25 @@ const enableDisableUser = async (userId, enabled) => {
   }
 };
 
+const changeLimited = async (userId, limited) => {
+  try {
+    return await User.changeLimited(userId, limited);
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 const getUserLeanById = async (userId) => {
   try {
     return await User.getUserLeanById(userId);
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getIfUserIsLimited = async (userId) => {
+  try {
+    return await User.getIfUserIsLimited(userId);
   } catch (err) {
     throw err;
   }
@@ -374,6 +402,9 @@ module.exports = {
   updatePassword,
   updateUserType,
   enableDisableUser,
+  changeLimited,
   getAdminUsers,
   getUserLeanById,
+  getIfUserIsLimited,
+  updateCurrentPassword,
 };

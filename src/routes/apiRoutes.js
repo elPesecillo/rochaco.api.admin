@@ -55,8 +55,14 @@ router.get("/api/userInfo/getSignedUserTerms", userAdmin.getSignedUserTerms);
 router.get("/api/userInfo/isPasswordTemp", userAdmin.isPasswordTemp);
 router.post("/api/userInfo/updateType", userAdmin.updateUserType);
 router.post("/api/userInfo/enableDisable", userAdmin.enableDisableUser);
+router.get("/api/userInfo/getIfUserIsLimited", userAdmin.getIfUserIsLimited);
+router.post("/api/userInfo/changeLimited", userAdmin.changeLimited);
 
 router.post("/api/userInfo/updatePassword", userAdmin.updatePassword);
+router.post(
+  "/api/userInfo/updateCurrentPassword",
+  userAdmin.updateCurrentPassword
+);
 router.post("/api/userInfo/signUserTerms", userAdmin.signUserTerms);
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
@@ -123,5 +129,10 @@ router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
 const upload2 = multer();
 
 router.post("/api/vision/ocr", upload2.any(), vision.processOCR);
+
+// files apis
+const blobFilesService = require("../controllers/blobFiles");
+router.post("/api/blob/uploadFile", blobFilesService.uploadBlobs);
+//router.post("/api/blob/uploadFile", upload2.any(), blobFilesService.uploadBlobs);
 
 module.exports = router;
