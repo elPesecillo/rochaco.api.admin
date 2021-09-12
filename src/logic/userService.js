@@ -353,6 +353,14 @@ const enableDisableUser = async (userId, enabled) => {
   }
 };
 
+const changeLimited = async (userId, limited) => {
+  try {
+    return await User.changeLimited(userId, limited);
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 const getUserLeanById = async (userId) => {
   try {
     return await User.getUserLeanById(userId);
@@ -394,6 +402,7 @@ module.exports = {
   updatePassword,
   updateUserType,
   enableDisableUser,
+  changeLimited,
   getAdminUsers,
   getUserLeanById,
   getIfUserIsLimited,

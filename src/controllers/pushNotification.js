@@ -80,7 +80,7 @@ exports.sendUploadPaymentNotification = async (req, res) => {
 
 exports.sendApproveRejectedPaymentNotification = async (req, res) => {
   try {
-    let { suburbId, addressId, approved, comment, paymentName } = req.body;
+    let { suburbId, addressId, status, comment, paymentName } = req.body;
     let users = await getUsersByAddressId(suburbId, addressId);
     let promises = [];
     users.forEach((u) => {
@@ -89,11 +89,14 @@ exports.sendApproveRejectedPaymentNotification = async (req, res) => {
           u.pushTokens.map((t) => t.token),
           {
             sound: "default",
-            body: approved
-              ? `Tu pago de ${paymentName} ha sido aceptado`
-              : `Tu pago de ${paymentName} ha sido rechazado por la siguiente razón: ${comment}`,
+            body:
+              status === "approved"
+                ? `Tu pago de ${paymentName} ha sido aceptado`
+                : status === "rejected"
+                ? `Tu pago de ${paymentName} ha sido rechazado por la siguiente razón: ${comment}`
+                : `Tu pago ${paymentName} esta siendo procesado.`,
             data: { redirect: "payments" },
-            title: approved ? "Pago aceptado" : "Pago rechazado",
+            title: status ? "Pago aceptado" : "Pago rechazado",
           }
         )
       );

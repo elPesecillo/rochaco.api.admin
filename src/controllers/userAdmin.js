@@ -591,6 +591,18 @@ exports.enableDisableUser = async (req, res) => {
   }
 };
 
+exports.changeLimited = async (req, res) => {
+  try {
+    let { userId, limited } = req.body;
+    let update = await userService.changeLimited(userId, limited);
+    res.status("200").json(update);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
 exports.getIfUserIsLimited = async (req, res) => {
   try {
     let { userId } = req.query;

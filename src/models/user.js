@@ -533,6 +533,9 @@ UserSchema.statics = {
   enableDisableUser: function (userId, enabled) {
     return this.updateOne({ _id: userId }, { $set: { active: enabled } });
   },
+  changeLimited: function (userId, limited) {
+    return this.updateOne({ _id: userId }, { $set: { limited: limited } });
+  },
   /**
    * Validate if the user token is active
    */
@@ -616,8 +619,15 @@ UserSchema.statics = {
           lastName: 2,
           street: 3,
           streetNumber: 4,
-          active: 5,
-          userType: 6,
+          limited: 5,
+          active: 6,
+          userType: 7,
+          facebookId: 8,
+          appleId: 9,
+          googleId: 10,
+          email: 11,
+          loginName: 12,
+          addressId: 13,
         })
         .exec((err, result) => {
           if (err) reject(err);

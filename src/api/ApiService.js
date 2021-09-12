@@ -50,10 +50,24 @@ const patch = (url, request, headers) => {
   return httpRequest("patch", url, request, headers);
 };
 
+const postForm = async (url, formData, headers) => {
+  try {
+    let hdrs = {
+      ...headers,
+      "Content-Type": "multipart/form-data",
+    };
+    let res = await axios.post(url, formData, { headers: hdrs });
+    return handleResponse(res);
+  } catch (err) {
+    return handleError(err);
+  }
+};
+
 module.exports = {
   get,
   delete: deleteRequest,
   post,
+  postForm,
   put,
   patch,
 };
