@@ -15,7 +15,14 @@ router.use(
   "/apiPayments/*",
   proxy(process.env.API_PAYMENTS_URL, {
     proxyReqPathResolver: function (req) {
-      return rewriteURL(req.protocol, req.get("Host"), req.baseUrl, req.query);
+      let redirectTo = rewriteURL(
+        req.protocol,
+        req.get("Host"),
+        req.baseUrl,
+        req.query
+      );
+      console.log("redirect to", redirectTo);
+      return redirectTo;
     },
   })
 );
