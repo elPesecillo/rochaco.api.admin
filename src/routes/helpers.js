@@ -28,8 +28,9 @@ const getMap = (url) => {
 
 const getQueryParams = (queryParams) => {
   let queryString = `?`;
-  Object.keys(queryParams).forEach((p) => {
-    queryString = `${queryString}${p}=${queryParams[p]}&`;
+  let params = { ...queryParams, code: process.env.API_PAYMENTS_KEY };
+  Object.keys(params).forEach((p) => {
+    queryString = `${queryString}${p}=${params[p]}&`;
   });
   return queryString;
 };
