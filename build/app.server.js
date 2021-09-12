@@ -5599,7 +5599,7 @@ exports.rewriteURL = (protocol, host, url, queryParams) => {
   if (path) {
     let regex = new RegExp(Object.keys(path.pathRewrite)[0]);
     var replaced = completeUrl.replace(regex, path.pathRewrite[Object.keys(path.pathRewrite)[0]]);
-    return Object.keys(queryParams).length > 0 ? `${path.target}${replaced}${getQueryParams(queryParams)}` : `${path.target}${replaced}`;
+    return Object.keys(queryParams).length > 0 ? `${path.target}${replaced}${getQueryParams(queryParams)}` : `${path.target}${replaced}?code=${process.env.API_PAYMENTS_KEY}`;
   } else return completeUrl;
 };
 
