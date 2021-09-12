@@ -93,7 +93,7 @@
 /*! exports provided: name, version, cryptoKey, description, main, scripts, repository, keywords, author, license, dependencies, devDependencies, default */
 /***/ (function(module) {
 
-module.exports = JSON.parse("{\"name\":\"rochaco_api\",\"version\":\"1.0.0\",\"cryptoKey\":\"secretKey123\",\"description\":\"rochaco management apis\",\"main\":\"index.js\",\"scripts\":{\"test\":\"echo \\\"Error: no test specified\\\" && exit 1\",\"heroku-prebuild\":\"npm install --dev\",\"build:server\":\"webpack --config webpack.config.js \",\"start\":\"node build/app.server.js\",\"heroku-postbuild\":\"npm run build:server\",\"start-all\":\"npm build:server & npm start\"},\"repository\":{\"type\":\"git\",\"url\":\"https://phdez@dev.azure.com/phdez/rochaco_web/_git/rochaco_api\"},\"keywords\":[\"rochaco\",\"api\",\"nodejs\"],\"author\":\"Pascual Hernandez\",\"license\":\"ISC\",\"dependencies\":{\"@azure/cognitiveservices-computervision\":\"^8.0.0\",\"@azure/ms-rest-azure-js\":\"^2.1.0\",\"@sendgrid/mail\":\"^6.5.4\",\"axios\":\"^0.21.1\",\"base-64\":\"^0.1.0\",\"bcryptjs\":\"^2.4.3\",\"body-parser\":\"^1.19.0\",\"cors\":\"^2.8.5\",\"crypto-js\":\"^4.0.0\",\"dotenv\":\"^8.1.0\",\"dropbox-v2-api\":\"^2.4.13\",\"expo-server-sdk\":\"^3.6.0\",\"express\":\"^4.17.1\",\"fs\":\"0.0.1-security\",\"jsonwebtoken\":\"^8.5.1\",\"moment\":\"^2.24.0\",\"mongoose\":\"^5.6.11\",\"morgan\":\"^1.9.1\",\"multer\":\"^1.4.2\",\"request\":\"^2.88.0\"},\"devDependencies\":{\"@babel/core\":\"^7.5.5\",\"babel-loader\":\"^8.0.6\",\"babel-plugin-transform-class-properties\":\"^6.24.1\",\"path\":\"^0.12.7\",\"source-map\":\"^0.7.3\",\"webpack\":\"^4.42.1\",\"webpack-cli\":\"^3.3.11\",\"webpack-node-externals\":\"^1.7.2\"}}");
+module.exports = JSON.parse("{\"name\":\"rochaco_api\",\"version\":\"1.0.0\",\"cryptoKey\":\"secretKey123\",\"description\":\"rochaco management apis\",\"main\":\"index.js\",\"scripts\":{\"test\":\"echo \\\"Error: no test specified\\\" && exit 1\",\"heroku-prebuild\":\"npm install --dev\",\"build:server\":\"webpack --config webpack.config.js \",\"start\":\"node build/app.server.js\",\"heroku-postbuild\":\"npm run build:server\",\"start-all\":\"npm build:server & npm start\"},\"repository\":{\"type\":\"git\",\"url\":\"https://phdez@dev.azure.com/phdez/rochaco_web/_git/rochaco_api\"},\"keywords\":[\"rochaco\",\"api\",\"nodejs\"],\"author\":\"Pascual Hernandez\",\"license\":\"ISC\",\"dependencies\":{\"@azure/cognitiveservices-computervision\":\"^8.0.0\",\"@azure/ms-rest-azure-js\":\"^2.1.0\",\"@sendgrid/mail\":\"^6.5.4\",\"axios\":\"^0.21.1\",\"base-64\":\"^0.1.0\",\"bcryptjs\":\"^2.4.3\",\"body-parser\":\"^1.19.0\",\"cors\":\"^2.8.5\",\"crypto-js\":\"^4.0.0\",\"dotenv\":\"^8.1.0\",\"dropbox-v2-api\":\"^2.4.13\",\"expo-server-sdk\":\"^3.6.0\",\"express\":\"^4.17.1\",\"express-http-proxy\":\"^1.6.2\",\"fs\":\"0.0.1-security\",\"jsonwebtoken\":\"^8.5.1\",\"moment\":\"^2.24.0\",\"mongoose\":\"^5.6.11\",\"morgan\":\"^1.9.1\",\"multer\":\"^1.4.2\",\"request\":\"^2.88.0\"},\"devDependencies\":{\"@babel/core\":\"^7.5.5\",\"babel-loader\":\"^8.0.6\",\"babel-plugin-transform-class-properties\":\"^6.24.1\",\"path\":\"^0.12.7\",\"source-map\":\"^0.7.3\",\"webpack\":\"^4.42.1\",\"webpack-cli\":\"^3.3.11\",\"webpack-node-externals\":\"^1.7.2\"}}");
 
 /***/ }),
 
@@ -162,10 +162,25 @@ const patch = (url, request, headers) => {
   return httpRequest("patch", url, request, headers);
 };
 
+const postForm = async (url, formData, headers) => {
+  try {
+    let hdrs = { ...headers,
+      "Content-Type": "multipart/form-data"
+    };
+    let res = await axios.post(url, formData, {
+      headers: hdrs
+    });
+    return handleResponse(res);
+  } catch (err) {
+    return handleError(err);
+  }
+};
+
 module.exports = {
   get,
   delete: deleteRequest,
   post,
+  postForm,
   put,
   patch
 };
@@ -228,7 +243,9 @@ var app = express();
 app.use(bodyParser.urlencoded({
   extended: true
 }));
-app.use(bodyParser.json());
+app.use(bodyParser.json({
+  limit: '50mb'
+}));
 app.use(express.json());
 app.use(cors());
 app.use(logger('dev'));
@@ -282,6 +299,13 @@ exports.menus = [{
 }, {
   name: "Vecinos",
   path: "/admin/vecinos",
+  icon: "icon icon-users",
+  visible: true,
+  validUserTypes: [userType.suburbAdmin, userType.admin],
+  order: 3
+}, {
+  name: "Administracion de pagos",
+  path: "/admin/payments",
   icon: "icon icon-users",
   visible: true,
   validUserTypes: [userType.suburbAdmin, userType.admin],
@@ -370,6 +394,63 @@ exports.getSuburbVisits = async (req, res) => {
       offset
     });
     res.status("200").json(response);
+  } catch (err) {
+    console.error(err);
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
+/***/ }),
+
+/***/ "./src/controllers/blobFiles.js":
+/*!**************************************!*\
+  !*** ./src/controllers/blobFiles.js ***!
+  \**************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const apiUrl = process.env.API_BLOB_URL;
+const apiKey = process.env.API_BLOB_KEY;
+
+const request = __webpack_require__(/*! request */ "request");
+
+const User = __webpack_require__(/*! ../logic/userService */ "./src/logic/userService.js");
+/** This service acts like a proxy to redirect the request to the blob service
+ *
+ * @param {*} req
+ * @param {*} res
+ */
+
+
+exports.uploadBlobs = async (req, res) => {
+  try {
+    let url = `${apiUrl}/UploadFile${apiKey ? `?code=${apiKey}` : ""}`;
+    req.pipe(request({
+      url: url
+    }, (error, response, body) => {
+      if (error) {
+        console.log(`An error occurs in the following url: ${url}: `, error);
+        let message = "dev proxy error: ";
+
+        if (error.code === "ECONNREFUSED") {
+          message = message.concat("Refused connection");
+        } else if (error.code === "ECONNRESET") {
+          message = message.concat("The target connection has been lost");
+        } else {
+          message = message.concat("Unhandled error");
+        }
+
+        req.res.status(500).json({
+          errorMessage: message || "",
+          exception: message || {}
+        });
+      } else {
+        User.updateUserPicture(req.query.userId, JSON.parse(response.body)[0].url);
+      }
+    })).pipe(res); //res.status("200").json({ message: "ok" });
   } catch (err) {
     console.error(err);
     res.status("400").json({
@@ -625,7 +706,9 @@ exports.getPostalCodeInfo = async (req, res, next) => {
 const pushNotificationService = __webpack_require__(/*! ../logic/pushNotificationService */ "./src/logic/pushNotificationService.js");
 
 const {
-  getUserById
+  getUserLeanById,
+  getAdminUsers,
+  getUsersByAddressId
 } = __webpack_require__(/*! ../logic/userService */ "./src/logic/userService.js");
 
 exports.sendTestNotification = async (req, res, next) => {
@@ -666,6 +749,63 @@ exports.sendArriveNotification = async (req, res) => {
       title: `Hola ${user.name}`
     });
     res.status(200).json(result);
+  } catch (err) {
+    console.log("notification error details: ", err);
+    res.status(400).json(err);
+  }
+};
+
+exports.sendUploadPaymentNotification = async (req, res) => {
+  try {
+    let {
+      suburbId,
+      userId,
+      paymentType
+    } = req.body;
+    let users = await getAdminUsers(suburbId);
+    let user = await getUserLeanById(userId);
+    let promises = [];
+    users.forEach(u => {
+      promises.push(pushNotificationService.sendPushNotification(u.pushTokens.map(t => t.token), {
+        sound: "default",
+        body: `El usuario ${user.name} con la dirección ${user.street} ${user.streetNumber} realizo un pago de ${paymentType}.`,
+        data: {
+          redirect: "paymentControl"
+        },
+        title: `Nuevo pago realizado`
+      }));
+    });
+    let sendNotifications = await Promise.all(promises);
+    res.status(200).json(sendNotifications);
+  } catch (err) {
+    console.log("notification error details: ", err);
+    res.status(400).json(err);
+  }
+};
+
+exports.sendApproveRejectedPaymentNotification = async (req, res) => {
+  try {
+    let {
+      suburbId,
+      addressId,
+      status,
+      comment,
+      paymentName
+    } = req.body;
+    let users = await getUsersByAddressId(suburbId, addressId);
+    let promises = [];
+    users.forEach(u => {
+      promises.push(pushNotificationService.sendPushNotification(u.pushTokens.map(t => t.token), {
+        sound: "default",
+        body: status === "approved" ? `Tu pago de ${paymentName} ha sido aceptado` : status === "rejected" ? `Tu pago de ${paymentName} ha sido rechazado por la siguiente razón: ${comment}` : `Tu pago ${paymentName} esta siendo procesado.`,
+        data: {
+          redirect: "payments"
+        },
+        title: status ? "Pago aceptado" : "Pago rechazado"
+      }));
+    });
+    let sendNotifications = await Promise.all(promises);
+    res.status(200).json(sendNotifications);
   } catch (err) {
     console.log("notification error details: ", err);
     res.status(400).json(err);
@@ -1063,6 +1203,8 @@ exports.logOff = (req, res, next) => {
 
 const suburbService = __webpack_require__(/*! ../logic/suburbService */ "./src/logic/suburbService.js");
 
+const addressService = __webpack_require__(/*! ../logic/addressService */ "./src/logic/addressService.js");
+
 const userService = __webpack_require__(/*! ../logic/userService */ "./src/logic/userService.js");
 
 const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants/types.js").userTypes;
@@ -1269,49 +1411,51 @@ exports.getSuburbConfig = (req, res) => {
   });
 };
 
-exports.saveSuburbStreet = (req, res) => {
-  let {
-    suburbId,
-    street
-  } = req.body;
+exports.saveSuburbStreet = async (req, res) => {
+  try {
+    let {
+      suburbId,
+      street
+    } = req.body;
 
-  if (ObjectId.isValid(suburbId)) {
-    suburbService.saveSuburbStreet(suburbId, street).then(sub => {
+    if (ObjectId.isValid(suburbId)) {
+      let sub = await addressService.saveSuburbStreet(suburbId, street);
       res.status(200).json({
         success: true,
         message: "La calle fue guardada correctamente."
       });
-    }).catch(err => {
-      res.status(500).json({
-        success: false,
-        message: err.message || "No se pudo guardar la calle"
-      });
+    } else res.status(400).json({
+      success: false,
+      message: "Por favor indique el fraccionamiento."
     });
-  } else res.status(400).json({
-    success: false,
-    message: "Por favor indique el fraccionamiento."
-  });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message || "No se pudo guardar la calle"
+    });
+  }
 };
 
-exports.getSuburbStreets = (req, res) => {
-  let {
-    suburbId
-  } = req.query;
+exports.getSuburbStreets = async (req, res) => {
+  try {
+    let {
+      suburbId
+    } = req.query;
 
-  if (ObjectId.isValid(suburbId)) {
-    suburbService.getSuburbStreets(suburbId).then(streets => {
+    if (ObjectId.isValid(suburbId)) {
+      let streets = await addressService.getSuburbStreets(suburbId);
       res.status(200).json({ ...streets
       });
-    }).catch(err => {
-      res.status(500).json({
-        success: false,
-        message: err.message || "No se pudieron obtener las calles del fraccionamiento"
-      });
+    } else res.status(400).json({
+      success: false,
+      message: "Por favor indique el fraccionamiento."
     });
-  } else res.status(400).json({
-    success: false,
-    message: "Por favor indique el fraccionamiento."
-  });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message || "No se pudieron obtener las calles del fraccionamiento"
+    });
+  }
 };
 
 exports.getUsersBySuburb = async (req, res) => {
@@ -1323,6 +1467,47 @@ exports.getUsersBySuburb = async (req, res) => {
     if (ObjectId.isValid(suburbId)) {
       let users = await suburbService.getUsersBySuburb(suburbId);
       res.status(200).json(users);
+    } else res.status(400).json({
+      success: false,
+      message: "Por favor indique el fraccionamiento."
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: err.message || "An unknown error occurs while trying to get the users."
+    });
+  }
+};
+
+exports.migrateAddresses = async (req, res) => {
+  try {
+    let {
+      suburbId
+    } = req.query;
+
+    if (ObjectId.isValid(suburbId)) {
+      let test = await addressService.migrateAddresses(suburbId); //let test = await addressService.getSuburbStreets(suburbId);
+
+      res.status(200).json(test);
+    } else res.status(400).json({
+      success: false,
+      message: "Por favor indique el fraccionamiento."
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: err.message || "An unknown error occurs while trying to get the users."
+    });
+  }
+};
+
+exports.getAddressesBySuburbId = async (req, res) => {
+  try {
+    let {
+      suburbId
+    } = req.query;
+
+    if (ObjectId.isValid(suburbId)) {
+      let test = await addressService.getAddressesBySuburbId(suburbId);
+      res.status(200).json(test);
     } else res.status(400).json({
       success: false,
       message: "Por favor indique el fraccionamiento."
@@ -1912,6 +2097,25 @@ exports.updatePassword = async (req, res) => {
   }
 };
 
+exports.updateCurrentPassword = async (req, res) => {
+  try {
+    let {
+      userId,
+      currentPassword,
+      newPassword
+    } = req.body;
+    currentPassword = Buffer.from(currentPassword, "base64").toString("utf-8");
+    newPassword = Buffer.from(newPassword, "base64").toString("utf-8");
+    let result = await userService.updateCurrentPassword(userId, currentPassword, newPassword);
+    res.status("200").json(result);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
 exports.signUserTerms = async (req, res) => {
   try {
     let {
@@ -1952,6 +2156,37 @@ exports.enableDisableUser = async (req, res) => {
     } = req.body;
     let update = await userService.enableDisableUser(userId, enabled);
     res.status("200").json(update);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
+exports.changeLimited = async (req, res) => {
+  try {
+    let {
+      userId,
+      limited
+    } = req.body;
+    let update = await userService.changeLimited(userId, limited);
+    res.status("200").json(update);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
+exports.getIfUserIsLimited = async (req, res) => {
+  try {
+    let {
+      userId
+    } = req.query;
+    let isLimited = await userService.getIfUserIsLimited(userId);
+    res.status("200").json(isLimited);
   } catch (err) {
     res.status("400").json({
       success: false,
@@ -2001,6 +2236,88 @@ exports.processOCR = async (req, res) => {
 
 /***/ }),
 
+/***/ "./src/logic/addressService.js":
+/*!*************************************!*\
+  !*** ./src/logic/addressService.js ***!
+  \*************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const Address = __webpack_require__(/*! ../models/Address */ "./src/models/Address.js");
+
+const Suburb = __webpack_require__(/*! ../models/suburb */ "./src/models/suburb.js");
+
+const User = __webpack_require__(/*! ../models/user */ "./src/models/user.js");
+
+const migrateAddresses = async suburbId => {
+  try {
+    let suburbAddresses = await Suburb.GetSuburbStreets(suburbId);
+    let promises = [];
+    suburbAddresses.streets.forEach(address => {
+      promises.push(Address.SaveSuburbStreet(suburbId, address.street, address.numbers));
+    });
+    let savedAddresses = await Promise.all(promises);
+    let suburbUsers = await User.getUsersBySuburb(suburbId);
+    console.log(suburbUsers);
+    let updateUserPromises = [];
+    savedAddresses = [].concat(...savedAddresses);
+    suburbUsers.forEach(user => {
+      let address = savedAddresses.filter(a => a.name === user.street && a.number === user.streetNumber);
+      address = address.length > 0 ? address[0]._id.toString() : "";
+      if (address) updateUserPromises.push(User.updateUser({ ...user,
+        _id: user._id.toString(),
+        addressId: address
+      }));
+    });
+    let saveUsers = await Promise.all(updateUserPromises);
+    return savedAddresses;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getSuburbStreets = async suburbId => {
+  try {
+    return await Address.GetStreetsBySuburb(suburbId);
+  } catch (err) {
+    throw err;
+  }
+};
+
+const saveSuburbStreet = async (suburbId, street) => {
+  try {
+    return await Address.SaveSuburbStreet(suburbId, street.street, street.numbers);
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getAddressByNameAndNumber = async (streetName, number) => {
+  try {
+    return await Address.GetAddressByNameAndNumber(streetName, number);
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getAddressesBySuburbId = async suburbId => {
+  try {
+    return await Address.GetAddressesBySuburb(suburbId);
+  } catch (err) {
+    throw err;
+  }
+};
+
+module.exports = {
+  migrateAddresses,
+  getSuburbStreets,
+  saveSuburbStreet,
+  getAddressByNameAndNumber,
+  getAddressesBySuburbId
+};
+
+/***/ }),
+
 /***/ "./src/logic/auth.js":
 /*!***************************!*\
   !*** ./src/logic/auth.js ***!
@@ -2014,10 +2331,11 @@ const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants
 
 const axios = __webpack_require__(/*! axios */ "axios").default;
 
-const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/auth/appletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveAppleUser", "/api/saveEmailUser", "/api/generateTempPassword", "/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", "/api/suburb/getInviteByCode", "/api/notification/test", "/api/suburb/getAllStreets", "/api/suburb/updateConfig", // remover esta api de esta lista
-"/api/suburb/getConfig", //remover esta api de esta lista
-"/api/userInfo/getSignedUserTerms", //remover
-"/api/userInfo/isPasswordTemp", "/api/userInfo/signUserTerms"];
+const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/auth/appletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveAppleUser", "/api/saveEmailUser", "/api/generateTempPassword", "/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", "/api/suburb/getInviteByCode", "/api/notification/test", "/api/suburb/getAllStreets", "/api/suburb/getConfig", //remover esta api de esta lista
+"/api/userInfo/isPasswordTemp"];
+const apiWithKey = ["/api/notification/newPayment", // add api key for this kind of requests
+"/api/notification/approveRejectPayment", // add api key for this kind of requests
+"/api/suburb/getAddressesBySuburbId"];
 const protectedApi = ["/api/suburb/approveReject"];
 exports.Auth = class Auth {
   validateToken(token) {
@@ -2062,18 +2380,33 @@ exports.Auth = class Auth {
   }
 
   isOpenApi(apiPath) {
-    return openApi.indexOf(apiPath) !== -1 ? true : false;
+    return openApi.indexOf(apiPath) !== -1;
+  }
+
+  isApiWithKey(apiPath) {
+    return apiWithKey.indexOf(apiPath) !== -1;
   }
 
   isProtectedApi(apiPath) {
     return protectedApi.indexOf(apiPath) !== -1 ? true : false;
   }
 
-  validateApiRequest(apiPath, token) {
+  validateApiRequest(apiPath, token, apiKey) {
     if (this.isOpenApi(apiPath)) return new Promise(resolve => resolve({
       valid: true,
       message: "the api is open."
-    }));else if (this.isProtectedApi(apiPath)) {
+    }));else if (this.isApiWithKey(apiPath)) {
+      // check if the api key is valid
+      return new Promise(resolve => {
+        process.env.PROTECTED_API_KEY === apiKey ? resolve({
+          valid: true,
+          message: "the api key is ok"
+        }) : reject({
+          valid: false,
+          message: "unknown api key"
+        });
+      });
+    } else if (this.isProtectedApi(apiPath)) {
       return new Promise((resolve, reject) => {
         this.validateAdminUser(token).then(res => {
           let validateToken = this.validateToken(token);
@@ -2605,18 +2938,25 @@ const GlobalConfig = __webpack_require__(/*! ../models/globalConfig */ "./src/mo
 
 const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants/types.js").userTypes;
 
+const AddressService = __webpack_require__(/*! ../logic/addressService */ "./src/logic/addressService.js");
+
 const saveUser = userObj => {
   return new Promise((resolve, reject) => {
-    User.getLogin(userObj.loginName).then(login => {
+    User.getLogin(userObj.loginName).then(async login => {
       if (login) {
         reject({
           success: false,
           message: "El usuario existe actualmente en la base de datos."
         });
       } else {
-        //create the user
-        User.saveUser(userObj.userType ? userObj : { ...userObj,
-          userType: userTypes.guest
+        let addressId = (await AddressService.getAddressByNameAndNumber(userObj.street, userObj.streetNumber))._id.toString(); //create the user
+
+
+        User.saveUser(userObj.userType ? { ...userObj,
+          addressId
+        } : { ...userObj,
+          userType: userTypes.guest,
+          addressId
         }).then((usr, err) => {
           //check if there is an error
           if (!err) resolve({
@@ -2700,14 +3040,26 @@ const saveUserWithPassword = async userObj => {
     password
   } = userObj;
   return new Promise((resolve, reject) => {
-    User.encryptPassword(password).then(resEncrypt => {
-      let encryptedPassword = resEncrypt.hash;
-      userObj.password = encryptedPassword;
-      saveUser(userObj).then(result => {
-        resolve(result);
-      }, err => {
-        reject(err);
-      });
+    User.encryptPassword(password).then(async resEncrypt => {
+      try {
+        let encryptedPassword = resEncrypt.hash;
+        userObj.password = encryptedPassword;
+
+        let addressId = (await AddressService.getAddressByNameAndNumber(userObj.street, userObj.streetNumber))._id.toString();
+
+        saveUser({ ...userObj,
+          addressId
+        }).then(result => {
+          resolve(result);
+        }, err => {
+          reject(err);
+        });
+      } catch (err) {
+        reject({
+          success: false,
+          message: err.message || "No se pudo obtener la direccion"
+        });
+      }
     }, err => {
       reject({
         success: false,
@@ -2800,8 +3152,27 @@ const getUsersBySuburbStreet = async (suburbId, street) => {
 
 const getUsersByAddress = async (suburbId, street, streetNumber) => {
   try {
-    let users = await User.getUsersByAddress(suburbId, street, streetNumber);
+    let addressId = (await AddressService.getAddressByNameAndNumber(street, streetNumber))._id.toString();
+
+    let users = await User.getUsersByAddress(suburbId, addressId);
     return users;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getUsersByAddressId = async (suburbId, addressId) => {
+  try {
+    return await User.getUsersByAddress(suburbId, addressId);
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getAdminUsers = async suburbId => {
+  try {
+    let adminUsers = await User.getAdminUsers(suburbId);
+    return adminUsers;
   } catch (err) {
     throw err;
   }
@@ -2868,6 +3239,14 @@ const updateTempPassword = async email => {
   }
 };
 
+const updateCurrentPassword = async (userId, currentPassword, newPassword) => {
+  try {
+    return await User.updateCurrentPassword(userId, currentPassword, newPassword);
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 const updateUserType = async (userId, userType) => {
   try {
     if (["neighbor", "guard", "suburbAdmin"].indexOf(userType) === -1) throw `The user type ${userType} is not valid.`;
@@ -2882,6 +3261,30 @@ const enableDisableUser = async (userId, enabled) => {
     return await User.enableDisableUser(userId, enabled);
   } catch (ex) {
     throw ex;
+  }
+};
+
+const changeLimited = async (userId, limited) => {
+  try {
+    return await User.changeLimited(userId, limited);
+  } catch (ex) {
+    throw ex;
+  }
+};
+
+const getUserLeanById = async userId => {
+  try {
+    return await User.getUserLeanById(userId);
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getIfUserIsLimited = async userId => {
+  try {
+    return await User.getIfUserIsLimited(userId);
+  } catch (err) {
+    throw err;
   }
 };
 
@@ -2900,6 +3303,7 @@ module.exports = {
   getUsersBySuburb,
   getUsersBySuburbStreet,
   getUsersByAddress,
+  getUsersByAddressId,
   updateUserPicture,
   deleteUserInfo,
   getSignedUserTerms,
@@ -2908,7 +3312,12 @@ module.exports = {
   isPasswordTemp,
   updatePassword,
   updateUserType,
-  enableDisableUser
+  enableDisableUser,
+  changeLimited,
+  getAdminUsers,
+  getUserLeanById,
+  getIfUserIsLimited,
+  updateCurrentPassword
 };
 
 /***/ }),
@@ -2979,10 +3388,10 @@ exports.permissionValid = (path, jwt) => {
 
 const Auth = __webpack_require__(/*! ../logic/auth */ "./src/logic/auth.js").Auth;
 
-const validApiRequest = (apiPath, token) => {
+const validApiRequest = (apiPath, token, apiKey) => {
   return new Promise((resolve, reject) => {
     let auth = new Auth();
-    auth.validateApiRequest(apiPath, token).then(res => {
+    auth.validateApiRequest(apiPath, token, apiKey).then(res => {
       resolve(res);
     }, err => reject({
       valid: false,
@@ -2995,8 +3404,9 @@ exports.checkApiAuth = (req, res, next) => {
   console.log(`validando si el request esta autenticado...`); //check request headers over here to know if the request is authenticated
 
   let apiPath = req.baseUrl,
-      token = req.headers["authorization"];
-  validApiRequest(apiPath, token).then(result => {
+      token = req.headers["authorization"],
+      apiKey = req.headers["api-key"] || req.query["api-key"] || req.body["api-key"];
+  validApiRequest(apiPath, token, apiKey).then(result => {
     if (result.valid) next();else res.status("401").json({
       success: false,
       error: "Unauthorized request."
@@ -3006,6 +3416,100 @@ exports.checkApiAuth = (req, res, next) => {
     error: err.message || "An error occurs while validating the request."
   }));
 };
+
+/***/ }),
+
+/***/ "./src/models/Address.js":
+/*!*******************************!*\
+  !*** ./src/models/Address.js ***!
+  \*******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
+
+const moment = __webpack_require__(/*! moment */ "moment");
+
+const AddressSchema = new mongoose.Schema({
+  suburbId: {
+    type: String
+  },
+  name: {
+    type: String
+  },
+  number: {
+    type: String
+  },
+  transtime: {
+    type: Date,
+    default: moment.utc()
+  }
+});
+AddressSchema.statics = {
+  SaveSuburbStreet: function (suburbId, name, numbers) {
+    let addresses = numbers.map(number => ({
+      suburbId,
+      name,
+      number
+    }));
+    return new Promise((resolve, reject) => {
+      Address.insertMany(addresses).then(value => {
+        resolve(value);
+      }).catch(err => {
+        reject(err);
+      });
+    });
+  },
+  GetStreetsBySuburb: function (suburbId) {
+    return new Promise((resolve, reject) => {
+      this.find({
+        suburbId: suburbId
+      }).lean().exec((err, result) => {
+        if (err) reject(err);
+
+        if (result) {
+          let addresses = result.map(s => ({
+            street: s.name,
+            number: s.number,
+            transtime: s.transtime
+          }));
+          let streets = addresses.reduce((streets, street) => {
+            if (streets.filter(s => s.street === street.street).length > 0) {
+              let existing = streets.filter(s => s.street === street.street)[0];
+              streets = [...streets.filter(s => s.street !== street.street), { ...existing,
+                numbers: [...existing.numbers.map(e => e), street.number]
+              }];
+            } else {
+              streets = [...streets, {
+                street: street.street,
+                numbers: [street.number],
+                transtime: street.transtime
+              }];
+            }
+
+            return streets;
+          }, []);
+          resolve({
+            streets: streets
+          });
+        }
+      });
+    });
+  },
+  GetAddressesBySuburb: function (suburbId) {
+    return this.find({
+      suburbId: suburbId
+    }).lean();
+  },
+  GetAddressByNameAndNumber: function (streetName, number) {
+    return this.findOne({
+      name: streetName,
+      number: number
+    }).lean();
+  }
+};
+const Address = mongoose.model("Address", AddressSchema);
+module.exports = Address;
 
 /***/ }),
 
@@ -3073,6 +3577,8 @@ const SuburbStreet = __webpack_require__(/*! ./suburbStreet */ "./src/models/sub
 
 const PostalCode = __webpack_require__(/*! ./postalCode */ "./src/models/postalCode.js");
 
+const Address = __webpack_require__(/*! ./Address */ "./src/models/Address.js");
+
 const GlobalConfig = __webpack_require__(/*! ./globalConfig */ "./src/models/globalConfig.js");
 
 const models = {
@@ -3083,13 +3589,15 @@ const models = {
   SuburbInvite,
   SuburbConfig,
   SuburbStreet,
+  Address,
   GlobalConfig
 };
 
 const connectDb = () => {
   //setup the mongo connection
   let mConn = mongoose.connect(process.env.DB_CONNECTION, {
-    useNewUrlParser: true
+    useNewUrlParser: true,
+    useUnifiedTopology: true
   });
   mongoose.connection.on("error", console.error.bind(console, "Mongo db connection error: "));
   return mConn;
@@ -4160,7 +4668,21 @@ const UserSchema = new mongoose.Schema({
   },
   favorites: [GuestSchema],
   pushTokens: [PushTokenSchema],
-  signedTerms: [Number]
+  signedTerms: [Number],
+  addressId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Address"
+  },
+  limited: {
+    type: Boolean,
+    default: false
+  },
+  limitedSince: {
+    type: Date
+  },
+  limitedReason: {
+    type: String
+  }
 });
 /**
  * Private attributes
@@ -4275,7 +4797,9 @@ UserSchema.methods = {
       validApis: _getValidApis(this._id),
       pushTokens: this.pushTokens,
       street: this.street,
-      streetNumber: this.streetNumber //validMenus: _getValidMenus(this._id) //verify if is better put this in another schema i.e. suburb
+      streetNumber: this.streetNumber,
+      addressId: this.addressId,
+      limited: typeof this.limited === "undefined" ? false : this.limited //validMenus: _getValidMenus(this._id) //verify if is better put this in another schema i.e. suburb
 
     };
     let token = jwt.sign(payload, _secretKey);
@@ -4374,7 +4898,8 @@ const extractUsersFromDoc = mUsers => {
       lastName,
       street,
       streetNumber,
-      active
+      active,
+      pushTokens
     } = u._doc;
     return {
       _id,
@@ -4382,7 +4907,8 @@ const extractUsersFromDoc = mUsers => {
       lastName,
       street,
       streetNumber,
-      active
+      active,
+      pushTokens
     };
   });
   return users;
@@ -4548,7 +5074,8 @@ UserSchema.statics = {
         cellphone: objUser.cellphone,
         active: objUser.active,
         userType: objUser.userType,
-        transtime: moment.utc()
+        transtime: moment.utc(),
+        addressId: objUser.addressId
       }
     });
   },
@@ -4585,6 +5112,15 @@ UserSchema.statics = {
     }, {
       $set: {
         active: enabled
+      }
+    });
+  },
+  changeLimited: function (userId, limited) {
+    return this.updateOne({
+      _id: userId
+    }, {
+      $set: {
+        limited: limited
       }
     });
   },
@@ -4671,8 +5207,15 @@ UserSchema.statics = {
         lastName: 2,
         street: 3,
         streetNumber: 4,
-        active: 5,
-        userType: 6
+        limited: 5,
+        active: 6,
+        userType: 7,
+        facebookId: 8,
+        appleId: 9,
+        googleId: 10,
+        email: 11,
+        loginName: 12,
+        addressId: 13
       }).exec((err, result) => {
         if (err) reject(err);
         resolve(result);
@@ -4693,15 +5236,13 @@ UserSchema.statics = {
       });
     });
   },
-  getUsersByAddress: function (suburbId, street, streetNumber) {
+  getUsersByAddress: function (suburbId, addressId) {
     return new Promise((resolve, reject) => {
       this.find({
         $and: [{
           suburb: suburbId
         }, {
-          street: street
-        }, {
-          streetNumber: streetNumber
+          addressId: addressId
         }]
       }).exec((err, result) => {
         if (err) reject(err);
@@ -4828,6 +5369,67 @@ UserSchema.statics = {
         });
       });
     });
+  },
+  getAdminUsers: function (suburbId) {
+    return this.find({
+      suburb: suburbId,
+      userType: "suburbAdmin"
+    }).lean();
+  },
+
+  getIfUserIsLimited(userId) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: userId
+      }).lean().exec((err, result) => {
+        if (err) reject(err);
+        resolve({
+          isLimited: typeof result.limited === "undefined" ? false : result.limited
+        });
+      });
+    });
+  },
+
+  updateCurrentPassword: function (userId, password, newPassword) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: userId
+      }).lean().exec((err, result) => {
+        if (err) reject(err);
+        bcrypt.compare(password, result.password).then(valid => {
+          if (valid) {
+            this.encryptPassword(base64.encode(newPassword)).then(resEncrypt => {
+              this.findOneAndUpdate({
+                _id: userId
+              }, {
+                $set: {
+                  tempPassword: null,
+                  password: resEncrypt.hash
+                }
+              }, {
+                new: true
+              }, function (err, user) {
+                if (err) reject(err);
+                resolve({
+                  success: true,
+                  message: "La contrasena fue actualizada exitosamente."
+                });
+              });
+            }).catch(err => {
+              reject({
+                success: false,
+                message: "La contraseña actual no es correcta."
+              });
+            });
+          } else {
+            reject({
+              success: false,
+              message: "La contraseña actual no es correcta."
+            });
+          }
+        });
+      });
+    });
   }
 };
 const User = mongoose.model("User", UserSchema);
@@ -4892,7 +5494,10 @@ router.get("/api/userInfo/getSignedUserTerms", userAdmin.getSignedUserTerms);
 router.get("/api/userInfo/isPasswordTemp", userAdmin.isPasswordTemp);
 router.post("/api/userInfo/updateType", userAdmin.updateUserType);
 router.post("/api/userInfo/enableDisable", userAdmin.enableDisableUser);
+router.get("/api/userInfo/getIfUserIsLimited", userAdmin.getIfUserIsLimited);
+router.post("/api/userInfo/changeLimited", userAdmin.changeLimited);
 router.post("/api/userInfo/updatePassword", userAdmin.updatePassword);
+router.post("/api/userInfo/updateCurrentPassword", userAdmin.updateCurrentPassword);
 router.post("/api/userInfo/signUserTerms", userAdmin.signUserTerms);
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
@@ -4919,14 +5524,84 @@ router.post("/api/suburb/updateConfig", suburb.saveSuburbConfig);
 router.get("/api/suburb/getConfig", suburb.getSuburbConfig);
 router.post("/api/suburb/saveStreet", suburb.saveSuburbStreet);
 router.get("/api/suburb/getAllStreets", suburb.getSuburbStreets);
-router.get("/api/suburb/getUsers", suburb.getUsersBySuburb); //push notifications
+router.get("/api/suburb/getUsers", suburb.getUsersBySuburb);
+router.get("/api/suburb/migrateAddresses", suburb.migrateAddresses);
+router.get("/api/suburb/getAddressesBySuburbId", suburb.getAddressesBySuburbId); //push notifications
 
 router.post("/api/notification/test", pushNotification.sendTestNotification);
 router.post("/api/notification/arrive", pushNotification.sendArriveNotification);
+router.post("/api/notification/newPayment", pushNotification.sendUploadPaymentNotification);
+router.post("/api/notification/approveRejectPayment", pushNotification.sendApproveRejectedPaymentNotification);
 router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
 const upload2 = multer();
-router.post("/api/vision/ocr", upload2.any(), vision.processOCR);
+router.post("/api/vision/ocr", upload2.any(), vision.processOCR); // files apis
+
+const blobFilesService = __webpack_require__(/*! ../controllers/blobFiles */ "./src/controllers/blobFiles.js");
+
+router.post("/api/blob/uploadFile", blobFilesService.uploadBlobs); //router.post("/api/blob/uploadFile", upload2.any(), blobFilesService.uploadBlobs);
+
 module.exports = router;
+
+/***/ }),
+
+/***/ "./src/routes/helpers.js":
+/*!*******************************!*\
+  !*** ./src/routes/helpers.js ***!
+  \*******************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+const map = {
+  "/apiPayments": {
+    target: `${process.env.API_PAYMENTS_URL}`,
+    pathRewrite: {
+      "^.+apiPayments": ""
+    }
+  }
+};
+
+const getMap = url => {
+  let proxyMap = map;
+  let urlParts = url.split("/");
+  let foundMap = null;
+
+  for (let i = 0; i <= urlParts.length; i++) {
+    if (!foundMap) {
+      let innerArray = Array.apply(null, {
+        length: i + 1
+      }).map(Function.call, Number);
+      let uri = "";
+      innerArray.forEach(element => {
+        uri += urlParts[element] !== "" ? `/${urlParts[element]}` : "";
+      });
+      foundMap = proxyMap[uri];
+    }
+  }
+
+  return foundMap;
+};
+
+const getQueryParams = queryParams => {
+  let queryString = `?`;
+  let params = { ...queryParams,
+    code: process.env.API_PAYMENTS_KEY
+  };
+  Object.keys(params).forEach(p => {
+    queryString = `${queryString}${p}=${params[p]}&`;
+  });
+  return queryString;
+};
+
+exports.rewriteURL = (protocol, host, url, queryParams) => {
+  let completeUrl = `${protocol}://${host}${url}`;
+  let path = getMap(url);
+
+  if (path) {
+    let regex = new RegExp(Object.keys(path.pathRewrite)[0]);
+    var replaced = completeUrl.replace(regex, path.pathRewrite[Object.keys(path.pathRewrite)[0]]);
+    return Object.keys(queryParams).length > 0 ? `${path.target}${replaced}${getQueryParams(queryParams)}` : `${path.target}${replaced}`;
+  } else return completeUrl;
+};
 
 /***/ }),
 
@@ -4941,6 +5616,12 @@ const express = __webpack_require__(/*! express */ "express");
 
 const router = express.Router();
 
+const proxy = __webpack_require__(/*! express-http-proxy */ "express-http-proxy");
+
+const {
+  rewriteURL
+} = __webpack_require__(/*! ./helpers */ "./src/routes/helpers.js");
+
 const auth = __webpack_require__(/*! ../middleware/auth */ "./src/middleware/auth.js"); //routes
 
 
@@ -4948,6 +5629,14 @@ const apiRoutes = __webpack_require__(/*! ./apiRoutes */ "./src/routes/apiRoutes
 
 router.use("/api/*", auth.checkApiAuth);
 router.all("/api/*", apiRoutes);
+router.use("/apiPayments/*", auth.checkApiAuth);
+router.use("/apiPayments/*", proxy(process.env.API_PAYMENTS_URL, {
+  proxyReqPathResolver: function (req) {
+    let redirectTo = rewriteURL(req.protocol, req.get("Host"), req.baseUrl, req.query);
+    console.log("redirect to", redirectTo);
+    return redirectTo;
+  }
+}));
 module.exports = router;
 
 /***/ }),
@@ -5197,6 +5886,17 @@ module.exports = require("expo-server-sdk");
 /***/ (function(module, exports) {
 
 module.exports = require("express");
+
+/***/ }),
+
+/***/ "express-http-proxy":
+/*!*************************************!*\
+  !*** external "express-http-proxy" ***!
+  \*************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("express-http-proxy");
 
 /***/ }),
 
