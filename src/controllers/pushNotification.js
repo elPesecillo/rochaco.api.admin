@@ -27,9 +27,8 @@ exports.sendArriveNotification = async (req, res) => {
   try {
     let { userId, guest } = req.body;
     console.log("getting user");
-    let user = await getUserById(userId);
-    console.log("user", user._doc);
-    let pushTokens = user.pushTokens.map((t) => t._doc.token);
+    let user = await getUserLeanById(userId);
+    let pushTokens = user.pushTokens.map((t) => t.token);
     console.log("push tokens", pushTokens);
 
     console.log("send notifications...");
