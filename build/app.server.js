@@ -761,7 +761,9 @@ exports.sendUploadPaymentNotification = async (req, res) => {
       userId,
       paymentType
     } = req.body;
-    let users = await getAdminUsers(suburbId);
+    let users = await getAdminUsers(suburbId); //esto es solo para pruebas
+    //users = users.filter((u) => u.facebookId === "10221055228718114");
+
     let user = await getUserLeanById(userId);
     let promises = [];
     users.forEach(u => {
@@ -769,7 +771,14 @@ exports.sendUploadPaymentNotification = async (req, res) => {
         sound: "default",
         body: `El usuario ${user.name} con la dirección ${user.street} ${user.streetNumber} realizo un pago de ${paymentType}.`,
         data: {
-          redirect: "paymentControl"
+          redirect: {
+            stack: "PaymentsControl",
+            screen: "PaymentList"
+          },
+          props: {
+            street: user.street,
+            streetNumber: user.streetNumber
+          }
         },
         title: `Nuevo pago realizado`
       }));
@@ -800,7 +809,7 @@ exports.sendApproveRejectedPaymentNotification = async (req, res) => {
         data: {
           redirect: "payments"
         },
-        title: status ? "Pago aceptado" : "Pago rechazado"
+        title: status === "approved" ? "Pago aceptado" : status === "rejected" ? "Pago rechazado" : "Procesando pago"
       }));
     });
     let sendNotifications = await Promise.all(promises);
