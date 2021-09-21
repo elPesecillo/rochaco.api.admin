@@ -435,9 +435,9 @@ exports.uploadBlobs = async (req, res) => {
         console.log(`An error occurs in the following url: ${url}: `, error);
         let message = "dev proxy error: ";
 
-        if (error.code === "ECONNREFUSED") {
+        if (error && error.code === "ECONNREFUSED") {
           message = message.concat("Refused connection");
-        } else if (error.code === "ECONNRESET") {
+        } else if (error && error.code === "ECONNRESET") {
           message = message.concat("The target connection has been lost");
         } else {
           message = message.concat("Unhandled error");
@@ -448,7 +448,7 @@ exports.uploadBlobs = async (req, res) => {
           exception: message || {}
         });
       } else {
-        User.updateUserPicture(req.query.userId, JSON.parse(response.body)[0].url);
+        if (response.statusCode < 300) User.updateUserPicture(req.query.userId, JSON.parse(response.body)[0].url);
       }
     })).pipe(res); //res.status("200").json({ message: "ok" });
   } catch (err) {
@@ -761,7 +761,9 @@ exports.sendUploadPaymentNotification = async (req, res) => {
       userId,
       paymentType
     } = req.body;
-    let users = await getAdminUsers(suburbId);
+    let users = await getAdminUsers(suburbId); //esto es solo para pruebas
+    //users = users.filter((u) => u.facebookId === "10221055228718114");
+
     let user = await getUserLeanById(userId);
     let promises = [];
     users.forEach(u => {
@@ -769,7 +771,14 @@ exports.sendUploadPaymentNotification = async (req, res) => {
         sound: "default",
         body: `El usuario ${user.name} con la dirección ${user.street} ${user.streetNumber} realizo un pago de ${paymentType}.`,
         data: {
-          redirect: "paymentControl"
+          redirect: {
+            stack: "PaymentsControl",
+            screen: "PaymentList"
+          },
+          props: {
+            street: user.street,
+            streetNumber: user.streetNumber
+          }
         },
         title: `Nuevo pago realizado`
       }));
@@ -800,7 +809,7 @@ exports.sendApproveRejectedPaymentNotification = async (req, res) => {
         data: {
           redirect: "payments"
         },
-        title: status ? "Pago aceptado" : "Pago rechazado"
+        title: status === "approved" ? "Pago aceptado" : status === "rejected" ? "Pago rechazado" : "Procesando pago"
       }));
     });
     let sendNotifications = await Promise.all(promises);

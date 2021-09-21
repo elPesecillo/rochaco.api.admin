@@ -20,9 +20,9 @@ exports.uploadBlobs = async (req, res) => {
               error
             );
             let message = "dev proxy error: ";
-            if (error.code === "ECONNREFUSED") {
+            if (error && error.code === "ECONNREFUSED") {
               message = message.concat("Refused connection");
-            } else if (error.code === "ECONNRESET") {
+            } else if (error && error.code === "ECONNRESET") {
               message = message.concat("The target connection has been lost");
             } else {
               message = message.concat("Unhandled error");
@@ -32,10 +32,11 @@ exports.uploadBlobs = async (req, res) => {
               exception: message || {},
             });
           } else {
-            User.updateUserPicture(
-              req.query.userId,
-              JSON.parse(response.body)[0].url
-            );
+            if (response.statusCode < 300)
+              User.updateUserPicture(
+                req.query.userId,
+                JSON.parse(response.body)[0].url
+              );
           }
         })
       )
