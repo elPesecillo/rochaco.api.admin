@@ -100,13 +100,21 @@ exports.sendApproveRejectedPaymentNotification = async (req, res) => {
                 : status === "rejected"
                 ? `Tu pago de ${paymentName} ha sido rechazado por la siguiente razón: ${comment}`
                 : `Tu pago ${paymentName} esta siendo procesado.`,
-            data: { redirect: "payments" },
+            data: {
+              redirect: {
+                stack: "Payments",
+                screen: "Info",
+              },
+              props: {
+                filter: status,
+              },
+            },
             title:
               status === "approved"
                 ? "Pago aceptado"
                 : status === "rejected"
                 ? "Pago rechazado"
-                : "Procesando pago",
+                : "Cambio en el estatus de tus pagos",
           }
         )
       );
