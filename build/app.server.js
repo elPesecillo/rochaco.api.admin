@@ -807,9 +807,15 @@ exports.sendApproveRejectedPaymentNotification = async (req, res) => {
         sound: "default",
         body: status === "approved" ? `Tu pago de ${paymentName} ha sido aceptado` : status === "rejected" ? `Tu pago de ${paymentName} ha sido rechazado por la siguiente razón: ${comment}` : `Tu pago ${paymentName} esta siendo procesado.`,
         data: {
-          redirect: "payments"
+          redirect: {
+            stack: "Payments",
+            screen: "Info"
+          },
+          props: {
+            filter: status
+          }
         },
-        title: status === "approved" ? "Pago aceptado" : status === "rejected" ? "Pago rechazado" : "Procesando pago"
+        title: status === "approved" ? "Pago aceptado" : status === "rejected" ? "Pago rechazado" : "Cambio en el estatus de tus pagos"
       }));
     });
     let sendNotifications = await Promise.all(promises);
@@ -3507,6 +3513,9 @@ AddressSchema.statics = {
   GetAddressesBySuburb: function (suburbId) {
     return this.find({
       suburbId: suburbId
+    }).sort({
+      name: 'asc',
+      number: 'asc'
     }).lean();
   },
   GetAddressByNameAndNumber: function (streetName, number) {

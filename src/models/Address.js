@@ -74,7 +74,9 @@ AddressSchema.statics = {
     });
   },
   GetAddressesBySuburb: function (suburbId) {
-    return this.find({ suburbId: suburbId }).lean();
+    return this.find({ suburbId: suburbId })
+      .sort({ name: 'asc', number: 'asc' })
+      .lean();
   },
   GetAddressByNameAndNumber: function (streetName, number) {
     return this.findOne({ name: streetName, number: number }).lean();
