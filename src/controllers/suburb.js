@@ -314,3 +314,64 @@ exports.getAddressesBySuburbId = async (req, res) => {
     });
   }
 };
+
+exports.getAddressesWithUsersStates = async (req, res) => {
+  try {
+    const { suburbId } = req.query;
+    if (ObjectId.isValid(suburbId)) {
+      const addresses = await addressService.getAddressesBySuburbId(suburbId);
+      const users = await userService.getUsersBySuburb(suburbId);
+
+      const addressesInfo = addresses.map((a) => {
+        let usersAddress = users.filter((u) =>
+          u.addressId ? u.addressId.toString() === a._id.toString() : false
+        );
+        return {
+          address: { ...a },
+          users: usersAddress.map((ua) => ({
+            id: ua._id.toString(),
+            name: ua.name,
+            active: ua.active,
+            limited: typeof ua.limited !== "undefined" ? ua.limited : false,
+          })),
+        };
+      });
+
+      res.status(200).json(addressesInfo);
+    } else
+      res.status(400).json({
+        success: false,
+        message: "Por favor indique el fraccionamiento.",
+      });
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to get the users.",
+    });
+  }
+};
+
+exports.setLimitedUsersByAddress = async (req, res) => {
+  try {
+    const { suburbId, addressId, limited } = req.body;
+    if (ObjectId.isValid(suburbId)) {
+      const users = await userService.getUsersByAddressId(suburbId, addressId);
+
+      let proms = [];
+      users.forEach((u) => {
+        proms.push(userService.changeLimited(u._id.toString(), limited));
+      });
+      await Promise.all(proms);
+      res.status(200).json(users.map(u=>({...u, limited})));
+    } else
+      res.status(400).json({
+        success: false,
+        message: "Por favor indique el fraccionamiento.",
+      });
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to update the users.",
+    });
+  }
+};
