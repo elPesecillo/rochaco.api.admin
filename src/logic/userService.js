@@ -347,7 +347,8 @@ const updateUserType = async (userId, userType) => {
 
 const enableDisableUser = async (userId, enabled) => {
   try {
-    return await User.enableDisableUser(userId, enabled);
+    await User.enableDisableUser(userId, enabled);
+    return { userId, active: enabled };
   } catch (ex) {
     throw ex;
   }

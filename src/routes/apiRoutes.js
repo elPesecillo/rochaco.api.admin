@@ -109,6 +109,16 @@ router.get("/api/suburb/migrateAddresses", suburb.migrateAddresses);
 
 router.get("/api/suburb/getAddressesBySuburbId", suburb.getAddressesBySuburbId);
 
+router.get(
+  "/api/suburb/getAddressesWithUsersStates",
+  suburb.getAddressesWithUsersStates
+);
+
+router.post(
+  "/api/suburb/setLimitedUsersByAddress",
+  suburb.setLimitedUsersByAddress
+);
+
 //push notifications
 router.post("/api/notification/test", pushNotification.sendTestNotification);
 router.post(

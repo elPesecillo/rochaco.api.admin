@@ -1533,6 +1533,69 @@ exports.getAddressesBySuburbId = async (req, res) => {
   }
 };
 
+exports.getAddressesWithUsersStates = async (req, res) => {
+  try {
+    const {
+      suburbId
+    } = req.query;
+
+    if (ObjectId.isValid(suburbId)) {
+      const addresses = await addressService.getAddressesBySuburbId(suburbId);
+      const users = await userService.getUsersBySuburb(suburbId);
+      const addressesInfo = addresses.map(a => {
+        let usersAddress = users.filter(u => u.addressId ? u.addressId.toString() === a._id.toString() : false);
+        return {
+          address: { ...a
+          },
+          users: usersAddress.map(ua => ({
+            id: ua._id.toString(),
+            name: ua.name,
+            active: ua.active,
+            limited: typeof ua.limited !== "undefined" ? ua.limited : false
+          }))
+        };
+      });
+      res.status(200).json(addressesInfo);
+    } else res.status(400).json({
+      success: false,
+      message: "Por favor indique el fraccionamiento."
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: err.message || "An unknown error occurs while trying to get the users."
+    });
+  }
+};
+
+exports.setLimitedUsersByAddress = async (req, res) => {
+  try {
+    const {
+      suburbId,
+      addressId,
+      limited
+    } = req.body;
+
+    if (ObjectId.isValid(suburbId)) {
+      const users = await userService.getUsersByAddressId(suburbId, addressId);
+      let proms = [];
+      users.forEach(u => {
+        proms.push(userService.changeLimited(u._id.toString(), limited));
+      });
+      await Promise.all(proms);
+      res.status(200).json(users.map(u => ({ ...u,
+        limited
+      })));
+    } else res.status(400).json({
+      success: false,
+      message: "Por favor indique el fraccionamiento."
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: err.message || "An unknown error occurs while trying to update the users."
+    });
+  }
+};
+
 /***/ }),
 
 /***/ "./src/controllers/userAdmin.js":
@@ -3272,7 +3335,11 @@ const updateUserType = async (userId, userType) => {
 
 const enableDisableUser = async (userId, enabled) => {
   try {
-    return await User.enableDisableUser(userId, enabled);
+    await User.enableDisableUser(userId, enabled);
+    return {
+      userId,
+      active: enabled
+    };
   } catch (ex) {
     throw ex;
   }
@@ -3925,6 +3992,45 @@ module.exports = Role;
 
 /***/ }),
 
+/***/ "./src/models/schemas/config/childMenuSchema.js":
+/*!******************************************************!*\
+  !*** ./src/models/schemas/config/childMenuSchema.js ***!
+  \******************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
+
+const ChildMenuSchema = new mongoose.Schema({
+  item: {
+    type: String
+  },
+  label: {
+    type: String
+  },
+  color: {
+    type: String
+  },
+  navigate: {
+    type: String
+  },
+  screen: {
+    type: String
+  },
+  isHome: {
+    type: Boolean
+  },
+  iconName: {
+    type: String
+  },
+  iconFamily: {
+    type: String
+  }
+});
+module.exports = ChildMenuSchema;
+
+/***/ }),
+
 /***/ "./src/models/schemas/config/dropdownSchema.js":
 /*!*****************************************************!*\
   !*** ./src/models/schemas/config/dropdownSchema.js ***!
@@ -3979,6 +4085,31 @@ const FieldSchema = new mongoose.Schema({
   }
 });
 module.exports = FieldSchema;
+
+/***/ }),
+
+/***/ "./src/models/schemas/config/menuSchema.js":
+/*!*************************************************!*\
+  !*** ./src/models/schemas/config/menuSchema.js ***!
+  \*************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
+
+const ChildMenuSchema = __webpack_require__(/*! ./childMenuSchema */ "./src/models/schemas/config/childMenuSchema.js");
+
+const MenuSchema = new mongoose.Schema({
+  item: {
+    type: String
+  },
+  label: {
+    type: String
+  },
+  validUserTypes: [String],
+  childMenus: [ChildMenuSchema]
+});
+module.exports = MenuSchema;
 
 /***/ }),
 
@@ -4415,11 +4546,14 @@ const moment = __webpack_require__(/*! moment */ "moment");
 
 const ScreenSchema = __webpack_require__(/*! ./schemas/config/screenSchema */ "./src/models/schemas/config/screenSchema.js");
 
+const MenuSchema = __webpack_require__(/*! ./schemas/config/menuSchema */ "./src/models/schemas/config/menuSchema.js");
+
 const SuburbConfigSchema = new mongoose.Schema({
   imageUrl: {
     type: String
   },
   screens: [ScreenSchema],
+  menus: [MenuSchema],
   transtime: {
     type: Date,
     default: moment.utc()
@@ -4708,7 +4842,7 @@ const UserSchema = new mongoose.Schema({
 const _secretKey = process.env.JWT_SECRET;
 
 let _getExpDate = () => {
-  var expTimeByMin = process.env.EXP_TOKEN != null ? process.env.EXP_TOKEN : "1440";
+  var expTimeByMin = process.env.EXP_TOKEN != null ? process.env.EXP_TOKEN : "10080";
   return moment().add(expTimeByMin, "minutes").unix();
 };
 
@@ -5543,7 +5677,9 @@ router.post("/api/suburb/saveStreet", suburb.saveSuburbStreet);
 router.get("/api/suburb/getAllStreets", suburb.getSuburbStreets);
 router.get("/api/suburb/getUsers", suburb.getUsersBySuburb);
 router.get("/api/suburb/migrateAddresses", suburb.migrateAddresses);
-router.get("/api/suburb/getAddressesBySuburbId", suburb.getAddressesBySuburbId); //push notifications
+router.get("/api/suburb/getAddressesBySuburbId", suburb.getAddressesBySuburbId);
+router.get("/api/suburb/getAddressesWithUsersStates", suburb.getAddressesWithUsersStates);
+router.post("/api/suburb/setLimitedUsersByAddress", suburb.setLimitedUsersByAddress); //push notifications
 
 router.post("/api/notification/test", pushNotification.sendTestNotification);
 router.post("/api/notification/arrive", pushNotification.sendArriveNotification);
