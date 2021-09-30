@@ -1,4 +1,5 @@
 const suburbService = require("../logic/suburbService");
+const addressService = require("../logic/addressService");
 const userService = require("../logic/userService");
 const userTypes = require("../constants/types").userTypes;
 const moment = require("moment");
@@ -213,51 +214,47 @@ exports.getSuburbConfig = (req, res) => {
     });
 };
 
-exports.saveSuburbStreet = (req, res) => {
-  let { suburbId, street } = req.body;
-  if (ObjectId.isValid(suburbId)) {
-    suburbService
-      .saveSuburbStreet(suburbId, street)
-      .then((sub) => {
-        res.status(200).json({
-          success: true,
-          message: "La calle fue guardada correctamente.",
-        });
-      })
-      .catch((err) => {
-        res.status(500).json({
-          success: false,
-          message: err.message || "No se pudo guardar la calle",
-        });
+exports.saveSuburbStreet = async (req, res) => {
+  try {
+    let { suburbId, street } = req.body;
+    if (ObjectId.isValid(suburbId)) {
+      let sub = await addressService.saveSuburbStreet(suburbId, street);
+
+      res.status(200).json({
+        success: true,
+        message: "La calle fue guardada correctamente.",
       });
-  } else
-    res.status(400).json({
+    } else
+      res.status(400).json({
+        success: false,
+        message: "Por favor indique el fraccionamiento.",
+      });
+  } catch (err) {
+    res.status(500).json({
       success: false,
-      message: "Por favor indique el fraccionamiento.",
+      message: err.message || "No se pudo guardar la calle",
     });
+  }
 };
 
-exports.getSuburbStreets = (req, res) => {
-  let { suburbId } = req.query;
-  if (ObjectId.isValid(suburbId)) {
-    suburbService
-      .getSuburbStreets(suburbId)
-      .then((streets) => {
-        res.status(200).json({ ...streets });
-      })
-      .catch((err) => {
-        res.status(500).json({
-          success: false,
-          message:
-            err.message ||
-            "No se pudieron obtener las calles del fraccionamiento",
-        });
+exports.getSuburbStreets = async (req, res) => {
+  try {
+    let { suburbId } = req.query;
+    if (ObjectId.isValid(suburbId)) {
+      let streets = await addressService.getSuburbStreets(suburbId);
+      res.status(200).json({ ...streets });
+    } else
+      res.status(400).json({
+        success: false,
+        message: "Por favor indique el fraccionamiento.",
       });
-  } else
-    res.status(400).json({
+  } catch (err) {
+    res.status(500).json({
       success: false,
-      message: "Por favor indique el fraccionamiento.",
+      message:
+        err.message || "No se pudieron obtener las calles del fraccionamiento",
     });
+  }
 };
 
 exports.getUsersBySuburb = async (req, res) => {
@@ -275,6 +272,106 @@ exports.getUsersBySuburb = async (req, res) => {
     res.status(500).json({
       message:
         err.message || "An unknown error occurs while trying to get the users.",
+    });
+  }
+};
+
+exports.migrateAddresses = async (req, res) => {
+  try {
+    let { suburbId } = req.query;
+    if (ObjectId.isValid(suburbId)) {
+      let test = await addressService.migrateAddresses(suburbId);
+      //let test = await addressService.getSuburbStreets(suburbId);
+      res.status(200).json(test);
+    } else
+      res.status(400).json({
+        success: false,
+        message: "Por favor indique el fraccionamiento.",
+      });
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to get the users.",
+    });
+  }
+};
+
+exports.getAddressesBySuburbId = async (req, res) => {
+  try {
+    let { suburbId } = req.query;
+    if (ObjectId.isValid(suburbId)) {
+      let test = await addressService.getAddressesBySuburbId(suburbId);
+      res.status(200).json(test);
+    } else
+      res.status(400).json({
+        success: false,
+        message: "Por favor indique el fraccionamiento.",
+      });
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to get the users.",
+    });
+  }
+};
+
+exports.getAddressesWithUsersStates = async (req, res) => {
+  try {
+    const { suburbId } = req.query;
+    if (ObjectId.isValid(suburbId)) {
+      const addresses = await addressService.getAddressesBySuburbId(suburbId);
+      const users = await userService.getUsersBySuburb(suburbId);
+
+      const addressesInfo = addresses.map((a) => {
+        let usersAddress = users.filter((u) =>
+          u.addressId ? u.addressId.toString() === a._id.toString() : false
+        );
+        return {
+          address: { ...a },
+          users: usersAddress.map((ua) => ({
+            id: ua._id.toString(),
+            name: ua.name,
+            active: ua.active,
+            limited: typeof ua.limited !== "undefined" ? ua.limited : false,
+          })),
+        };
+      });
+
+      res.status(200).json(addressesInfo);
+    } else
+      res.status(400).json({
+        success: false,
+        message: "Por favor indique el fraccionamiento.",
+      });
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to get the users.",
+    });
+  }
+};
+
+exports.setLimitedUsersByAddress = async (req, res) => {
+  try {
+    const { suburbId, addressId, limited } = req.body;
+    if (ObjectId.isValid(suburbId)) {
+      const users = await userService.getUsersByAddressId(suburbId, addressId);
+
+      let proms = [];
+      users.forEach((u) => {
+        proms.push(userService.changeLimited(u._id.toString(), limited));
+      });
+      await Promise.all(proms);
+      res.status(200).json(users.map(u=>({...u, limited})));
+    } else
+      res.status(400).json({
+        success: false,
+        message: "Por favor indique el fraccionamiento.",
+      });
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to update the users.",
     });
   }
 };

@@ -6,6 +6,7 @@ const SuburbInvite = require("./suburbInvite");
 const SuburbConfig = require("./suburbConfig");
 const SuburbStreet = require("./suburbStreet");
 const PostalCode = require("./postalCode");
+const Address = require("./Address");
 const GlobalConfig = require("./globalConfig");
 
 const models = {
@@ -16,6 +17,7 @@ const models = {
   SuburbInvite,
   SuburbConfig,
   SuburbStreet,
+  Address,
   GlobalConfig,
 };
 
@@ -23,6 +25,7 @@ const connectDb = () => {
   //setup the mongo connection
   let mConn = mongoose.connect(process.env.DB_CONNECTION, {
     useNewUrlParser: true,
+    useUnifiedTopology: true,
   });
 
   mongoose.connection.on(

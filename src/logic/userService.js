@@ -2,22 +2,29 @@ const User = require("../models/user");
 const request = require("request");
 const GlobalConfig = require("../models/globalConfig");
 const userTypes = require("../constants/types").userTypes;
+const AddressService = require("../logic/addressService");
 
 const saveUser = (userObj) => {
   return new Promise((resolve, reject) => {
     User.getLogin(userObj.loginName).then(
-      (login) => {
+      async (login) => {
         if (login) {
           reject({
             success: false,
             message: "El usuario existe actualmente en la base de datos.",
           });
         } else {
+          let addressId = (
+            await AddressService.getAddressByNameAndNumber(
+              userObj.street,
+              userObj.streetNumber
+            )
+          )._id.toString();
           //create the user
           User.saveUser(
             userObj.userType
-              ? userObj
-              : { ...userObj, userType: userTypes.guest }
+              ? { ...userObj, addressId }
+              : { ...userObj, userType: userTypes.guest, addressId }
           ).then(
             (usr, err) => {
               //check if there is an error
@@ -109,17 +116,31 @@ const saveUserWithPassword = async (userObj) => {
   const { password } = userObj;
   return new Promise((resolve, reject) => {
     User.encryptPassword(password).then(
-      (resEncrypt) => {
-        let encryptedPassword = resEncrypt.hash;
-        userObj.password = encryptedPassword;
-        saveUser(userObj).then(
-          (result) => {
-            resolve(result);
-          },
-          (err) => {
-            reject(err);
-          }
-        );
+      async (resEncrypt) => {
+        try {
+          let encryptedPassword = resEncrypt.hash;
+          userObj.password = encryptedPassword;
+
+          let addressId = (
+            await AddressService.getAddressByNameAndNumber(
+              userObj.street,
+              userObj.streetNumber
+            )
+          )._id.toString();
+          saveUser({ ...userObj, addressId }).then(
+            (result) => {
+              resolve(result);
+            },
+            (err) => {
+              reject(err);
+            }
+          );
+        } catch (err) {
+          reject({
+            success: false,
+            message: err.message || "No se pudo obtener la direccion",
+          });
+        }
       },
       (err) => {
         reject({ success: false, message: err.message || "Bad request." });
@@ -211,8 +232,28 @@ const getUsersBySuburbStreet = async (suburbId, street) => {
 
 const getUsersByAddress = async (suburbId, street, streetNumber) => {
   try {
-    let users = await User.getUsersByAddress(suburbId, street, streetNumber);
+    let addressId = (
+      await AddressService.getAddressByNameAndNumber(street, streetNumber)
+    )._id.toString();
+    let users = await User.getUsersByAddress(suburbId, addressId);
     return users;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getUsersByAddressId = async (suburbId, addressId) => {
+  try {
+    return await User.getUsersByAddress(suburbId, addressId);
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getAdminUsers = async (suburbId) => {
+  try {
+    let adminUsers = await User.getAdminUsers(suburbId);
+    return adminUsers;
   } catch (err) {
     throw err;
   }
@@ -282,6 +323,18 @@ const updateTempPassword = async (email) => {
   }
 };
 
+const updateCurrentPassword = async (userId, currentPassword, newPassword) => {
+  try {
+    return await User.updateCurrentPassword(
+      userId,
+      currentPassword,
+      newPassword
+    );
+  } catch (ex) {
+    throw ex;
+  }
+};
+
 const updateUserType = async (userId, userType) => {
   try {
     if (["neighbor", "guard", "suburbAdmin"].indexOf(userType) === -1)
@@ -294,9 +347,34 @@ const updateUserType = async (userId, userType) => {
 
 const enableDisableUser = async (userId, enabled) => {
   try {
-    return await User.enableDisableUser(userId, enabled);
+    await User.enableDisableUser(userId, enabled);
+    return { userId, active: enabled };
   } catch (ex) {
     throw ex;
+  }
+};
+
+const changeLimited = async (userId, limited) => {
+  try {
+    return await User.changeLimited(userId, limited);
+  } catch (ex) {
+    throw ex;
+  }
+};
+
+const getUserLeanById = async (userId) => {
+  try {
+    return await User.getUserLeanById(userId);
+  } catch (err) {
+    throw err;
+  }
+};
+
+const getIfUserIsLimited = async (userId) => {
+  try {
+    return await User.getIfUserIsLimited(userId);
+  } catch (err) {
+    throw err;
   }
 };
 
@@ -315,6 +393,7 @@ module.exports = {
   getUsersBySuburb,
   getUsersBySuburbStreet,
   getUsersByAddress,
+  getUsersByAddressId,
   updateUserPicture,
   deleteUserInfo,
   getSignedUserTerms,
@@ -324,4 +403,9 @@ module.exports = {
   updatePassword,
   updateUserType,
   enableDisableUser,
+  changeLimited,
+  getAdminUsers,
+  getUserLeanById,
+  getIfUserIsLimited,
+  updateCurrentPassword,
 };

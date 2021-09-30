@@ -99,6 +99,20 @@ const UserSchema = new mongoose.Schema({
   favorites: [GuestSchema],
   pushTokens: [PushTokenSchema],
   signedTerms: [Number],
+  addressId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Address",
+  },
+  limited: {
+    type: Boolean,
+    default: false,
+  },
+  limitedSince: {
+    type: Date,
+  },
+  limitedReason: {
+    type: String,
+  },
 });
 
 /**
@@ -108,7 +122,7 @@ const _secretKey = process.env.JWT_SECRET;
 
 let _getExpDate = () => {
   var expTimeByMin =
-    process.env.EXP_TOKEN != null ? process.env.EXP_TOKEN : "1440";
+    process.env.EXP_TOKEN != null ? process.env.EXP_TOKEN : "10080";
   return moment().add(expTimeByMin, "minutes").unix();
 };
 
@@ -233,6 +247,8 @@ UserSchema.methods = {
       pushTokens: this.pushTokens,
       street: this.street,
       streetNumber: this.streetNumber,
+      addressId: this.addressId,
+      limited: typeof this.limited === "undefined" ? false : this.limited,
       //validMenus: _getValidMenus(this._id) //verify if is better put this in another schema i.e. suburb
     };
     let token = jwt.sign(payload, _secretKey);
@@ -341,8 +357,16 @@ const mergePushTokens = (currentPushTokens, newPushToken) => {
 
 const extractUsersFromDoc = (mUsers) => {
   let users = mUsers.map((u) => {
-    let { _id, name, lastName, street, streetNumber, active } = u._doc;
-    return { _id, name, lastName, street, streetNumber, active };
+    let {
+      _id,
+      name,
+      lastName,
+      street,
+      streetNumber,
+      active,
+      pushTokens,
+    } = u._doc;
+    return { _id, name, lastName, street, streetNumber, active, pushTokens };
   });
   return users;
 };
@@ -488,6 +512,7 @@ UserSchema.statics = {
           active: objUser.active,
           userType: objUser.userType,
           transtime: moment.utc(),
+          addressId: objUser.addressId,
         },
       }
     );
@@ -507,6 +532,9 @@ UserSchema.statics = {
   },
   enableDisableUser: function (userId, enabled) {
     return this.updateOne({ _id: userId }, { $set: { active: enabled } });
+  },
+  changeLimited: function (userId, limited) {
+    return this.updateOne({ _id: userId }, { $set: { limited: limited } });
   },
   /**
    * Validate if the user token is active
@@ -591,8 +619,15 @@ UserSchema.statics = {
           lastName: 2,
           street: 3,
           streetNumber: 4,
-          active: 5,
-          userType: 6,
+          limited: 5,
+          active: 6,
+          userType: 7,
+          facebookId: 8,
+          appleId: 9,
+          googleId: 10,
+          email: 11,
+          loginName: 12,
+          addressId: 13,
         })
         .exec((err, result) => {
           if (err) reject(err);
@@ -610,14 +645,10 @@ UserSchema.statics = {
       );
     });
   },
-  getUsersByAddress: function (suburbId, street, streetNumber) {
+  getUsersByAddress: function (suburbId, addressId) {
     return new Promise((resolve, reject) => {
       this.find({
-        $and: [
-          { suburb: suburbId },
-          { street: street },
-          { streetNumber: streetNumber },
-        ],
+        $and: [{ suburb: suburbId }, { addressId: addressId }],
       }).exec((err, result) => {
         if (err) reject(err);
         resolve(extractUsersFromDoc(result));
@@ -750,6 +781,61 @@ UserSchema.statics = {
           resolve(tempPassword);
         });
       });
+    });
+  },
+  getAdminUsers: function (suburbId) {
+    return this.find({ suburb: suburbId, userType: "suburbAdmin" }).lean();
+  },
+  getIfUserIsLimited(userId) {
+    return new Promise((resolve, reject) => {
+      this.findOne({ _id: userId })
+        .lean()
+        .exec((err, result) => {
+          if (err) reject(err);
+          resolve({
+            isLimited:
+              typeof result.limited === "undefined" ? false : result.limited,
+          });
+        });
+    });
+  },
+  updateCurrentPassword: function (userId, password, newPassword) {
+    return new Promise((resolve, reject) => {
+      this.findOne({ _id: userId })
+        .lean()
+        .exec((err, result) => {
+          if (err) reject(err);
+          bcrypt.compare(password, result.password).then((valid) => {
+            if (valid) {
+              this.encryptPassword(base64.encode(newPassword))
+                .then((resEncrypt) => {
+                  this.findOneAndUpdate(
+                    { _id: userId },
+                    { $set: { tempPassword: null, password: resEncrypt.hash } },
+                    { new: true },
+                    function (err, user) {
+                      if (err) reject(err);
+                      resolve({
+                        success: true,
+                        message: "La contrasena fue actualizada exitosamente.",
+                      });
+                    }
+                  );
+                })
+                .catch((err) => {
+                  reject({
+                    success: false,
+                    message: "La contraseña actual no es correcta.",
+                  });
+                });
+            } else {
+              reject({
+                success: false,
+                message: "La contraseña actual no es correcta.",
+              });
+            }
+          });
+        });
     });
   },
 };
