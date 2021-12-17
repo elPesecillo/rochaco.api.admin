@@ -48,7 +48,15 @@ exports.checkAuth = async (req, res, next) => {
           // var session = req.session;
           // session.token = result.message;
           // session.user = user;
-          res.status("200").json(usr);
+          let userData = (await User.getLogin(user)).toObject();
+
+          res.status("200").json({
+            ...usr,
+            email: userData.email,
+            name: userData.name,
+            createdAt: userData.transtime,
+            id: userData._id.toString(),
+          });
         } else
           res.status("401").json({ success: false, message: "Unauthorized" });
       } else {
