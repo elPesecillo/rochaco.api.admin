@@ -614,3 +614,27 @@ exports.getIfUserIsLimited = async (req, res) => {
       .json({ success: false, message: err.message || "Bad request." });
   }
 };
+
+exports.addUserRfid = async (req, res) => {
+  try {
+    let { userId, rfid } = req.body;
+    let update = await userService.addUserRfid(userId, rfid);
+    res.status("200").json(update);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.removeUserRfid = async (req, res) => {
+  try {
+    let { userId, rfid } = req.body;
+    let update = await userService.removeUserRfid(userId, rfid);
+    res.status("200").json(update);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};

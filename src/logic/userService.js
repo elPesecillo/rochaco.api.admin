@@ -378,6 +378,22 @@ const getIfUserIsLimited = async (userId) => {
   }
 };
 
+const addUserRfid = async (userId, rfid) => {
+  try {
+    return await User.addUserRfid(userId, rfid);
+  } catch (err) {
+    throw err;
+  }
+};
+
+const removeUserRfid = async (userId, rfid) => {
+  try {
+    return await User.removeUserRfid(userId, rfid);
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -408,4 +424,6 @@ module.exports = {
   getUserLeanById,
   getIfUserIsLimited,
   updateCurrentPassword,
+  addUserRfid,
+  removeUserRfid,
 };

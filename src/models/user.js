@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const base64 = require("base-64");
 const GuestSchema = require("./schemas/guestSchema");
 const PushTokenSchema = require("./schemas/pushTokenSchema");
+const RFIdSchema = require("./schemas/RFIdSchema");
 
 const UserSchema = new mongoose.Schema({
   name: {
@@ -113,6 +114,7 @@ const UserSchema = new mongoose.Schema({
   limitedReason: {
     type: String,
   },
+  rfids: [RFIdSchema],
 });
 
 /**
@@ -357,15 +359,8 @@ const mergePushTokens = (currentPushTokens, newPushToken) => {
 
 const extractUsersFromDoc = (mUsers) => {
   let users = mUsers.map((u) => {
-    let {
-      _id,
-      name,
-      lastName,
-      street,
-      streetNumber,
-      active,
-      pushTokens,
-    } = u._doc;
+    let { _id, name, lastName, street, streetNumber, active, pushTokens } =
+      u._doc;
     return { _id, name, lastName, street, streetNumber, active, pushTokens };
   });
   return users;
@@ -536,6 +531,48 @@ UserSchema.statics = {
   changeLimited: function (userId, limited) {
     return this.updateOne({ _id: userId }, { $set: { limited: limited } });
   },
+  addUserRfid: function (userId, rfId) {
+    return new Promise((resolve, reject) => {
+      this.findOne({ _id: userId }).exec((err, result) => {
+        if (err) reject(err);
+        if (!result) reject({ message: "user not found" });
+        let currentRfids = result.rfids || [];
+        let mergedRfids = currentRfids.some((item) => item.rfid === rfId)
+          ? currentRfids
+          : [...currentRfids, { rfid: rfId }];
+
+        this.findOneAndUpdate(
+          { _id: userId },
+          { $set: { rfids: [...mergedRfids] } },
+          { new: true },
+          function (err, user) {
+            if (err) reject(err);
+            resolve({ userId: user._id, rfids: user.rfids });
+          }
+        );
+      });
+    });
+  },
+  removeUserRfid: function (userId, rfId) {
+    return new Promise((resolve, reject) => {
+      this.findOne({ _id: userId }).exec((err, result) => {
+        if (err) reject(err);
+        if (!result) reject({ message: "user not found" });
+        let currentRfids = result.rfids || [];
+        let filteredRfids = currentRfids.filter((item) => item.rfid !== rfId);
+
+        this.findOneAndUpdate(
+          { _id: userId },
+          { $set: { rfids: [...filteredRfids] } },
+          { new: true },
+          function (err, user) {
+            if (err) reject(err);
+            resolve({ userId: user._id, rfids: user.rfids });
+          }
+        );
+      });
+    });
+  },
   /**
    * Validate if the user token is active
    */
@@ -628,6 +665,7 @@ UserSchema.statics = {
           email: 11,
           loginName: 12,
           addressId: 13,
+          rfids: 14,
         })
         .exec((err, result) => {
           if (err) reject(err);
