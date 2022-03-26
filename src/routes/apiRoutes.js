@@ -38,6 +38,8 @@ router.get("/api/auth/appletoken", siteAuth.getTokenByAppleId);
 
 router.post("/api/signUp", signup.signUp);
 
+router.post("/api/auth/internal/auth", siteAuth.internalAuth);
+
 //user apis
 const userAdmin = require("../controllers/userAdmin");
 
@@ -64,6 +66,8 @@ router.post(
   userAdmin.updateCurrentPassword
 );
 router.post("/api/userInfo/signUserTerms", userAdmin.signUserTerms);
+router.post("/api/userInfo/addUserRfid", userAdmin.addUserRfid);
+router.post("/api/userInfo/removeUserRfid", userAdmin.removeUserRfid);
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
 router.post("/api/saveAppleUser", userAdmin.saveAppleUser);
@@ -117,6 +121,11 @@ router.get(
 router.post(
   "/api/suburb/setLimitedUsersByAddress",
   suburb.setLimitedUsersByAddress
+);
+
+router.get(
+  "/api/suburb/getSuburbAutomationInfo",
+  suburb.getSuburbAutomationInfo
 );
 
 //push notifications

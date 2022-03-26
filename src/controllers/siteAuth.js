@@ -34,6 +34,17 @@ const validateUser = (userLogin, password, isTemporary = false) => {
   });
 };
 
+exports.internalAuth = async (req, res) => {
+  try {
+    const { user, password } = req.body;
+    const isTemporary = false;
+    const result = await validateUser(user, password, isTemporary);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 exports.checkAuth = async (req, res, next) => {
   try {
     //over here check the db to know if the auth is valid

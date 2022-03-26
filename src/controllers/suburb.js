@@ -362,7 +362,7 @@ exports.setLimitedUsersByAddress = async (req, res) => {
         proms.push(userService.changeLimited(u._id.toString(), limited));
       });
       await Promise.all(proms);
-      res.status(200).json(users.map(u=>({...u, limited})));
+      res.status(200).json(users.map((u) => ({ ...u, limited })));
     } else
       res.status(400).json({
         success: false,
@@ -371,7 +371,48 @@ exports.setLimitedUsersByAddress = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message:
-        err.message || "An unknown error occurs while trying to update the users.",
+        err.message ||
+        "An unknown error occurs while trying to update the users.",
+    });
+  }
+};
+
+exports.getSuburbAutomationInfo = async (req, res) => {
+  try {
+    const { suburbId } = req.query;
+    if (ObjectId.isValid(suburbId)) {
+      const addresses = await addressService.getAddressesBySuburbId(suburbId);
+      const users = await userService.getUsersBySuburb(suburbId);
+      const addressesInfo = addresses.map((a) => {
+        let usersAddress = users.filter((u) =>
+          u.addressId ? u.addressId.toString() === a._id.toString() : false
+        );
+        return {
+          address: { ...a },
+          status: {
+            active: usersAddress.some((u) => u.active),
+            limited: usersAddress
+              .filter((u) => u.active)
+              .some((u) =>
+                typeof u.limited !== "undefined" ? u.limited : false
+              ),
+            rfids: usersAddress.map((u) => u.rfids || []).flat(),
+          },
+        };
+      });
+
+      res.status(200).json(addressesInfo);
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "Por favor indique el fraccionamiento.",
+      });
+    }
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message ||
+        "An unknown error occurs while trying to get automation info.",
     });
   }
 };
