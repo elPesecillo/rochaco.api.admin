@@ -1007,6 +1007,23 @@ const validateUser = (userLogin, password, isTemporary = false) => {
   });
 };
 
+exports.internalAuth = async (req, res) => {
+  try {
+    const {
+      user,
+      password
+    } = req.body;
+    const isTemporary = false;
+    const result = await validateUser(user, password, isTemporary);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
+
 exports.checkAuth = async (req, res, next) => {
   try {
     //over here check the db to know if the auth is valid
@@ -1026,7 +1043,13 @@ exports.checkAuth = async (req, res, next) => {
           // var session = req.session;
           // session.token = result.message;
           // session.user = user;
-          res.status("200").json(usr);
+          let userData = (await User.getLogin(user)).toObject();
+          res.status("200").json({ ...usr,
+            email: userData.email,
+            name: userData.name,
+            createdAt: userData.transtime,
+            id: userData._id.toString()
+          });
         } else res.status("401").json({
           success: false,
           message: "Unauthorized"
@@ -1592,6 +1615,41 @@ exports.setLimitedUsersByAddress = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message: err.message || "An unknown error occurs while trying to update the users."
+    });
+  }
+};
+
+exports.getSuburbAutomationInfo = async (req, res) => {
+  try {
+    const {
+      suburbId
+    } = req.query;
+
+    if (ObjectId.isValid(suburbId)) {
+      const addresses = await addressService.getAddressesBySuburbId(suburbId);
+      const users = await userService.getUsersBySuburb(suburbId);
+      const addressesInfo = addresses.map(a => {
+        let usersAddress = users.filter(u => u.addressId ? u.addressId.toString() === a._id.toString() : false);
+        return {
+          address: { ...a
+          },
+          status: {
+            active: usersAddress.some(u => u.active),
+            limited: usersAddress.filter(u => u.active).some(u => typeof u.limited !== "undefined" ? u.limited : false),
+            rfids: usersAddress.map(u => u.rfids || []).flat()
+          }
+        };
+      });
+      res.status(200).json(addressesInfo);
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "Por favor indique el fraccionamiento."
+      });
+    }
+  } catch (err) {
+    res.status(500).json({
+      message: err.message || "An unknown error occurs while trying to get automation info."
     });
   }
 };
@@ -2272,6 +2330,38 @@ exports.getIfUserIsLimited = async (req, res) => {
   }
 };
 
+exports.addUserRfid = async (req, res) => {
+  try {
+    let {
+      userId,
+      rfid
+    } = req.body;
+    let update = await userService.addUserRfid(userId, rfid);
+    res.status("200").json(update);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
+exports.removeUserRfid = async (req, res) => {
+  try {
+    let {
+      userId,
+      rfid
+    } = req.body;
+    let update = await userService.removeUserRfid(userId, rfid);
+    res.status("200").json(update);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request."
+    });
+  }
+};
+
 /***/ }),
 
 /***/ "./src/controllers/vision.js":
@@ -2412,7 +2502,8 @@ const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken",
 "/api/userInfo/isPasswordTemp"];
 const apiWithKey = ["/api/notification/newPayment", // add api key for this kind of requests
 "/api/notification/approveRejectPayment", // add api key for this kind of requests
-"/api/suburb/getAddressesBySuburbId"];
+"/api/suburb/getAddressesBySuburbId", // add api key for this kind of requests
+"/api/suburb/getSuburbAutomationInfo", "/api/auth/internal/auth"];
 const protectedApi = ["/api/suburb/approveReject"];
 exports.Auth = class Auth {
   validateToken(token) {
@@ -3369,6 +3460,22 @@ const getIfUserIsLimited = async userId => {
   }
 };
 
+const addUserRfid = async (userId, rfid) => {
+  try {
+    return await User.addUserRfid(userId, rfid);
+  } catch (err) {
+    throw err;
+  }
+};
+
+const removeUserRfid = async (userId, rfid) => {
+  try {
+    return await User.removeUserRfid(userId, rfid);
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports = {
   saveUser,
   validateRecaptcha,
@@ -3398,7 +3505,9 @@ module.exports = {
   getAdminUsers,
   getUserLeanById,
   getIfUserIsLimited,
-  updateCurrentPassword
+  updateCurrentPassword,
+  addUserRfid,
+  removeUserRfid
 };
 
 /***/ }),
@@ -3992,6 +4101,30 @@ module.exports = Role;
 
 /***/ }),
 
+/***/ "./src/models/schemas/RFIdSchema.js":
+/*!******************************************!*\
+  !*** ./src/models/schemas/RFIdSchema.js ***!
+  \******************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
+
+const moment = __webpack_require__(/*! moment */ "moment");
+
+const RFIdSchema = new mongoose.Schema({
+  rfid: {
+    type: String
+  },
+  transtime: {
+    type: Date,
+    default: moment.utc()
+  }
+});
+module.exports = RFIdSchema;
+
+/***/ }),
+
 /***/ "./src/models/schemas/config/childMenuSchema.js":
 /*!******************************************************!*\
   !*** ./src/models/schemas/config/childMenuSchema.js ***!
@@ -4429,21 +4562,24 @@ SuburbSchema.statics = {
       this.findOne({
         _id: id
       }).exec((err, result) => {
-        if (err) reject(err);
-        let {
-          name,
-          location,
-          postalCode,
-          active,
-          transtime
-        } = result;
-        resolve({
-          name,
-          location,
-          postalCode,
-          active,
-          transtime
-        });
+        if (err || !result) reject(err);
+
+        if (result) {
+          let {
+            name,
+            location,
+            postalCode,
+            active,
+            transtime
+          } = result;
+          resolve({
+            name,
+            location,
+            postalCode,
+            active,
+            transtime
+          });
+        }
       });
     });
   },
@@ -4482,12 +4618,13 @@ SuburbSchema.statics = {
       this.findOne({
         _id: id
       }).populate("config").exec((err, result) => {
-        if (err) reject(err);
-        let {
-          config
-        } = result;
-        if (config) resolve({ ...config._doc
-        });else resolve({});
+        if (err || !result) reject(err || "No se encontro la configuracion");else {
+          let {
+            config
+          } = result;
+          if (config) resolve({ ...config._doc
+          });else resolve({});
+        }
       });
     });
   },
@@ -4728,6 +4865,8 @@ const GuestSchema = __webpack_require__(/*! ./schemas/guestSchema */ "./src/mode
 
 const PushTokenSchema = __webpack_require__(/*! ./schemas/pushTokenSchema */ "./src/models/schemas/pushTokenSchema.js");
 
+const RFIdSchema = __webpack_require__(/*! ./schemas/RFIdSchema */ "./src/models/schemas/RFIdSchema.js");
+
 const UserSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -4833,7 +4972,8 @@ const UserSchema = new mongoose.Schema({
   },
   limitedReason: {
     type: String
-  }
+  },
+  rfids: [RFIdSchema]
 });
 /**
  * Private attributes
@@ -5275,6 +5415,66 @@ UserSchema.statics = {
       }
     });
   },
+  addUserRfid: function (userId, rfId) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: userId
+      }).exec((err, result) => {
+        if (err) reject(err);
+        if (!result) reject({
+          message: "user not found"
+        });
+        let currentRfids = result.rfids || [];
+        let mergedRfids = currentRfids.some(item => item.rfid === rfId) ? currentRfids : [...currentRfids, {
+          rfid: rfId
+        }];
+        this.findOneAndUpdate({
+          _id: userId
+        }, {
+          $set: {
+            rfids: [...mergedRfids]
+          }
+        }, {
+          new: true
+        }, function (err, user) {
+          if (err) reject(err);
+          resolve({
+            userId: user._id,
+            rfids: user.rfids
+          });
+        });
+      });
+    });
+  },
+  removeUserRfid: function (userId, rfId) {
+    return new Promise((resolve, reject) => {
+      this.findOne({
+        _id: userId
+      }).exec((err, result) => {
+        if (err) reject(err);
+        if (!result) reject({
+          message: "user not found"
+        });
+        let currentRfids = result.rfids || [];
+        let filteredRfids = currentRfids.filter(item => item.rfid !== rfId);
+        this.findOneAndUpdate({
+          _id: userId
+        }, {
+          $set: {
+            rfids: [...filteredRfids]
+          }
+        }, {
+          new: true
+        }, function (err, user) {
+          if (err) reject(err);
+          resolve({
+            userId: user._id,
+            rfids: user.rfids
+          });
+        });
+      });
+    });
+  },
 
   /**
    * Validate if the user token is active
@@ -5366,7 +5566,8 @@ UserSchema.statics = {
         googleId: 10,
         email: 11,
         loginName: 12,
-        addressId: 13
+        addressId: 13,
+        rfids: 14
       }).exec((err, result) => {
         if (err) reject(err);
         resolve(result);
@@ -5627,7 +5828,8 @@ router.post("/api/logOff", siteAuth.logOff);
 router.get("/api/auth/fbtoken", siteAuth.getTokenByFacebookId);
 router.get("/api/auth/googletoken", siteAuth.getTokenByGoogleId);
 router.get("/api/auth/appletoken", siteAuth.getTokenByAppleId);
-router.post("/api/signUp", signup.signUp); //user apis
+router.post("/api/signUp", signup.signUp);
+router.post("/api/auth/internal/auth", siteAuth.internalAuth); //user apis
 
 const userAdmin = __webpack_require__(/*! ../controllers/userAdmin */ "./src/controllers/userAdmin.js");
 
@@ -5650,6 +5852,8 @@ router.post("/api/userInfo/changeLimited", userAdmin.changeLimited);
 router.post("/api/userInfo/updatePassword", userAdmin.updatePassword);
 router.post("/api/userInfo/updateCurrentPassword", userAdmin.updateCurrentPassword);
 router.post("/api/userInfo/signUserTerms", userAdmin.signUserTerms);
+router.post("/api/userInfo/addUserRfid", userAdmin.addUserRfid);
+router.post("/api/userInfo/removeUserRfid", userAdmin.removeUserRfid);
 router.post("/api/saveGoogleUser", userAdmin.saveGoogleUser);
 router.post("/api/saveFacebookUser", userAdmin.saveFacebookUser);
 router.post("/api/saveAppleUser", userAdmin.saveAppleUser);
@@ -5679,7 +5883,8 @@ router.get("/api/suburb/getUsers", suburb.getUsersBySuburb);
 router.get("/api/suburb/migrateAddresses", suburb.migrateAddresses);
 router.get("/api/suburb/getAddressesBySuburbId", suburb.getAddressesBySuburbId);
 router.get("/api/suburb/getAddressesWithUsersStates", suburb.getAddressesWithUsersStates);
-router.post("/api/suburb/setLimitedUsersByAddress", suburb.setLimitedUsersByAddress); //push notifications
+router.post("/api/suburb/setLimitedUsersByAddress", suburb.setLimitedUsersByAddress);
+router.get("/api/suburb/getSuburbAutomationInfo", suburb.getSuburbAutomationInfo); //push notifications
 
 router.post("/api/notification/test", pushNotification.sendTestNotification);
 router.post("/api/notification/arrive", pushNotification.sendArriveNotification);
