@@ -33,6 +33,8 @@ const apiWithKey = [
   "/api/suburb/getAddressesBySuburbId", // add api key for this kind of requests
   "/api/suburb/getSuburbAutomationInfo",
   "/api/auth/internal/auth",
+  "/api/notification/newReservation",
+  "/api/notification/approveRejectReservation",
 ];
 
 const protectedApi = ["/api/suburb/approveReject"];

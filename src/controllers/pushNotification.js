@@ -127,3 +127,86 @@ exports.sendApproveRejectedPaymentNotification = async (req, res) => {
     res.status(400).json(err);
   }
 };
+
+exports.sendNewSpaceReservationNotification = async (req, res) => {
+  try {
+    const { suburbId, userId, reservationId } = req.body;
+    const adminUsers = await getAdminUsers(suburbId);
+
+    const user = await getUserLeanById(userId);
+    let promises = [];
+    adminUsers.forEach((u) => {
+      promises.push(
+        pushNotificationService.sendPushNotification(
+          u.pushTokens.map((t) => t.token),
+          {
+            sound: "default",
+            body: `El usuario ${user.name} con la dirección ${user.street} ${user.streetNumber} ha realizado una reserva de un area común.`,
+            data: {
+              redirect: { stack: "CommonAreas", screen: "ApprovalScreen" },
+              props: {
+                street: user.street,
+                streetNumber: user.streetNumber,
+                reservationId,
+              },
+            },
+            title: `Nueva reserva de area común`,
+          }
+        )
+      );
+    });
+
+    let sendNotifications = await Promise.all(promises);
+    res.status(200).json(sendNotifications);
+  } catch (err) {
+    console.log("notification error details: ", err);
+    res.status(400).json(err);
+  }
+};
+
+const getReservationStatusMessage = (status, comment) => {
+  switch (status) {
+    case "approved":
+      return "Tu reservación ha sido aprobada";
+    case "rejected":
+      return `Tu reservación ha sido rechazada por la siguiente razón: ${comment}`;
+    case "pending":
+      return "Tu reservación esta siendo procesada";
+    default:
+      return "El estatus de tu reservación ha cambiado";
+  }
+};
+
+exports.sendApproveRejectedReservationNotification = async (req, res) => {
+  try {
+    const { suburbId, addressId, status, comment, reservationId } = req.body;
+    let promises = [];
+    let users = await getUsersByAddressId(suburbId, addressId);
+    users.forEach((user) => {
+      promises.push(
+        pushNotificationService.sendPushNotification(
+          user.pushTokens.map((t) => t.token),
+          {
+            sound: "default",
+            body: getReservationStatusMessage(status, comment),
+            title: "Cambio en el estatus de tu reservación",
+            data: {
+              redirect: { stack: "CommonAreas", screen: "MyReservationsStack" },
+              props: {
+                street: user.street,
+                streetNumber: user.streetNumber,
+                reservationId,
+              },
+            },
+          }
+        )
+      );
+    });
+
+    let sendNotifications = await Promise.all(promises);
+    res.status(200).json(sendNotifications);
+  } catch (err) {
+    console.log("notification error details: ", err);
+    res.status(400).json(err);
+  }
+};
