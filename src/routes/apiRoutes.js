@@ -142,6 +142,14 @@ router.post(
   "/api/notification/approveRejectPayment",
   pushNotification.sendApproveRejectedPaymentNotification
 );
+router.post(
+  "/api/notification/newReservation",
+  pushNotification.sendNewSpaceReservationNotification
+);
+router.post(
+  "/api/notification/approveRejectReservation",
+  pushNotification.sendApproveRejectedReservationNotification
+);
 
 router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
 
