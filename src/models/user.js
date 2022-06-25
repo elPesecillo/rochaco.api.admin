@@ -149,65 +149,72 @@ let _validateExpDate = function (expDate) {
 
 UserSchema.methods = {
   validatePassword: function (_password, isTemporary = false) {
-    var _this = this;
-    let pass = base64.decode(_password);
+    try {
+      var _this = this;
+      let pass = base64.decode(_password);
 
-    let compareValue = isTemporary ? _this.tempPassword : _this.password;
+      let compareValue = isTemporary ? _this.tempPassword : _this.password;
 
-    return new Promise(
-      (resolve, reject) => {
-        if (_this.temporaryDisabled) {
-          let wait = 10 - this.getDisabledSince();
-          if (wait > 0)
-            reject({
-              success: false,
-              message: `El usuario esta temporalmente desabilitado, por favor espere ${wait} minutos para volver a intentar.`,
+      return new Promise(
+        (resolve, reject) => {
+          if (_this.temporaryDisabled) {
+            let wait = 10 - this.getDisabledSince();
+            if (wait > 0)
+              reject({
+                success: false,
+                message: `El usuario esta temporalmente desabilitado, por favor espere ${wait} minutos para volver a intentar.`,
+              });
+            else
+              this.increaseLoginAttempts(true).then((res) => {
+                this.validatePassword(_password).then(
+                  (result) => resolve(result),
+                  (err) => reject(err)
+                );
+              });
+          } else
+            bcrypt.compare(pass, compareValue).then((valid) => {
+              if (valid) {
+                //reset logint attempts
+                this.increaseLoginAttempts(true).then(
+                  (res) => {
+                    resolve({
+                      success: true,
+                      message: "La contraseña coincide.",
+                    });
+                  },
+                  (err) =>
+                    reject({ success: false, message: "Un error occurio." })
+                );
+              } else {
+                //increase login attempts
+                this.increaseLoginAttempts().then(
+                  (res) => {
+                    reject({
+                      success: false,
+                      message: "La contraseña no es valida.",
+                    });
+                  },
+                  (err) =>
+                    reject({
+                      success: false,
+                      message: "Un error occurio, la contraseña no es valida.",
+                    })
+                );
+              }
             });
-          else
-            this.increaseLoginAttempts(true).then((res) => {
-              this.validatePassword(_password).then(
-                (result) => resolve(result),
-                (err) => reject(err)
-              );
-            });
-        } else
-          bcrypt.compare(pass, compareValue).then((valid) => {
-            if (valid) {
-              //reset logint attempts
-              this.increaseLoginAttempts(true).then(
-                (res) => {
-                  resolve({
-                    success: true,
-                    message: "La contraseña coincide.",
-                  });
-                },
-                (err) =>
-                  reject({ success: false, message: "Un error occurio." })
-              );
-            } else {
-              //increase login attempts
-              this.increaseLoginAttempts().then(
-                (res) => {
-                  reject({
-                    success: false,
-                    message: "La contraseña no es valida.",
-                  });
-                },
-                (err) =>
-                  reject({
-                    success: false,
-                    message: "Un error occurio, la contraseña no es valida.",
-                  })
-              );
-            }
-          });
-      },
-      (err) =>
-        reject({
-          success: false,
-          message: "Ocurrio un error al comparar la contraseña.",
-        })
-    );
+        },
+        (err) =>
+          reject({
+            success: false,
+            message: "Ocurrio un error al comparar la contraseña.",
+          })
+      );
+    } catch (e) {
+      return Promise.reject({
+        success: false,
+        message: "Ocurrio un error al comparar la contraseña.",
+      });
+    }
   },
   getDisabledSince: function () {
     let disabledSince = this.disabledSince ? this.disabledSince : moment.utc();
