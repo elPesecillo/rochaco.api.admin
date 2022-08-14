@@ -83,23 +83,23 @@ exports.checkAuth = async (req, res, next) => {
 exports.getTokenByFacebookId = async (req, res) => {
   try {
     let { id, captchaToken } = req.query;
-    let validCaptcha = await validateRecaptcha(captchaToken);
-    if (validCaptcha) {
-      let usr = await User.getUserByFacebookId(id);
-      if (usr) {
-        if (validateActiveUser(usr._doc)) {
-          let token = usr.generateUserToken();
-          res.status("200").json({ token });
-        } else
-          res.status("401").json({
-            token: null,
-            message:
-              "Tu usuario esta desactivado, para mayor información contacta el administrador de tu fraccionamiento.",
-          });
-      } else {
-        res.status("404").json({ token: null });
-      }
-    } else res.status("401").json({ token: null });
+    //let validCaptcha = await validateRecaptcha(captchaToken);
+    //if (validCaptcha) {
+    let usr = await User.getUserByFacebookId(id);
+    if (usr) {
+      if (validateActiveUser(usr._doc)) {
+        let token = usr.generateUserToken();
+        res.status("200").json({ token });
+      } else
+        res.status("401").json({
+          token: null,
+          message:
+            "Tu usuario esta desactivado, para mayor información contacta el administrador de tu fraccionamiento.",
+        });
+    } else {
+      res.status("404").json({ token: null });
+    }
+    //} else res.status("401").json({ token: null });
   } catch (err) {
     console.log("error", err);
     res.status("404").json({ token: null });

@@ -1167,30 +1167,27 @@ exports.getTokenByFacebookId = async (req, res) => {
     let {
       id,
       captchaToken
-    } = req.query;
-    let validCaptcha = await validateRecaptcha(captchaToken);
+    } = req.query; //let validCaptcha = await validateRecaptcha(captchaToken);
+    //if (validCaptcha) {
 
-    if (validCaptcha) {
-      let usr = await User.getUserByFacebookId(id);
+    let usr = await User.getUserByFacebookId(id);
 
-      if (usr) {
-        if (validateActiveUser(usr._doc)) {
-          let token = usr.generateUserToken();
-          res.status("200").json({
-            token
-          });
-        } else res.status("401").json({
-          token: null,
-          message: "Tu usuario esta desactivado, para mayor información contacta el administrador de tu fraccionamiento."
+    if (usr) {
+      if (validateActiveUser(usr._doc)) {
+        let token = usr.generateUserToken();
+        res.status("200").json({
+          token
         });
-      } else {
-        res.status("404").json({
-          token: null
-        });
-      }
-    } else res.status("401").json({
-      token: null
-    });
+      } else res.status("401").json({
+        token: null,
+        message: "Tu usuario esta desactivado, para mayor información contacta el administrador de tu fraccionamiento."
+      });
+    } else {
+      res.status("404").json({
+        token: null
+      });
+    } //} else res.status("401").json({ token: null });
+
   } catch (err) {
     console.log("error", err);
     res.status("404").json({
@@ -5315,8 +5312,9 @@ UserSchema.statics = {
              }
          })*/
       .exec((err, result) => {
-        if (err) reject(err);
-        resolve(result);
+        if (err) reject(err);else {
+          resolve(result);
+        }
       });
     });
   },
@@ -5325,8 +5323,9 @@ UserSchema.statics = {
       this.findOne({
         facebookId: _facebookId
       }).exec((err, result) => {
-        if (err) reject(err);
-        resolve(result);
+        if (err) reject(err);else {
+          resolve(result);
+        }
       });
     });
   },
@@ -5335,8 +5334,9 @@ UserSchema.statics = {
       this.findOne({
         googleId: _googleId
       }).exec((err, result) => {
-        if (err) reject(err);
-        resolve(result);
+        if (err) reject(err);else {
+          resolve(result);
+        }
       });
     });
   },
@@ -5345,8 +5345,9 @@ UserSchema.statics = {
       this.findOne({
         appleId: _appleId
       }).exec((err, result) => {
-        if (err) reject(err);
-        resolve(result);
+        if (err) reject(err);else {
+          resolve(result);
+        }
       });
     });
   },
@@ -5355,8 +5356,9 @@ UserSchema.statics = {
       this.findOne({
         _id: userId
       }).exec((err, result) => {
-        if (err) reject(err);
-        resolve(result.favorites);
+        if (err) reject(err);else {
+          resolve(result.favorites);
+        }
       });
     });
   },
@@ -5379,8 +5381,9 @@ UserSchema.statics = {
         }, {
           new: true
         }, function (err, user) {
-          if (err) reject(err);
-          resolve(mergedFavs);
+          if (err) reject(err);else {
+            resolve(mergedFavs);
+          }
         });
         resolve(result);
       });
@@ -5408,8 +5411,9 @@ UserSchema.statics = {
         }, {
           new: true
         }, function (err, user) {
-          if (err) reject(err);
-          resolve(filterFavs);
+          if (err) reject(err);else {
+            resolve(filterFavs);
+          }
         });
         resolve(result);
       });
@@ -5436,8 +5440,9 @@ UserSchema.statics = {
         }, {
           new: true
         }, function (err, user) {
-          if (err) reject(err);
-          resolve(mergedPushTokens);
+          if (err) reject(err);else {
+            resolve(mergedPushTokens);
+          }
         });
       });
     });
@@ -5509,29 +5514,30 @@ UserSchema.statics = {
       this.findOne({
         _id: userId
       }).exec((err, result) => {
-        if (err) reject(err);
-        if (!result) reject({
+        if (err) reject(err);else if (!result) reject({
           message: "user not found"
-        });
-        let currentRfids = result.rfids || [];
-        let mergedRfids = currentRfids.some(item => item.rfid === rfId) ? currentRfids : [...currentRfids, {
-          rfid: rfId
-        }];
-        this.findOneAndUpdate({
-          _id: userId
-        }, {
-          $set: {
-            rfids: [...mergedRfids]
-          }
-        }, {
-          new: true
-        }, function (err, user) {
-          if (err) reject(err);
-          resolve({
-            userId: user._id,
-            rfids: user.rfids
+        });else {
+          let currentRfids = result.rfids || [];
+          let mergedRfids = currentRfids.some(item => item.rfid === rfId) ? currentRfids : [...currentRfids, {
+            rfid: rfId
+          }];
+          this.findOneAndUpdate({
+            _id: userId
+          }, {
+            $set: {
+              rfids: [...mergedRfids]
+            }
+          }, {
+            new: true
+          }, function (err, user) {
+            if (err) reject(err);else {
+              resolve({
+                userId: user._id,
+                rfids: user.rfids
+              });
+            }
           });
-        });
+        }
       });
     });
   },
@@ -5540,27 +5546,28 @@ UserSchema.statics = {
       this.findOne({
         _id: userId
       }).exec((err, result) => {
-        if (err) reject(err);
-        if (!result) reject({
+        if (err) reject(err);else if (!result) reject({
           message: "user not found"
-        });
-        let currentRfids = result.rfids || [];
-        let filteredRfids = currentRfids.filter(item => item.rfid !== rfId);
-        this.findOneAndUpdate({
-          _id: userId
-        }, {
-          $set: {
-            rfids: [...filteredRfids]
-          }
-        }, {
-          new: true
-        }, function (err, user) {
-          if (err) reject(err);
-          resolve({
-            userId: user._id,
-            rfids: user.rfids
+        });else {
+          let currentRfids = result.rfids || [];
+          let filteredRfids = currentRfids.filter(item => item.rfid !== rfId);
+          this.findOneAndUpdate({
+            _id: userId
+          }, {
+            $set: {
+              rfids: [...filteredRfids]
+            }
+          }, {
+            new: true
+          }, function (err, user) {
+            if (err) reject(err);else {
+              resolve({
+                userId: user._id,
+                rfids: user.rfids
+              });
+            }
           });
-        });
+        }
       });
     });
   },
@@ -5622,8 +5629,9 @@ UserSchema.statics = {
       this.findOne({
         _id: id
       }).populate("suburb", "name").exec((err, result) => {
-        if (err) reject(err);
-        resolve(result);
+        if (err) reject(err);else {
+          resolve(result);
+        }
       });
     });
   },
@@ -5632,8 +5640,9 @@ UserSchema.statics = {
       this.findOne({
         _id: id
       }).populate("suburb", "name").lean().exec((err, result) => {
-        if (err) reject(err);
-        resolve(result);
+        if (err) reject(err);else {
+          resolve(result);
+        }
       });
     });
   },
@@ -5658,8 +5667,9 @@ UserSchema.statics = {
         addressId: 13,
         rfids: 14
       }).exec((err, result) => {
-        if (err) reject(err);
-        resolve(result);
+        if (err) reject(err);else {
+          resolve(result);
+        }
       });
     });
   },
@@ -5672,8 +5682,9 @@ UserSchema.statics = {
           street: street
         }]
       }).exec((err, result) => {
-        if (err) reject(err);
-        resolve(extractUsersFromDoc(result));
+        if (err) reject(err);else {
+          resolve(extractUsersFromDoc(result));
+        }
       });
     });
   },
@@ -5686,8 +5697,9 @@ UserSchema.statics = {
           addressId: addressId
         }]
       }).exec((err, result) => {
-        if (err) reject(err);
-        resolve(extractUsersFromDoc(result));
+        if (err) reject(err);else {
+          resolve(extractUsersFromDoc(result));
+        }
       });
     });
   },
@@ -5707,12 +5719,13 @@ UserSchema.statics = {
           }
         }, {
           new: true
-        }, function (err, user) {
-          if (err) reject(err);
-          resolve({
-            signed: true,
-            termsVersion: terms
-          });
+        }, function (err, _user) {
+          if (err) reject(err);else {
+            resolve({
+              signed: true,
+              termsVersion: terms
+            });
+          }
         });
       });
     });
@@ -5722,9 +5735,7 @@ UserSchema.statics = {
       this.findOne({
         loginName: user
       }).exec((err, result) => {
-        if (err) reject(err);
-
-        if (!result || result.tempPassword == "" || result.tempPassword == null) {
+        if (err) reject(err);else if (!result || result.tempPassword == "" || result.tempPassword == null) {
           resolve(false);
         } else {
           bcrypt.compare(password, result.tempPassword).then(valid => {
@@ -5743,41 +5754,40 @@ UserSchema.statics = {
       this.findOne({
         _id: userId
       }).exec((err, result) => {
-        if (err) reject(err);
-
-        if (result.tempPassword == "") {
+        if (err) reject(err);else if (result.tempPassword == "") {
           resolve(false);
-        }
-
-        bcrypt.compare(tempPassword, result.tempPassword).then(valid => {
-          if (valid) {
-            let HashPassword = "";
-            this.encryptPassword(base64.encode(password)).then(resEncrypt => {
-              HashPassword = resEncrypt.hash;
-              this.findOneAndUpdate({
-                _id: userId
-              }, {
-                $set: {
-                  tempPassword: null,
-                  password: HashPassword
-                }
-              }, {
-                new: true
-              }, function (err, user) {
-                if (err) reject(err);
-                resolve({
-                  success: true,
-                  message: "La contrasena fue actualizada exitosamente."
+        } else {
+          bcrypt.compare(tempPassword, result.tempPassword).then(valid => {
+            if (valid) {
+              let HashPassword = "";
+              this.encryptPassword(base64.encode(password)).then(resEncrypt => {
+                HashPassword = resEncrypt.hash;
+                this.findOneAndUpdate({
+                  _id: userId
+                }, {
+                  $set: {
+                    tempPassword: null,
+                    password: HashPassword
+                  }
+                }, {
+                  new: true
+                }, function (err, user) {
+                  if (err) reject(err);else {
+                    resolve({
+                      success: true,
+                      message: "La contrasena fue actualizada exitosamente."
+                    });
+                  }
                 });
               });
-            });
-          } else {
-            reject({
-              success: false,
-              message: "Hubo un problema al actualizar la contrasena."
-            });
-          }
-        });
+            } else {
+              reject({
+                success: false,
+                message: "Hubo un problema al actualizar la contrasena."
+              });
+            }
+          });
+        }
       });
     });
   },
@@ -5786,28 +5796,31 @@ UserSchema.statics = {
       this.findOne({
         email: email
       }).exec((err, result) => {
-        if (err) reject(err);
-        if (!result) reject({
-          message: "Email does not exist."
-        });
-        let tempPassword = Math.random().toString(36).substring(2, 8).toUpperCase() + Math.random().toString(36).substring(2, 4).toUpperCase();
-        let tempHashPassword = "";
-        this.encryptPassword(base64.encode(tempPassword)).then(resEncrypt => {
-          tempHashPassword = resEncrypt.hash;
-          this.findOneAndUpdate({
-            email: email
-          }, {
-            $set: {
-              tempPassword: tempHashPassword
-            }
-          }, {
-            new: true
-          }, function (err) {
-            if (err) reject(err);
+        if (err) reject(err);else if (!result) {
+          reject({
+            message: "Email does not exist."
+          });
+        } else {
+          let tempPassword = Math.random().toString(36).substring(2, 8).toUpperCase() + Math.random().toString(36).substring(2, 4).toUpperCase();
+          let tempHashPassword = "";
+          this.encryptPassword(base64.encode(tempPassword)).then(resEncrypt => {
+            tempHashPassword = resEncrypt.hash;
+            this.findOneAndUpdate({
+              email: email
+            }, {
+              $set: {
+                tempPassword: tempHashPassword
+              }
+            }, {
+              new: true
+            }, function (err) {
+              if (err) reject(err);else {
+                resolve(tempPassword);
+              }
+            });
             resolve(tempPassword);
           });
-          resolve(tempPassword);
-        });
+        }
       });
     });
   },
@@ -5823,10 +5836,11 @@ UserSchema.statics = {
       this.findOne({
         _id: userId
       }).lean().exec((err, result) => {
-        if (err) reject(err);
-        resolve({
-          isLimited: typeof result.limited === "undefined" ? false : result.limited
-        });
+        if (err || !result) reject(err || "User not found");else {
+          resolve({
+            isLimited: typeof result.limited === "undefined" ? false : result.limited
+          });
+        }
       });
     });
   },
@@ -5836,39 +5850,41 @@ UserSchema.statics = {
       this.findOne({
         _id: userId
       }).lean().exec((err, result) => {
-        if (err) reject(err);
-        bcrypt.compare(password, result.password).then(valid => {
-          if (valid) {
-            this.encryptPassword(base64.encode(newPassword)).then(resEncrypt => {
-              this.findOneAndUpdate({
-                _id: userId
-              }, {
-                $set: {
-                  tempPassword: null,
-                  password: resEncrypt.hash
-                }
-              }, {
-                new: true
-              }, function (err, user) {
-                if (err) reject(err);
-                resolve({
-                  success: true,
-                  message: "La contrasena fue actualizada exitosamente."
+        if (err) reject(err);else {
+          bcrypt.compare(password, result.password).then(valid => {
+            if (valid) {
+              this.encryptPassword(base64.encode(newPassword)).then(resEncrypt => {
+                this.findOneAndUpdate({
+                  _id: userId
+                }, {
+                  $set: {
+                    tempPassword: null,
+                    password: resEncrypt.hash
+                  }
+                }, {
+                  new: true
+                }, function (err, user) {
+                  if (err) reject(err);else {
+                    resolve({
+                      success: true,
+                      message: "La contrasena fue actualizada exitosamente."
+                    });
+                  }
+                });
+              }).catch(err => {
+                reject({
+                  success: false,
+                  message: "La contraseña actual no es correcta."
                 });
               });
-            }).catch(err => {
+            } else {
               reject({
                 success: false,
                 message: "La contraseña actual no es correcta."
               });
-            });
-          } else {
-            reject({
-              success: false,
-              message: "La contraseña actual no es correcta."
-            });
-          }
-        });
+            }
+          });
+        }
       });
     });
   }
