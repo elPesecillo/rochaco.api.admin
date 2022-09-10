@@ -3,7 +3,9 @@ const {
   getUserLeanById,
   getAdminUsers,
   getUsersByAddressId,
+  getUsersBySuburb,
 } = require("../logic/userService");
+const moment = require("moment");
 
 exports.sendTestNotification = async (req, res, next) => {
   try {
@@ -208,5 +210,45 @@ exports.sendApproveRejectedReservationNotification = async (req, res) => {
   } catch (err) {
     console.log("notification error details: ", err);
     res.status(400).json(err);
+  }
+};
+
+exports.sendNewSurveyNotification = async (req, res) => {
+  try {
+    const { suburbId, surveyName, expirationDate } = req.body;
+    const users = await getUsersBySuburb(suburbId);
+    if (users) {
+      const activeUsers = users.filter((user) => user.active);
+      const userPushTokensArrays = activeUsers.map((user) => user.pushTokens);
+      const rawUserPushTokens = [].concat.apply([], userPushTokensArrays);
+      const userPushTokens = rawUserPushTokens.reduce((acc, cur) => {
+        if (acc.indexOf(cur) === -1) {
+          acc.push(cur);
+        }
+        return acc;
+      }, []);
+      const sendNotifications = pushNotificationService.sendPushNotification(
+        userPushTokens,
+        {
+          sound: "default",
+          body: `Se ha creado la encuesta "${surveyName}", tienes hasta la siguiente fecha para participar: ${moment(
+            expirationDate
+          ).format("YYYY/MM/DD")}`,
+          title: "Nueva encuesta disponible",
+          data: {
+            redirect: { stack: "SurveysNeighbours", screen: "Survey" },
+            props: {
+              surveyName,
+            },
+          },
+        }
+      );
+      res.status(200).json(sendNotifications);
+    } else {
+      res.status(404).json({ message: "users not found" });
+    }
+  } catch (err) {
+    console.log("notification error details", err);
+    res.status(500).json(err);
   }
 };

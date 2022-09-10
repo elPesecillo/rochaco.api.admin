@@ -701,6 +701,7 @@ UserSchema.statics = {
           loginName: 12,
           addressId: 13,
           rfids: 14,
+          pushTokens: 15,
         })
         .exec((err, result) => {
           if (err) reject(err);
