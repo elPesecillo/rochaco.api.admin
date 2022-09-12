@@ -708,8 +708,11 @@ const pushNotificationService = __webpack_require__(/*! ../logic/pushNotificatio
 const {
   getUserLeanById,
   getAdminUsers,
-  getUsersByAddressId
+  getUsersByAddressId,
+  getUsersBySuburb
 } = __webpack_require__(/*! ../logic/userService */ "./src/logic/userService.js");
+
+const moment = __webpack_require__(/*! moment */ "moment");
 
 exports.sendTestNotification = async (req, res, next) => {
   try {
@@ -912,6 +915,52 @@ exports.sendApproveRejectedReservationNotification = async (req, res) => {
   } catch (err) {
     console.log("notification error details: ", err);
     res.status(400).json(err);
+  }
+};
+
+exports.sendNewSurveyNotification = async (req, res) => {
+  try {
+    const {
+      suburbId,
+      surveyName,
+      expirationDate
+    } = req.body;
+    const users = await getUsersBySuburb(suburbId);
+
+    if (users) {
+      const activeUsers = users.filter(user => user.active);
+      const userPushTokensArrays = activeUsers.map(user => user.pushTokens);
+      const rawUserPushTokens = [].concat.apply([], userPushTokensArrays);
+      const userPushTokens = rawUserPushTokens.reduce((acc, cur) => {
+        if (acc.indexOf(cur) === -1) {
+          acc.push(cur);
+        }
+
+        return acc;
+      }, []);
+      const sendNotifications = pushNotificationService.sendPushNotification(userPushTokens, {
+        sound: "default",
+        body: `Se ha creado la encuesta "${surveyName}", tienes hasta la siguiente fecha para participar: ${moment(expirationDate).format("YYYY/MM/DD")}`,
+        title: "Nueva encuesta disponible",
+        data: {
+          redirect: {
+            stack: "SurveysNeighbours",
+            screen: "Survey"
+          },
+          props: {
+            surveyName
+          }
+        }
+      });
+      res.status(200).json(sendNotifications);
+    } else {
+      res.status(404).json({
+        message: "users not found"
+      });
+    }
+  } catch (err) {
+    console.log("notification error details", err);
+    res.status(500).json(err);
   }
 };
 
@@ -2589,7 +2638,7 @@ const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken",
 const apiWithKey = ["/api/notification/newPayment", // add api key for this kind of requests
 "/api/notification/approveRejectPayment", // add api key for this kind of requests
 "/api/suburb/getAddressesBySuburbId", // add api key for this kind of requests
-"/api/suburb/getSuburbAutomationInfo", "/api/auth/internal/auth", "/api/notification/newReservation", "/api/notification/approveRejectReservation"];
+"/api/suburb/getSuburbAutomationInfo", "/api/auth/internal/auth", "/api/notification/newReservation", "/api/notification/approveRejectReservation", "/api/notification/newSurvey"];
 const protectedApi = ["/api/suburb/approveReject"];
 exports.Auth = class Auth {
   validateToken(token) {
@@ -2780,19 +2829,20 @@ exports.getCPInfo = async postalCode => {
 
 const Expo = __webpack_require__(/*! expo-server-sdk */ "expo-server-sdk").Expo;
 
-let expo = new Expo();
+const expo = new Expo();
+const DIFFERENT_PROJECTS_ERROR_MESSAGE = "PUSH_TOO_MANY_EXPERIENCE_IDS";
 
 const getMessagesBatches = (pushTokens, message) => {
-  let messages = [];
-  pushTokens.forEach(token => {
-    if (!Expo.isExpoPushToken(token)) {
-      console.error(`Push token ${token} is not a valid push token`); //continue;
+  const validTokens = pushTokens.reduce((tokens, currentToken) => {
+    if (Expo.isExpoPushToken(currentToken.token)) {
+      tokens.push(currentToken.token);
     }
 
-    messages = [...messages, { ...message,
-      to: token
-    }];
-  });
+    return tokens;
+  }, []);
+  const messages = validTokens.map(token => ({ ...message,
+    to: token
+  }));
   return expo.chunkPushNotifications(messages);
 };
 
@@ -2804,9 +2854,9 @@ const sendExpoNotification = async chunks => {
     // time, which nicely spreads the load out over time:
     let tickets = [];
 
-    for (let chunk of chunks) {
+    for (const chunk of chunks) {
       try {
-        let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+        const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
         console.log(ticketChunk);
         tickets.push(...ticketChunk); // NOTE: If a ticket contains an error code in ticket.details.error, you
         // must handle it appropriately. The error codes are listed in the Expo
@@ -2814,12 +2864,44 @@ const sendExpoNotification = async chunks => {
         // https://docs.expo.io/push-notifications/sending-notifications/#individual-errors
       } catch (error) {
         console.error(error);
+
+        if (error.code === DIFFERENT_PROJECTS_ERROR_MESSAGE) {
+          const diffProjectsTickets = await handlePushNotificationsFromDifferentProjects(error.details, chunk);
+          tickets.push([].concat.apply([], diffProjectsTickets));
+        }
       }
     }
 
     return tickets; //})();
   } catch (err) {
     console.log("send expo notification error", err);
+    throw err;
+  }
+};
+
+const handlePushNotificationsFromDifferentProjects = async (projects, notifications) => {
+  try {
+    const projectChunks = Object.keys(projects).map(key => {
+      const projectTokens = projects[key];
+      const projectNotifications = projectTokens.map(token => {
+        return notifications.find(notification => notification.to === token);
+      });
+      return projectNotifications;
+    });
+    let tickets = [];
+
+    for (const projectChunk of projectChunks) {
+      try {
+        const ticketChunk = await expo.sendPushNotificationsAsync(projectChunk);
+        tickets.push(ticketChunk);
+      } catch (err) {
+        console.log(err);
+      }
+    }
+
+    return tickets;
+  } catch (err) {
+    console.log(err);
     throw err;
   }
 };
@@ -5094,48 +5176,55 @@ let _validateExpDate = function (expDate) {
 
 UserSchema.methods = {
   validatePassword: function (_password, isTemporary = false) {
-    var _this = this;
+    try {
+      var _this = this;
 
-    let pass = base64.decode(_password);
-    let compareValue = isTemporary ? _this.tempPassword : _this.password;
-    return new Promise((resolve, reject) => {
-      if (_this.temporaryDisabled) {
-        let wait = 10 - this.getDisabledSince();
-        if (wait > 0) reject({
-          success: false,
-          message: `El usuario esta temporalmente desabilitado, por favor espere ${wait} minutos para volver a intentar.`
-        });else this.increaseLoginAttempts(true).then(res => {
-          this.validatePassword(_password).then(result => resolve(result), err => reject(err));
-        });
-      } else bcrypt.compare(pass, compareValue).then(valid => {
-        if (valid) {
-          //reset logint attempts
-          this.increaseLoginAttempts(true).then(res => {
-            resolve({
-              success: true,
-              message: "La contraseña coincide."
-            });
-          }, err => reject({
+      let pass = base64.decode(_password);
+      let compareValue = isTemporary ? _this.tempPassword : _this.password;
+      return new Promise((resolve, reject) => {
+        if (_this.temporaryDisabled) {
+          let wait = 10 - this.getDisabledSince();
+          if (wait > 0) reject({
             success: false,
-            message: "Un error occurio."
-          }));
-        } else {
-          //increase login attempts
-          this.increaseLoginAttempts().then(res => {
-            reject({
+            message: `El usuario esta temporalmente desabilitado, por favor espere ${wait} minutos para volver a intentar.`
+          });else this.increaseLoginAttempts(true).then(res => {
+            this.validatePassword(_password).then(result => resolve(result), err => reject(err));
+          });
+        } else bcrypt.compare(pass, compareValue).then(valid => {
+          if (valid) {
+            //reset logint attempts
+            this.increaseLoginAttempts(true).then(res => {
+              resolve({
+                success: true,
+                message: "La contraseña coincide."
+              });
+            }, err => reject({
               success: false,
-              message: "La contraseña no es valida."
-            });
-          }, err => reject({
-            success: false,
-            message: "Un error occurio, la contraseña no es valida."
-          }));
-        }
+              message: "Un error occurio."
+            }));
+          } else {
+            //increase login attempts
+            this.increaseLoginAttempts().then(res => {
+              reject({
+                success: false,
+                message: "La contraseña no es valida."
+              });
+            }, err => reject({
+              success: false,
+              message: "Un error occurio, la contraseña no es valida."
+            }));
+          }
+        });
+      }, err => reject({
+        success: false,
+        message: "Ocurrio un error al comparar la contraseña."
+      }));
+    } catch (e) {
+      return Promise.reject({
+        success: false,
+        message: "Ocurrio un error al comparar la contraseña."
       });
-    }, err => reject({
-      success: false,
-      message: "Ocurrio un error al comparar la contraseña."
-    }));
+    }
   },
   getDisabledSince: function () {
     let disabledSince = this.disabledSince ? this.disabledSince : moment.utc();
@@ -5665,7 +5754,8 @@ UserSchema.statics = {
         email: 11,
         loginName: 12,
         addressId: 13,
-        rfids: 14
+        rfids: 14,
+        pushTokens: 15
       }).exec((err, result) => {
         if (err) reject(err);else {
           resolve(result);
@@ -5997,6 +6087,7 @@ router.post("/api/notification/newPayment", pushNotification.sendUploadPaymentNo
 router.post("/api/notification/approveRejectPayment", pushNotification.sendApproveRejectedPaymentNotification);
 router.post("/api/notification/newReservation", pushNotification.sendNewSpaceReservationNotification);
 router.post("/api/notification/approveRejectReservation", pushNotification.sendApproveRejectedReservationNotification);
+router.post("/api/notification/newSurvey", pushNotification.sendNewSurveyNotification);
 router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
 const upload2 = multer();
 router.post("/api/vision/ocr", upload2.any(), vision.processOCR); // files apis
