@@ -151,6 +151,11 @@ router.post(
   pushNotification.sendApproveRejectedReservationNotification
 );
 
+router.post(
+  "/api/notification/newSurvey",
+  pushNotification.sendNewSurveyNotification
+);
+
 router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
 
 const upload2 = multer();
