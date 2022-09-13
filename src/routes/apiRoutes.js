@@ -20,6 +20,8 @@ const analytics = require("../controllers/analytics");
 
 const vision = require("../controllers/vision");
 
+const notification = require("../controllers/notification");
+
 let upload = multer({ dest: "./uploads/" });
 
 router.post("/api/checkAuth", siteAuth.checkAuth);
@@ -155,6 +157,15 @@ router.post(
   "/api/notification/newSurvey",
   pushNotification.sendNewSurveyNotification
 );
+
+// internal notifications apis
+router.post("/api/alert/save", notification.Save);
+router.delete("/api/alert/delete", notification.Delete);
+router.get("/api/alert/getById", notification.GetById);
+router.get("/api/alert/getBySuburbId", notification.GetBySuburbId);
+router.get("/api/alert/getByUserId", notification.GetByUserId);
+
+// analytics apis
 
 router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
 
