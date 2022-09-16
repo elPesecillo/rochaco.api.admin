@@ -24,6 +24,8 @@ const notification = require("../controllers/notification");
 
 let upload = multer({ dest: "./uploads/" });
 
+const upload2 = multer();
+
 router.post("/api/checkAuth", siteAuth.checkAuth);
 
 router.post("/api/isValidToken", siteAuth.isValidToken);
@@ -159,7 +161,7 @@ router.post(
 );
 
 // internal notifications apis
-router.post("/api/alert/save", notification.Save);
+router.post("/api/alert/save", upload2.any(), notification.Save);
 router.delete("/api/alert/delete", notification.Delete);
 router.get("/api/alert/getById", notification.GetById);
 router.get("/api/alert/getBySuburbId", notification.GetBySuburbId);
@@ -169,7 +171,6 @@ router.get("/api/alert/getByUserId", notification.GetByUserId);
 
 router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
 
-const upload2 = multer();
 
 router.post("/api/vision/ocr", upload2.any(), vision.processOCR);
 

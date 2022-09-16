@@ -1,25 +1,29 @@
 const notificationService = require("../logic/notificationService");
+const { UploadBlob } = require("../logic/blobService");
 
+const NOTIFICATIONS_CONTAINER = "notifications";
 exports.Save = async (req, res) => {
   try {
-    const {
-      suburbId,
-      title,
-      body,
-      notificationType,
-      level,
-      attachments,
-      users,
-    } = req.body;
+    const { suburbId, title, body, level, users } = req.body;
+    let { attachments } = req.body;
+    if (!attachments && req.files) {
+      //upload attachments here
+      const files = req.files.map((file) => ({
+        ...file,
+        name: file.originalname,
+        uri: file.buffer.toString("base64"),
+      }));
 
-    const result = await notificationService.SaveNotification({
+      attachments = await UploadBlob(files, NOTIFICATIONS_CONTAINER);
+    }
+
+    const result = await notificationService.Save({
       suburbId,
       title,
       body,
-      notificationType,
       level,
-      attachments,
-      users,
+      attachments: attachments ?? [],
+      users: users ?? [],
     });
     res.status(200).json(result);
   } catch (err) {
@@ -29,7 +33,7 @@ exports.Save = async (req, res) => {
 
 exports.Delete = async (req, res) => {
   try {
-    const { notificationId } = req.body;
+    const { notificationId } = req.query;
     const result = await notificationService.Delete(notificationId);
     res.status(200).json(result);
   } catch (err) {

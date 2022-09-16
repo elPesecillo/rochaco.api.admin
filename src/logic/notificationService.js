@@ -4,21 +4,21 @@ const Save = async ({
   suburbId,
   title,
   body,
-  notificationType,
   level,
   attachments,
   users,
+  metadata,
 }) => {
   try {
     // todo: add logic to upload image attachments here
-    return await notificationModel.SaveNotification({
+    return await notificationModel.Save({
       suburbId,
       title,
       body,
-      notificationType,
       level,
       attachments,
       users,
+      metadata,
     });
   } catch (err) {
     throw err;
@@ -60,15 +60,9 @@ const GetByUserId = async (suburbId, userId, minDate) => {
       userId,
       minDate
     );
-    const allRawNotifications = [...suburbNotifications, ...userNotifications];
+    const allNotifications = [...suburbNotifications, ...userNotifications];
 
-    const allNotifications = allRawNotifications.reduce((acc, cur) => {
-      if (!acc.some((notification) => notification._id === cur._id)) {
-        cur.push(cur);
-      }
-      return cur;
-    }, []);
-    return allNotifications;
+    return allNotifications.sort((a, b) => a.transtime - b.transtime);
   } catch (err) {
     throw err;
   }

@@ -6,6 +6,18 @@ const {
   getUsersBySuburb,
 } = require("../logic/userService");
 const moment = require("moment");
+const notificationService = require("../logic/notificationService");
+
+const NOTIFICATION_DEFAULT_SOUND = "default";
+const NOTIFICATION_INFO_LEVEL = "info";
+const NOTIFICATION_ARRIVE_TITLE = "Notificación de llegada de invitado";
+const NOTIFICATION_UPLOAD_PAYMENT_TITLE =
+  "Notificación de actualización de pago";
+const NOTIFICATION_UPDATE_PAYMENT_TITLE =
+  "Notificación de actualización de pago";
+const NOTIFICATION_UPDATE_RESERVATION =
+  "Notificación de actualización de reservación";
+const NOTIFICATION_NEW_SURVEY = "Notificación de nueva encuesta";
 
 exports.sendTestNotification = async (req, res, next) => {
   try {
@@ -27,22 +39,32 @@ exports.sendTestNotification = async (req, res, next) => {
 
 exports.sendArriveNotification = async (req, res) => {
   try {
-    let { userId, guest } = req.body;
-    console.log("getting user");
-    let user = await getUserLeanById(userId);
-    let pushTokens = user.pushTokens.map((t) => t.token);
-    console.log("push tokens", pushTokens);
+    const { suburbId, userId, guest } = req.body;
+    const user = await getUserLeanById(userId);
+    const pushTokens = user.pushTokens.map((t) => t.token);
 
-    console.log("send notifications...");
-    let result = await pushNotificationService.sendPushNotification(
+    const metadata = {
+      sound: NOTIFICATION_DEFAULT_SOUND,
+      body: guest.isService
+        ? `Tu servicio ${guest.name} ha llegado.`
+        : `Tu invitado ${guest.name} ha llegado.`,
+      data: { redirect: "myVisits" },
+      title: `Hola ${user.name}`,
+    };
+
+    await notificationService.Save({
+      suburbId,
+      title: NOTIFICATION_ARRIVE_TITLE,
+      body: metadata.body,
+      level: NOTIFICATION_INFO_LEVEL,
+      users: [user._id],
+      metadata,
+    });
+
+    const result = await pushNotificationService.sendPushNotification(
       pushTokens,
       {
-        sound: "default",
-        body: guest.isService
-          ? `Tu servicio ${guest.name} ha llegado.`
-          : `Tu invitado ${guest.name} ha llegado.`,
-        data: { redirect: "myVisits" },
-        title: `Hola ${user.name}`,
+        ...metadata,
       }
     );
     res.status(200).json(result);
@@ -54,30 +76,39 @@ exports.sendArriveNotification = async (req, res) => {
 
 exports.sendUploadPaymentNotification = async (req, res) => {
   try {
-    let { suburbId, userId, paymentType } = req.body;
-    let users = await getAdminUsers(suburbId);
+    const { suburbId, userId, paymentType } = req.body;
+    const users = await getAdminUsers(suburbId);
     //esto es solo para pruebas
     //users = users.filter((u) => u.facebookId === "10221055228718114");
 
-    let user = await getUserLeanById(userId);
+    const user = await getUserLeanById(userId);
+    const metadata = {
+      sound: NOTIFICATION_DEFAULT_SOUND,
+      body: `El usuario ${user.name} con la dirección ${user.street} ${user.streetNumber} realizo un pago de ${paymentType}.`,
+      data: {
+        redirect: { stack: "PaymentsControl", screen: "PaymentList" },
+        props: { street: user.street, streetNumber: user.streetNumber },
+      },
+      title: `Nuevo pago realizado`,
+    };
+    await notificationService.Save({
+      suburbId,
+      title: NOTIFICATION_UPLOAD_PAYMENT_TITLE,
+      body: metadata.body,
+      level: NOTIFICATION_INFO_LEVEL,
+      users: [user._id],
+      metadata,
+    });
     let promises = [];
     users.forEach((u) => {
       promises.push(
         pushNotificationService.sendPushNotification(
           u.pushTokens.map((t) => t.token),
-          {
-            sound: "default",
-            body: `El usuario ${user.name} con la dirección ${user.street} ${user.streetNumber} realizo un pago de ${paymentType}.`,
-            data: {
-              redirect: { stack: "PaymentsControl", screen: "PaymentList" },
-              props: { street: user.street, streetNumber: user.streetNumber },
-            },
-            title: `Nuevo pago realizado`,
-          }
+          { ...metadata }
         )
       );
     });
-    let sendNotifications = await Promise.all(promises);
+    const sendNotifications = await Promise.all(promises);
     res.status(200).json(sendNotifications);
   } catch (err) {
     console.log("notification error details: ", err);
@@ -87,42 +118,55 @@ exports.sendUploadPaymentNotification = async (req, res) => {
 
 exports.sendApproveRejectedPaymentNotification = async (req, res) => {
   try {
-    let { suburbId, addressId, status, comment, paymentName } = req.body;
-    let users = await getUsersByAddressId(suburbId, addressId);
+    const { suburbId, addressId, status, comment, paymentName } = req.body;
+    const users = await getUsersByAddressId(suburbId, addressId);
+
+    const metadata = {
+      sound: NOTIFICATION_DEFAULT_SOUND,
+      body:
+        status === "approved"
+          ? `Tu pago de ${paymentName} ha sido aceptado`
+          : status === "rejected"
+          ? `Tu pago de ${paymentName} ha sido rechazado por la siguiente razón: ${comment}`
+          : `Tu pago ${paymentName} esta siendo procesado.`,
+      data: {
+        redirect: {
+          stack: "Payments",
+          screen: "Info",
+        },
+        props: {
+          filter: status,
+        },
+      },
+      title:
+        status === "approved"
+          ? "Pago aceptado"
+          : status === "rejected"
+          ? "Pago rechazado"
+          : "Cambio en el estatus de tus pagos",
+    };
+    await notificationService.Save({
+      suburbId,
+      title: NOTIFICATION_UPDATE_PAYMENT_TITLE,
+      body: metadata.body,
+      level: NOTIFICATION_INFO_LEVEL,
+      users: users.map((user) => user._id),
+      metadata,
+    });
+
     let promises = [];
     users.forEach((u) => {
       promises.push(
         pushNotificationService.sendPushNotification(
           u.pushTokens.map((t) => t.token),
           {
-            sound: "default",
-            body:
-              status === "approved"
-                ? `Tu pago de ${paymentName} ha sido aceptado`
-                : status === "rejected"
-                ? `Tu pago de ${paymentName} ha sido rechazado por la siguiente razón: ${comment}`
-                : `Tu pago ${paymentName} esta siendo procesado.`,
-            data: {
-              redirect: {
-                stack: "Payments",
-                screen: "Info",
-              },
-              props: {
-                filter: status,
-              },
-            },
-            title:
-              status === "approved"
-                ? "Pago aceptado"
-                : status === "rejected"
-                ? "Pago rechazado"
-                : "Cambio en el estatus de tus pagos",
+            ...metadata,
           }
         )
       );
     });
 
-    let sendNotifications = await Promise.all(promises);
+    const sendNotifications = await Promise.all(promises);
     res.status(200).json(sendNotifications);
   } catch (err) {
     console.log("notification error details: ", err);
@@ -136,24 +180,33 @@ exports.sendNewSpaceReservationNotification = async (req, res) => {
     const adminUsers = await getAdminUsers(suburbId);
 
     const user = await getUserLeanById(userId);
+    const metadata = {
+      sound: NOTIFICATION_DEFAULT_SOUND,
+      body: `El usuario ${user.name} con la dirección ${user.street} ${user.streetNumber} ha realizado una reserva de un area común.`,
+      data: {
+        redirect: { stack: "CommonAreas", screen: "ApprovalScreen" },
+        props: {
+          street: user.street,
+          streetNumber: user.streetNumber,
+          reservationId,
+        },
+      },
+      title: `Nueva reserva de area común`,
+    };
+    await notificationService.Save({
+      suburbId,
+      title: NOTIFICATION_UPDATE_RESERVATION,
+      body: metadata.body,
+      level: NOTIFICATION_INFO_LEVEL,
+      users: adminUsers.map((user) => user._id),
+      metadata,
+    });
     let promises = [];
     adminUsers.forEach((u) => {
       promises.push(
         pushNotificationService.sendPushNotification(
           u.pushTokens.map((t) => t.token),
-          {
-            sound: "default",
-            body: `El usuario ${user.name} con la dirección ${user.street} ${user.streetNumber} ha realizado una reserva de un area común.`,
-            data: {
-              redirect: { stack: "CommonAreas", screen: "ApprovalScreen" },
-              props: {
-                street: user.street,
-                streetNumber: user.streetNumber,
-                reservationId,
-              },
-            },
-            title: `Nueva reserva de area común`,
-          }
+          { ...metadata }
         )
       );
     });
@@ -183,23 +236,34 @@ exports.sendApproveRejectedReservationNotification = async (req, res) => {
   try {
     const { suburbId, addressId, status, comment, reservationId } = req.body;
     let promises = [];
-    let users = await getUsersByAddressId(suburbId, addressId);
+    const users = await getUsersByAddressId(suburbId, addressId);
+    const metadata = {
+      sound: NOTIFICATION_DEFAULT_SOUND,
+      body: getReservationStatusMessage(status, comment),
+      title: "Cambio en el estatus de tu reservación",
+      data: {
+        redirect: { stack: "CommonAreas", screen: "MyReservationsStack" },
+        props: {
+          street: users[0].street,
+          streetNumber: users[0].streetNumber,
+          reservationId,
+        },
+      },
+    };
+    await notificationService.Save({
+      suburbId,
+      title: NOTIFICATION_UPDATE_RESERVATION,
+      body: metadata.body,
+      level: NOTIFICATION_INFO_LEVEL,
+      users: users.map((user) => user._id),
+      metadata,
+    });
     users.forEach((user) => {
       promises.push(
         pushNotificationService.sendPushNotification(
           user.pushTokens.map((t) => t.token),
           {
-            sound: "default",
-            body: getReservationStatusMessage(status, comment),
-            title: "Cambio en el estatus de tu reservación",
-            data: {
-              redirect: { stack: "CommonAreas", screen: "MyReservationsStack" },
-              props: {
-                street: user.street,
-                streetNumber: user.streetNumber,
-                reservationId,
-              },
-            },
+            ...metadata,
           }
         )
       );
@@ -227,10 +291,31 @@ exports.sendNewSurveyNotification = async (req, res) => {
         }
         return acc;
       }, []);
+      const metadata = {
+        sound: NOTIFICATION_DEFAULT_SOUND,
+        body: `Se ha creado la encuesta "${surveyName}", tienes hasta la siguiente fecha para participar: ${moment(
+          expirationDate
+        ).format("YYYY/MM/DD")}`,
+        title: "Nueva encuesta disponible",
+        data: {
+          redirect: { stack: "SurveysNeighbours", screen: "Survey" },
+          props: {
+            surveyName,
+          },
+        },
+      };
+      await notificationService.Save({
+        suburbId,
+        title: NOTIFICATION_NEW_SURVEY,
+        body: metadata.body,
+        level: NOTIFICATION_INFO_LEVEL,
+        users: users.map((user) => user._id),
+        metadata,
+      });
       const sendNotifications = pushNotificationService.sendPushNotification(
-        userPushTokens,
+        userPushTokens.map((pushToken) => pushToken.token),
         {
-          sound: "default",
+          sound: NOTIFICATION_DEFAULT_SOUND,
           body: `Se ha creado la encuesta "${surveyName}", tienes hasta la siguiente fecha para participar: ${moment(
             expirationDate
           ).format("YYYY/MM/DD")}`,

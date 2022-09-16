@@ -12,15 +12,14 @@ const NotificationSchema = new mongoose.Schema({
   body: {
     type: String,
   },
-  notificationType: {
-    type: String,
-    enum: ["survey", "push", "alert", "info"],
-  },
   level: {
     type: String,
     enum: ["info", "warning", "danger", "success"],
   },
   attachments: [AttachmentSchema],
+  metadata: {
+    type: mongoose.Schema.Types.Mixed,
+  },
   users: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -39,7 +38,7 @@ NotificationSchema.statics = {
     return notification.save();
   },
   Delete: function (notificationId) {
-    return this.Delete({ _id: notificationId });
+    return this.deleteOne({ _id: notificationId });
   },
   GetById: function (notificationId) {
     return this.findOne({ _id: notificationId }).lean();
@@ -48,16 +47,22 @@ NotificationSchema.statics = {
     suburbId,
     minDate = moment.utc().add(-90, "days").format("YYYY-MM-DD")
   ) {
-    this.find({ suburbId, transtime: { $gte: minDate } }).lean();
+    return this.find({
+      suburbId,
+      transtime: { $gte: moment(minDate) },
+      users: { $exists: true, $size: 0 },
+    }).lean();
   },
   GetByUserId: function (
     suburbId,
     userId,
     minDate = moment.utc().add(-90, "days").format("YYYY-MM-DD")
   ) {
-    return this.find({ suburbId, transtime: { $gte: minDate } })
-      .select({ users: { $elemMatch: { _id: userId } } })
-      .lean();
+    return this.find({
+      suburbId,
+      transtime: { $gte: minDate },
+      users: { $elemMatch: { $in: [userId] } },
+    }).lean();
   },
 };
 

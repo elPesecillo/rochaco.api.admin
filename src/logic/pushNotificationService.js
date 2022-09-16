@@ -6,8 +6,8 @@ const DIFFERENT_PROJECTS_ERROR_MESSAGE = "PUSH_TOO_MANY_EXPERIENCE_IDS";
 
 const getMessagesBatches = (pushTokens, message) => {
   const validTokens = pushTokens.reduce((tokens, currentToken) => {
-    if (Expo.isExpoPushToken(currentToken.token)) {
-      tokens.push(currentToken.token);
+    if (Expo.isExpoPushToken(currentToken)) {
+      tokens.push(currentToken);
     }
     return tokens;
   }, []);
