@@ -315,17 +315,7 @@ exports.sendNewSurveyNotification = async (req, res) => {
       const sendNotifications = pushNotificationService.sendPushNotification(
         userPushTokens.map((pushToken) => pushToken.token),
         {
-          sound: NOTIFICATION_DEFAULT_SOUND,
-          body: `Se ha creado la encuesta "${surveyName}", tienes hasta la siguiente fecha para participar: ${moment(
-            expirationDate
-          ).format("YYYY/MM/DD")}`,
-          title: "Nueva encuesta disponible",
-          data: {
-            redirect: { stack: "SurveysNeighbours", screen: "Survey" },
-            props: {
-              surveyName,
-            },
-          },
+          ...metadata,
         }
       );
       res.status(200).json(sendNotifications);
