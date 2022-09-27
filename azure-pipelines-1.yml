@@ -1,0 +1,23 @@
+trigger:
+  branches:
+    include:
+    - '*'
+variables:
+  system_accesstoken: $(System.AccessToken)
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- checkout: self
+  persistCredentials: true    #Allow scripts to access the system token
+  clean: true 
+
+- task: shellexec@0
+  inputs:
+    code: |
+      git config --global user.email "ciber_pes@hotmail.com"
+      git config --global user.name "Pas"
+      git branch -r | grep -v '\->' | while read remote; do git branch --track "${remote#origin/}" "$remote"; done
+      git remote add vsts https://phdez@dev.azure.com/phdez/rochaco.ui/_git/rochaco.api.admin
+      git branch -r | grep -v '\->' | while read remote; do git -c http.extraheader="AUTHORIZATION: bearer $(system_accesstoken)" push -u vsts "${remote#origin/}"; done
