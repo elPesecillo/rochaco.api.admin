@@ -24,7 +24,10 @@
   "author": "Pascual Hernandez",
   "license": "ISC",
   "dependencies": {
+    "@azure/cognitiveservices-computervision": "^8.0.0",
+    "@azure/ms-rest-azure-js": "^2.1.0",
     "@sendgrid/mail": "^6.5.4",
+    "axios": "^0.21.1",
     "base-64": "^0.1.0",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.0",
@@ -34,6 +37,7 @@
     "dropbox-v2-api": "^2.4.13",
     "expo-server-sdk": "^3.6.0",
     "express": "^4.17.1",
+    "express-http-proxy": "^1.6.2",
     "fs": "0.0.1-security",
     "jsonwebtoken": "^8.5.1",
     "moment": "^2.24.0",

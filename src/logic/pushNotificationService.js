@@ -1,41 +1,82 @@
 const Expo = require("expo-server-sdk").Expo;
 
-let expo = new Expo();
+const expo = new Expo();
+
+const DIFFERENT_PROJECTS_ERROR_MESSAGE = "PUSH_TOO_MANY_EXPERIENCE_IDS";
 
 const getMessagesBatches = (pushTokens, message) => {
-  let messages = [];
-  pushTokens.forEach((token) => {
-    if (!Expo.isExpoPushToken(token)) {
-      console.error(`Push token ${token} is not a valid push token`);
-      //continue;
+  const validTokens = pushTokens.reduce((tokens, currentToken) => {
+    if (Expo.isExpoPushToken(currentToken)) {
+      tokens.push(currentToken);
     }
-
-    messages = [...messages, { ...message, to: token }];
-  });
+    return tokens;
+  }, []);
+  const messages = validTokens.map((token) => ({ ...message, to: token }));
   return expo.chunkPushNotifications(messages);
 };
 
 const sendExpoNotification = async (chunks) => {
-  //(async () => {
-  // Send the chunks to the Expo push notification service. There are
-  // different strategies you could use. A simple one is to send one chunk at a
-  // time, which nicely spreads the load out over time:
-  let tickets = [];
-  for (let chunk of chunks) {
-    try {
-      let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-      console.log(ticketChunk);
-      tickets.push(...ticketChunk);
-      // NOTE: If a ticket contains an error code in ticket.details.error, you
-      // must handle it appropriately. The error codes are listed in the Expo
-      // documentation:
-      // https://docs.expo.io/push-notifications/sending-notifications/#individual-errors
-    } catch (error) {
-      console.error(error);
+  try {
+    //(async () => {
+    // Send the chunks to the Expo push notification service. There are
+    // different strategies you could use. A simple one is to send one chunk at a
+    // time, which nicely spreads the load out over time:
+    let tickets = [];
+    for (const chunk of chunks) {
+      try {
+        const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+        console.log(ticketChunk);
+        tickets.push(...ticketChunk);
+        // NOTE: If a ticket contains an error code in ticket.details.error, you
+        // must handle it appropriately. The error codes are listed in the Expo
+        // documentation:
+        // https://docs.expo.io/push-notifications/sending-notifications/#individual-errors
+      } catch (error) {
+        console.error(error);
+        if (error.code === DIFFERENT_PROJECTS_ERROR_MESSAGE) {
+          const diffProjectsTickets =
+            await handlePushNotificationsFromDifferentProjects(
+              error.details,
+              chunk
+            );
+          tickets.push([].concat.apply([], diffProjectsTickets));
+        }
+      }
     }
+    return tickets;
+    //})();
+  } catch (err) {
+    console.log("send expo notification error", err);
+    throw err;
   }
-  return tickets;
-  //})();
+};
+
+const handlePushNotificationsFromDifferentProjects = async (
+  projects,
+  notifications
+) => {
+  try {
+    const projectChunks = Object.keys(projects).map((key) => {
+      const projectTokens = projects[key];
+      const projectNotifications = projectTokens.map((token) => {
+        return notifications.find((notification) => notification.to === token);
+      });
+      return projectNotifications;
+    });
+    let tickets = [];
+    for (const projectChunk of projectChunks) {
+      try {
+        const ticketChunk = await expo.sendPushNotificationsAsync(projectChunk);
+        tickets.push(ticketChunk);
+      } catch (err) {
+        console.log(err);
+      }
+    }
+    return tickets;
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
 };
 
 const checkTickets = async (tickets) => {
@@ -99,10 +140,16 @@ const checkTickets = async (tickets) => {
 
 const sendPushNotification = async (pushTokens, message) => {
   try {
+    console.log("getting chunks...");
     let chunks = getMessagesBatches(pushTokens, message);
+    console.log("chunks", chunks);
+
+    console.log("send push notifications");
     let tickets = await sendExpoNotification(chunks);
+    console.log("await check tickets");
     await checkTickets(tickets);
   } catch (ex) {
+    console.log("notification error details:", ex);
     throw ex;
   }
 };

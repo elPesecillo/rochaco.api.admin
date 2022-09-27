@@ -1,9 +1,9 @@
-const Auth = require("../logic/auth");
+const Auth = require("../logic/auth").Auth;
 
-const validApiRequest = (apiPath, token) => {
+const validApiRequest = (apiPath, token, apiKey) => {
   return new Promise((resolve, reject) => {
     let auth = new Auth();
-    auth.validateApiRequest(apiPath, token).then(
+    auth.validateApiRequest(apiPath, token, apiKey).then(
       (res) => {
         resolve(res);
       },
@@ -20,9 +20,11 @@ exports.checkApiAuth = (req, res, next) => {
   console.log(`validando si el request esta autenticado...`);
   //check request headers over here to know if the request is authenticated
   let apiPath = req.baseUrl,
-    token = req.headers["authorization"];
+    token = req.headers["authorization"],
+    apiKey =
+      req.headers["api-key"] || req.query["api-key"] || req.body["api-key"];
 
-  validApiRequest(apiPath, token).then(
+  validApiRequest(apiPath, token, apiKey).then(
     (result) => {
       if (result.valid) next();
       else

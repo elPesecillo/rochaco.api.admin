@@ -1,7 +1,8 @@
 const userService = require("../logic/userService");
 const userTypes = require("../constants/types").userTypes;
 const SuburbInvite = require("../models/suburbInvite");
-
+const validateRecaptcha = require("../logic/auth").validateRecaptcha;
+const handleFile = require("../controllers/handleFile");
 exports.saveGoogleUser = (req, res, next) => {
   //get user data here
   let {
@@ -227,6 +228,37 @@ exports.saveEmailUser = (req, res, next) => {
   );
 };
 
+exports.generateTempPassword = async (req, res) => {
+  try {
+    let { email, captchaToken } = req.body;
+    let validCaptcha = await validateRecaptcha(captchaToken);
+
+    if (validCaptcha) {
+      let tempPass = await userService.updateTempPassword(email);
+
+      if (tempPass) {
+        let sendMail = await handleFile.sendTempPassEmail(email, tempPass);
+
+        res.status("200").json({
+          message: "Se ha enviado el correo correctamente.",
+        });
+      } else {
+        res.status("401").json({
+          message: "Hubo un problema al enviar el correo.",
+        });
+      }
+    } else
+      res.status("401").json({
+        message: "Hubo un problema al enviar el correo.",
+      });
+  } catch (err) {
+    console.log("error", err);
+    res.status("404").json({
+      message: err.message || "Hubo un problema al enviar el correo.",
+    });
+  }
+};
+
 exports.createUserByType = async (req, res, next) => {
   try {
     const { name, lastName, loginName, email, cellphone } = req.body;
@@ -255,34 +287,32 @@ exports.createUserByType = async (req, res, next) => {
   }
 };
 
-exports.saveUserBySuburbId = async (req, res, next) => {
-  debugger;
-  let {
-    name,
-    lastName,
-    loginName,
-    email,
-    password,
-    cellphone,
-    facebookId,
-    googleId,
-    appleId,
-    photoUrl,
-    suburbId,
-    street,
-    streetNumber,
-    code,
-    userType,
-    token, // add captcha here
-  } = req.body;
-
-  SuburbInvite.GetInviteByCode(code)
-    .then((resInv) => {
-      //***add validate captcha here***
-
+exports.saveUserBySuburbId = async (req, res) => {
+  try {
+    let {
+      name,
+      lastName,
+      loginName,
+      email,
+      password,
+      cellphone,
+      facebookId,
+      googleId,
+      appleId,
+      photoUrl,
+      suburbId,
+      street,
+      streetNumber,
+      code,
+      userType,
+      captchaToken, // add captcha here
+    } = req.body;
+    let validCaptcha = await validateRecaptcha(captchaToken);
+    if (validCaptcha) {
+      let getcode = await SuburbInvite.GetInviteByCode(code);
       let save = null;
-      if (password && password.trim() !== "")
-        save = userService.saveUserWithPassword({
+      if (password && password.trim() !== "") {
+        save = await userService.saveUserWithPassword({
           name,
           lastName,
           loginName,
@@ -299,8 +329,8 @@ exports.saveUserBySuburbId = async (req, res, next) => {
           userType,
           userConfirmed: false, // if the user is an email user the user needs to confirm
         });
-      else
-        save = userService.saveUser({
+      } else {
+        save = await userService.saveUser({
           name,
           lastName,
           loginName,
@@ -317,38 +347,22 @@ exports.saveUserBySuburbId = async (req, res, next) => {
           userType,
           userConfirmed: true,
         });
-      save.then(
-        (resSave) => {
-          SuburbInvite.UpdateSuburbInviteUsed(
-            code,
-            resSave.userData._doc._id.toString()
-          )
-            .then((resCodeUpdate) => {
-              res.status("200").json({
-                success: true,
-                message:
-                  resCodeUpdate.message || "Has sido registrado correctamente.",
-              });
-            })
-            .catch((err) => {
-              res.status("400").json({
-                success: false,
-                message: err.message || "Bad request.",
-              });
-            });
-        },
-        (err) => {
-          res
-            .status("400")
-            .json({ success: false, message: err.message || "Bad request." });
-        }
+      }
+      let updateCode = await SuburbInvite.UpdateSuburbInviteUsed(
+        code,
+        save.userData._doc._id.toString()
       );
-    })
-    .catch((err) => {
-      res
-        .status("400")
-        .json({ success: false, message: err.message || "Bad request." });
-    });
+
+      res.status("200").json({
+        success: true,
+        message: updateCode.message || "Has sido registrado correctamente.",
+      });
+    } else res.status("401").json({ success: false, message: "invalid token" });
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
 };
 
 exports.getUserByType = async (req, res, next) => {
@@ -465,6 +479,159 @@ exports.deleteUserInfo = async (req, res, next) => {
     let { userId } = req.body;
     let removeUserInfo = await userService.deleteUserInfo(userId);
     res.status("200").json(removeUserInfo);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.getSignedUserTerms = async (req, res) => {
+  try {
+    let { userId } = req.query;
+    let signedUserTerms = await userService.getSignedUserTerms(userId);
+    res.status("200").json(signedUserTerms);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.isPasswordTemp = async (req, res) => {
+  try {
+    let { user, password } = req.query;
+    let buff = Buffer.from(password, "base64");
+    let decodedPassword = buff.toString("utf-8");
+    let isPassTemp = await userService.isPasswordTemp(user, decodedPassword);
+    res.status("200").json(isPassTemp);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request.",
+    });
+  }
+};
+
+exports.updatePassword = async (req, res) => {
+  try {
+    let { userId, password, tempPassword } = req.body;
+    let buff = Buffer.from(password, "base64");
+    let decodedPassword = buff.toString("utf-8");
+
+    let buff2 = Buffer.from(tempPassword, "base64");
+    let decodedTempPassword = buff2.toString("utf-8");
+
+    let isPassTemp = await userService.updatePassword(
+      userId,
+      decodedPassword,
+      decodedTempPassword
+    );
+    res.status("200").json(isPassTemp);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request.",
+    });
+  }
+};
+
+exports.updateCurrentPassword = async (req, res) => {
+  try {
+    let { userId, currentPassword, newPassword } = req.body;
+    currentPassword = Buffer.from(currentPassword, "base64").toString("utf-8");
+    newPassword = Buffer.from(newPassword, "base64").toString("utf-8");
+    let result = await userService.updateCurrentPassword(
+      userId,
+      currentPassword,
+      newPassword
+    );
+    res.status("200").json(result);
+  } catch (err) {
+    res.status("400").json({
+      success: false,
+      message: err.message || "Bad request.",
+    });
+  }
+};
+
+exports.signUserTerms = async (req, res) => {
+  try {
+    let { userId, termsVersion } = req.body;
+    let update = await userService.signUserTerms(userId, termsVersion);
+    res.status("200").json(update);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.updateUserType = async (req, res) => {
+  try {
+    let { userId, userType } = req.body;
+    let update = await userService.updateUserType(userId, userType);
+    res.status("200").json(update);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.enableDisableUser = async (req, res) => {
+  try {
+    let { userId, enabled } = req.body;
+    let update = await userService.enableDisableUser(userId, enabled);
+    res.status("200").json(update);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.changeLimited = async (req, res) => {
+  try {
+    let { userId, limited } = req.body;
+    let update = await userService.changeLimited(userId, limited);
+    res.status("200").json(update);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.getIfUserIsLimited = async (req, res) => {
+  try {
+    let { userId } = req.query;
+    let isLimited = await userService.getIfUserIsLimited(userId);
+    res.status("200").json(isLimited);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.addUserRfid = async (req, res) => {
+  try {
+    let { userId, rfid } = req.body;
+    let update = await userService.addUserRfid(userId, rfid);
+    res.status("200").json(update);
+  } catch (err) {
+    res
+      .status("400")
+      .json({ success: false, message: err.message || "Bad request." });
+  }
+};
+
+exports.removeUserRfid = async (req, res) => {
+  try {
+    let { userId, rfid } = req.body;
+    let update = await userService.removeUserRfid(userId, rfid);
+    res.status("200").json(update);
   } catch (err) {
     res
       .status("400")

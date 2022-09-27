@@ -143,15 +143,17 @@ SuburbSchema.statics = {
       this.findOne({
         _id: id,
       }).exec((err, result) => {
-        if (err) reject(err);
-        let { name, location, postalCode, active, transtime } = result;
-        resolve({
-          name,
-          location,
-          postalCode,
-          active,
-          transtime,
-        });
+        if (err || !result) reject(err);
+        if (result) {
+          let { name, location, postalCode, active, transtime } = result;
+          resolve({
+            name,
+            location,
+            postalCode,
+            active,
+            transtime,
+          });
+        }
       });
     });
   },
@@ -193,10 +195,12 @@ SuburbSchema.statics = {
       })
         .populate("config")
         .exec((err, result) => {
-          if (err) reject(err);
-          let { config } = result;
-          if (config) resolve({ ...config._doc });
-          else resolve({});
+          if (err || !result) reject(err || "No se encontro la configuracion");
+          else {
+            let { config } = result;
+            if (config) resolve({ ...config._doc });
+            else resolve({});
+          }
         });
     });
   },

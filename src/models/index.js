@@ -6,6 +6,9 @@ const SuburbInvite = require("./suburbInvite");
 const SuburbConfig = require("./suburbConfig");
 const SuburbStreet = require("./suburbStreet");
 const PostalCode = require("./postalCode");
+const Address = require("./Address");
+const GlobalConfig = require("./globalConfig");
+const Notification = require("./Notification")
 
 const models = {
   Menu,
@@ -15,19 +18,26 @@ const models = {
   SuburbInvite,
   SuburbConfig,
   SuburbStreet,
+  Address,
+  GlobalConfig,
+  Notification
 };
 
-const connectDb = () => {
+const connectDb = async () => {
   //setup the mongo connection
-  let mConn = mongoose.connect(process.env.DB_CONNECTION, {
+  const mongooseConnection = await mongoose.connect(process.env.DB_CONNECTION, {
     useNewUrlParser: true,
+    useUnifiedTopology: true,
   });
+
+  console.log(mongoose.models)
+
 
   mongoose.connection.on(
     "error",
     console.error.bind(console, "Mongo db connection error: ")
   );
-  return mConn;
+  return mongooseConnection;
 };
 
 module.exports = { connectDb, models };
