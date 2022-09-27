@@ -2819,7 +2819,7 @@ const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants
 const axios = __webpack_require__(/*! axios */ "axios").default;
 
 const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/auth/appletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveAppleUser", "/api/saveEmailUser", "/api/generateTempPassword", "/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", "/api/suburb/getInviteByCode", "/api/notification/test", "/api/suburb/getAllStreets", "/api/suburb/getConfig", //remover esta api de esta lista
-"/api/userInfo/isPasswordTemp"];
+"/api/userInfo/isPasswordTemp", "/api/healthCheck"];
 const apiWithKey = ["/api/notification/newPayment", // add api key for this kind of requests
 "/api/notification/approveRejectPayment", // add api key for this kind of requests
 "/api/suburb/getAddressesBySuburbId", // add api key for this kind of requests
@@ -6477,10 +6477,26 @@ const vision = __webpack_require__(/*! ../controllers/vision */ "./src/controlle
 
 const notification = __webpack_require__(/*! ../controllers/notification */ "./src/controllers/notification.js");
 
+const fs = __webpack_require__(/*! fs */ "fs");
+
 let upload = multer({
   dest: "./uploads/"
 });
 const upload2 = multer();
+router.get("/api/healthCheck", (_req, res) => {
+  const rev = fs.readFileSync(".git/HEAD").toString().trim();
+  let hash;
+
+  if (rev.indexOf(":") === -1) {
+    hash = rev;
+  } else {
+    hash = fs.readFileSync(".git/" + rev.substring(5)).toString().trim();
+  }
+
+  res.status(200).json({
+    hash
+  });
+});
 router.post("/api/checkAuth", siteAuth.checkAuth);
 router.post("/api/isValidToken", siteAuth.isValidToken);
 router.post("/api/validateTokenPath", siteAuth.validateTokenPath);
