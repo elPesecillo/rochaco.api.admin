@@ -1,4 +1,9 @@
 const notificationModel = require("../models/Notification");
+const { getUsersBySuburb } = require("./userService");
+const { sendPushNotification } = require("./pushNotificationService");
+const moment = require("moment");
+
+const NOTIFICATION_DEFAULT_SOUND = "default";
 
 const Save = async ({
   suburbId,
@@ -10,7 +15,6 @@ const Save = async ({
   metadata,
 }) => {
   try {
-    // todo: add logic to upload image attachments here
     return await notificationModel.Save({
       suburbId,
       title,
@@ -19,7 +23,44 @@ const Save = async ({
       attachments,
       users,
       metadata,
+      transtime: moment.utc(),
     });
+  } catch (err) {
+    throw err;
+  }
+};
+
+const SendSuburbNotification = async ({
+  suburbId,
+  title,
+  body,
+  level,
+  attachments,
+}) => {
+  try {
+    const suburbUsers = (await getUsersBySuburb(suburbId)).filter(
+      (user) => user.active
+    );
+    const userPushTokensArrays = suburbUsers.map((user) => user.pushTokens);
+    const rawUserPushTokens = [].concat.apply([], userPushTokensArrays);
+    const userPushTokens = rawUserPushTokens.reduce((acc, cur) => {
+      if (acc.indexOf(cur) === -1) {
+        acc.push(cur);
+      }
+      return acc;
+    }, []);
+    return await sendPushNotification(
+      userPushTokens.map((pushToken) => pushToken.token),
+      {
+        sound: NOTIFICATION_DEFAULT_SOUND,
+        body,
+        title,
+        data: {
+          level,
+          attachments,
+        },
+      }
+    );
   } catch (err) {
     throw err;
   }
@@ -61,8 +102,10 @@ const GetByUserId = async (suburbId, userId, minDate) => {
       minDate
     );
     const allNotifications = [...suburbNotifications, ...userNotifications];
-
-    return allNotifications.sort((a, b) => a.transtime - b.transtime);
+    const notificationsWithoutUsers = allNotifications.map(
+      ({ users, ...rest }) => ({ ...rest })
+    );
+    return notificationsWithoutUsers.sort((a, b) => b.transtime - a.transtime);
   } catch (err) {
     throw err;
   }
@@ -74,4 +117,5 @@ module.exports = {
   GetById,
   GetBySuburbId,
   GetByUserId,
+  SendSuburbNotification,
 };

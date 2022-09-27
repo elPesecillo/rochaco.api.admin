@@ -5,7 +5,7 @@ const NOTIFICATIONS_CONTAINER = "notifications";
 exports.Save = async (req, res) => {
   try {
     const { suburbId, title, body, level, users } = req.body;
-    let { attachments } = req.body;
+    let { attachments, sendSuburbNotification = false } = req.body;
     if (!attachments && req.files) {
       //upload attachments here
       const files = req.files.map((file) => ({
@@ -22,9 +22,20 @@ exports.Save = async (req, res) => {
       title,
       body,
       level,
-      attachments: attachments ?? [],
-      users: users ?? [],
+      attachments: attachments || [],
+      users: users || [],
     });
+    if (sendSuburbNotification) {
+      // todo: check if we need to await for push notification service response
+      notificationService.SendSuburbNotification({
+        suburbId,
+        title,
+        body,
+        level,
+        attachments,
+      });
+    }
+
     res.status(200).json(result);
   } catch (err) {
     res.status(500).json(err);
