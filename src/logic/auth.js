@@ -22,6 +22,7 @@ const openApi = [
   "/api/suburb/getAllStreets",
   "/api/suburb/getConfig", //remover esta api de esta lista
   "/api/userInfo/isPasswordTemp",
+  "/api/healthCheck",
   // "/api/notification/newPayment", // add api key for this kind of requests
   // "/api/notification/approveRejectPayment", // add api key for this kind of requests
   // "/api/suburb/getAddressesBySuburbId", // add api key for this kind of requests
