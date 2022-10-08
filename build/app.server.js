@@ -676,6 +676,123 @@ exports.getMenusByUser = async (req, res, next) => {
 
 /***/ }),
 
+/***/ "./src/controllers/notification.js":
+/*!*****************************************!*\
+  !*** ./src/controllers/notification.js ***!
+  \*****************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const notificationService = __webpack_require__(/*! ../logic/notificationService */ "./src/logic/notificationService.js");
+
+const {
+  UploadBlob
+} = __webpack_require__(/*! ../logic/blobService */ "./src/logic/blobService.js");
+
+const NOTIFICATIONS_CONTAINER = "notifications";
+
+exports.Save = async (req, res) => {
+  try {
+    const {
+      suburbId,
+      title,
+      body,
+      level,
+      users
+    } = req.body;
+    let {
+      attachments,
+      sendSuburbNotification = false
+    } = req.body;
+
+    if (!attachments && req.files) {
+      //upload attachments here
+      const files = req.files.map(file => ({ ...file,
+        name: file.originalname,
+        uri: file.buffer.toString("base64")
+      }));
+      attachments = await UploadBlob(files, NOTIFICATIONS_CONTAINER);
+    }
+
+    const result = await notificationService.Save({
+      suburbId,
+      title,
+      body,
+      level,
+      attachments: attachments || [],
+      users: users || []
+    });
+
+    if (sendSuburbNotification) {
+      // todo: check if we need to await for push notification service response
+      notificationService.SendSuburbNotification({
+        suburbId,
+        title,
+        body,
+        level,
+        attachments
+      });
+    }
+
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+};
+
+exports.Delete = async (req, res) => {
+  try {
+    const {
+      notificationId
+    } = req.query;
+    const result = await notificationService.Delete(notificationId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+};
+
+exports.GetById = async (req, res) => {
+  try {
+    const {
+      notificationId
+    } = req.query;
+    const result = await notificationService.GetById(notificationId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+};
+
+exports.GetBySuburbId = async (req, res) => {
+  try {
+    const {
+      suburbId,
+      minDate
+    } = req.query;
+    const result = await notificationService.GetBySuburbId(suburbId, minDate);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+};
+
+exports.GetByUserId = async (req, res) => {
+  try {
+    const {
+      suburbId,
+      userId,
+      minDate
+    } = req.query;
+    const result = await notificationService.GetByUserId(suburbId, userId, minDate);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+};
+
+/***/ }),
+
 /***/ "./src/controllers/postalCodes.js":
 /*!****************************************!*\
   !*** ./src/controllers/postalCodes.js ***!
@@ -714,6 +831,16 @@ const {
 
 const moment = __webpack_require__(/*! moment */ "moment");
 
+const notificationService = __webpack_require__(/*! ../logic/notificationService */ "./src/logic/notificationService.js");
+
+const NOTIFICATION_DEFAULT_SOUND = "default";
+const NOTIFICATION_INFO_LEVEL = "info";
+const NOTIFICATION_ARRIVE_TITLE = "Notificación de llegada de invitado";
+const NOTIFICATION_UPLOAD_PAYMENT_TITLE = "Notificación de actualización de pago";
+const NOTIFICATION_UPDATE_PAYMENT_TITLE = "Notificación de actualización de pago";
+const NOTIFICATION_UPDATE_RESERVATION = "Notificación de actualización de reservación";
+const NOTIFICATION_NEW_SURVEY = "Notificación de nueva encuesta";
+
 exports.sendTestNotification = async (req, res, next) => {
   try {
     let result = await pushNotificationService.sendPushNotification(["ExponentPushToken[TRMrLcG4VUxVUwmsCXPIyw]"], {
@@ -733,22 +860,30 @@ exports.sendTestNotification = async (req, res, next) => {
 
 exports.sendArriveNotification = async (req, res) => {
   try {
-    let {
+    const {
+      suburbId,
       userId,
       guest
     } = req.body;
-    console.log("getting user");
-    let user = await getUserLeanById(userId);
-    let pushTokens = user.pushTokens.map(t => t.token);
-    console.log("push tokens", pushTokens);
-    console.log("send notifications...");
-    let result = await pushNotificationService.sendPushNotification(pushTokens, {
-      sound: "default",
+    const user = await getUserLeanById(userId);
+    const pushTokens = user.pushTokens.map(t => t.token);
+    const metadata = {
+      sound: NOTIFICATION_DEFAULT_SOUND,
       body: guest.isService ? `Tu servicio ${guest.name} ha llegado.` : `Tu invitado ${guest.name} ha llegado.`,
       data: {
         redirect: "myVisits"
       },
       title: `Hola ${user.name}`
+    };
+    await notificationService.Save({
+      suburbId,
+      title: NOTIFICATION_ARRIVE_TITLE,
+      body: metadata.body,
+      level: NOTIFICATION_INFO_LEVEL,
+      users: [user._id],
+      metadata
+    });
+    const result = await pushNotificationService.sendPushNotification(pushTokens, { ...metadata
     });
     res.status(200).json(result);
   } catch (err) {
@@ -759,34 +894,44 @@ exports.sendArriveNotification = async (req, res) => {
 
 exports.sendUploadPaymentNotification = async (req, res) => {
   try {
-    let {
+    const {
       suburbId,
       userId,
       paymentType
     } = req.body;
-    let users = await getAdminUsers(suburbId); //esto es solo para pruebas
+    const users = await getAdminUsers(suburbId); //esto es solo para pruebas
     //users = users.filter((u) => u.facebookId === "10221055228718114");
 
-    let user = await getUserLeanById(userId);
+    const user = await getUserLeanById(userId);
+    const metadata = {
+      sound: NOTIFICATION_DEFAULT_SOUND,
+      body: `El usuario ${user.name} con la dirección ${user.street} ${user.streetNumber} realizo un pago de ${paymentType}.`,
+      data: {
+        redirect: {
+          stack: "PaymentsControl",
+          screen: "PaymentList"
+        },
+        props: {
+          street: user.street,
+          streetNumber: user.streetNumber
+        }
+      },
+      title: `Nuevo pago realizado`
+    };
+    await notificationService.Save({
+      suburbId,
+      title: NOTIFICATION_UPLOAD_PAYMENT_TITLE,
+      body: metadata.body,
+      level: NOTIFICATION_INFO_LEVEL,
+      users: [user._id],
+      metadata
+    });
     let promises = [];
     users.forEach(u => {
-      promises.push(pushNotificationService.sendPushNotification(u.pushTokens.map(t => t.token), {
-        sound: "default",
-        body: `El usuario ${user.name} con la dirección ${user.street} ${user.streetNumber} realizo un pago de ${paymentType}.`,
-        data: {
-          redirect: {
-            stack: "PaymentsControl",
-            screen: "PaymentList"
-          },
-          props: {
-            street: user.street,
-            streetNumber: user.streetNumber
-          }
-        },
-        title: `Nuevo pago realizado`
+      promises.push(pushNotificationService.sendPushNotification(u.pushTokens.map(t => t.token), { ...metadata
       }));
     });
-    let sendNotifications = await Promise.all(promises);
+    const sendNotifications = await Promise.all(promises);
     res.status(200).json(sendNotifications);
   } catch (err) {
     console.log("notification error details: ", err);
@@ -796,32 +941,42 @@ exports.sendUploadPaymentNotification = async (req, res) => {
 
 exports.sendApproveRejectedPaymentNotification = async (req, res) => {
   try {
-    let {
+    const {
       suburbId,
       addressId,
       status,
       comment,
       paymentName
     } = req.body;
-    let users = await getUsersByAddressId(suburbId, addressId);
+    const users = await getUsersByAddressId(suburbId, addressId);
+    const metadata = {
+      sound: NOTIFICATION_DEFAULT_SOUND,
+      body: status === "approved" ? `Tu pago de ${paymentName} ha sido aceptado` : status === "rejected" ? `Tu pago de ${paymentName} ha sido rechazado por la siguiente razón: ${comment}` : `Tu pago ${paymentName} esta siendo procesado.`,
+      data: {
+        redirect: {
+          stack: "Payments",
+          screen: "Info"
+        },
+        props: {
+          filter: status
+        }
+      },
+      title: status === "approved" ? "Pago aceptado" : status === "rejected" ? "Pago rechazado" : "Cambio en el estatus de tus pagos"
+    };
+    await notificationService.Save({
+      suburbId,
+      title: NOTIFICATION_UPDATE_PAYMENT_TITLE,
+      body: metadata.body,
+      level: NOTIFICATION_INFO_LEVEL,
+      users: users.map(user => user._id),
+      metadata
+    });
     let promises = [];
     users.forEach(u => {
-      promises.push(pushNotificationService.sendPushNotification(u.pushTokens.map(t => t.token), {
-        sound: "default",
-        body: status === "approved" ? `Tu pago de ${paymentName} ha sido aceptado` : status === "rejected" ? `Tu pago de ${paymentName} ha sido rechazado por la siguiente razón: ${comment}` : `Tu pago ${paymentName} esta siendo procesado.`,
-        data: {
-          redirect: {
-            stack: "Payments",
-            screen: "Info"
-          },
-          props: {
-            filter: status
-          }
-        },
-        title: status === "approved" ? "Pago aceptado" : status === "rejected" ? "Pago rechazado" : "Cambio en el estatus de tus pagos"
+      promises.push(pushNotificationService.sendPushNotification(u.pushTokens.map(t => t.token), { ...metadata
       }));
     });
-    let sendNotifications = await Promise.all(promises);
+    const sendNotifications = await Promise.all(promises);
     res.status(200).json(sendNotifications);
   } catch (err) {
     console.log("notification error details: ", err);
@@ -838,23 +993,33 @@ exports.sendNewSpaceReservationNotification = async (req, res) => {
     } = req.body;
     const adminUsers = await getAdminUsers(suburbId);
     const user = await getUserLeanById(userId);
+    const metadata = {
+      sound: NOTIFICATION_DEFAULT_SOUND,
+      body: `El usuario ${user.name} con la dirección ${user.street} ${user.streetNumber} ha realizado una reserva de un area común.`,
+      data: {
+        redirect: {
+          stack: "CommonAreas",
+          screen: "ApprovalScreen"
+        },
+        props: {
+          street: user.street,
+          streetNumber: user.streetNumber,
+          reservationId
+        }
+      },
+      title: `Nueva reserva de area común`
+    };
+    await notificationService.Save({
+      suburbId,
+      title: NOTIFICATION_UPDATE_RESERVATION,
+      body: metadata.body,
+      level: NOTIFICATION_INFO_LEVEL,
+      users: adminUsers.map(user => user._id),
+      metadata
+    });
     let promises = [];
     adminUsers.forEach(u => {
-      promises.push(pushNotificationService.sendPushNotification(u.pushTokens.map(t => t.token), {
-        sound: "default",
-        body: `El usuario ${user.name} con la dirección ${user.street} ${user.streetNumber} ha realizado una reserva de un area común.`,
-        data: {
-          redirect: {
-            stack: "CommonAreas",
-            screen: "ApprovalScreen"
-          },
-          props: {
-            street: user.street,
-            streetNumber: user.streetNumber,
-            reservationId
-          }
-        },
-        title: `Nueva reserva de area común`
+      promises.push(pushNotificationService.sendPushNotification(u.pushTokens.map(t => t.token), { ...metadata
       }));
     });
     let sendNotifications = await Promise.all(promises);
@@ -891,23 +1056,33 @@ exports.sendApproveRejectedReservationNotification = async (req, res) => {
       reservationId
     } = req.body;
     let promises = [];
-    let users = await getUsersByAddressId(suburbId, addressId);
-    users.forEach(user => {
-      promises.push(pushNotificationService.sendPushNotification(user.pushTokens.map(t => t.token), {
-        sound: "default",
-        body: getReservationStatusMessage(status, comment),
-        title: "Cambio en el estatus de tu reservación",
-        data: {
-          redirect: {
-            stack: "CommonAreas",
-            screen: "MyReservationsStack"
-          },
-          props: {
-            street: user.street,
-            streetNumber: user.streetNumber,
-            reservationId
-          }
+    const users = await getUsersByAddressId(suburbId, addressId);
+    const metadata = {
+      sound: NOTIFICATION_DEFAULT_SOUND,
+      body: getReservationStatusMessage(status, comment),
+      title: "Cambio en el estatus de tu reservación",
+      data: {
+        redirect: {
+          stack: "CommonAreas",
+          screen: "MyReservationsStack"
+        },
+        props: {
+          street: users[0].street,
+          streetNumber: users[0].streetNumber,
+          reservationId
         }
+      }
+    };
+    await notificationService.Save({
+      suburbId,
+      title: NOTIFICATION_UPDATE_RESERVATION,
+      body: metadata.body,
+      level: NOTIFICATION_INFO_LEVEL,
+      users: users.map(user => user._id),
+      metadata
+    });
+    users.forEach(user => {
+      promises.push(pushNotificationService.sendPushNotification(user.pushTokens.map(t => t.token), { ...metadata
       }));
     });
     let sendNotifications = await Promise.all(promises);
@@ -938,8 +1113,8 @@ exports.sendNewSurveyNotification = async (req, res) => {
 
         return acc;
       }, []);
-      const sendNotifications = pushNotificationService.sendPushNotification(userPushTokens, {
-        sound: "default",
+      const metadata = {
+        sound: NOTIFICATION_DEFAULT_SOUND,
         body: `Se ha creado la encuesta "${surveyName}", tienes hasta la siguiente fecha para participar: ${moment(expirationDate).format("YYYY/MM/DD")}`,
         title: "Nueva encuesta disponible",
         data: {
@@ -951,6 +1126,16 @@ exports.sendNewSurveyNotification = async (req, res) => {
             surveyName
           }
         }
+      };
+      await notificationService.Save({
+        suburbId,
+        title: NOTIFICATION_NEW_SURVEY,
+        body: metadata.body,
+        level: NOTIFICATION_INFO_LEVEL,
+        users: users.map(user => user._id),
+        metadata
+      });
+      const sendNotifications = pushNotificationService.sendPushNotification(userPushTokens.map(pushToken => pushToken.token), { ...metadata
       });
       res.status(200).json(sendNotifications);
     } else {
@@ -2634,7 +2819,7 @@ const userTypes = __webpack_require__(/*! ../constants/types */ "./src/constants
 const axios = __webpack_require__(/*! axios */ "axios").default;
 
 const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken", "/api/auth/appletoken", "/api/saveGoogleUser", "/api/saveFacebookUser", "/api/saveAppleUser", "/api/saveEmailUser", "/api/generateTempPassword", "/api/saveUserBySuburb", "/api/signUp", "/api/validateTokenPath", "/api/cp/getCPInfo", "/api/file/upload", "/api/suburb/getInviteByCode", "/api/notification/test", "/api/suburb/getAllStreets", "/api/suburb/getConfig", //remover esta api de esta lista
-"/api/userInfo/isPasswordTemp"];
+"/api/userInfo/isPasswordTemp", "/api/healthCheck"];
 const apiWithKey = ["/api/notification/newPayment", // add api key for this kind of requests
 "/api/notification/approveRejectPayment", // add api key for this kind of requests
 "/api/suburb/getAddressesBySuburbId", // add api key for this kind of requests
@@ -2743,6 +2928,37 @@ exports.validateRecaptcha = async token => {
 
 /***/ }),
 
+/***/ "./src/logic/blobService.js":
+/*!**********************************!*\
+  !*** ./src/logic/blobService.js ***!
+  \**********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const ApiBlobUrl = process.env.API_BLOB_URL;
+const ApiBlobKey = process.env.API_BLOB_KEY;
+
+const {
+  post
+} = __webpack_require__(/*! ../api/ApiService */ "./src/api/ApiService.js");
+
+const UploadBlob = async (files, container) => {
+  try {
+    return await post(`${ApiBlobUrl}/UploadFile2${ApiBlobKey ? `?code=${ApiBlobKey}` : ""}`, {
+      files,
+      container
+    });
+  } catch (err) {
+    throw err;
+  }
+};
+
+module.exports = {
+  UploadBlob
+};
+
+/***/ }),
+
 /***/ "./src/logic/menuService.js":
 /*!**********************************!*\
   !*** ./src/logic/menuService.js ***!
@@ -2784,6 +3000,135 @@ exports.getMenusByUser = async userToken => {
       });
     });
   });
+};
+
+/***/ }),
+
+/***/ "./src/logic/notificationService.js":
+/*!******************************************!*\
+  !*** ./src/logic/notificationService.js ***!
+  \******************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const notificationModel = __webpack_require__(/*! ../models/Notification */ "./src/models/Notification.js");
+
+const {
+  getUsersBySuburb
+} = __webpack_require__(/*! ./userService */ "./src/logic/userService.js");
+
+const {
+  sendPushNotification
+} = __webpack_require__(/*! ./pushNotificationService */ "./src/logic/pushNotificationService.js");
+
+const moment = __webpack_require__(/*! moment */ "moment");
+
+const NOTIFICATION_DEFAULT_SOUND = "default";
+
+const Save = async ({
+  suburbId,
+  title,
+  body,
+  level,
+  attachments,
+  users,
+  metadata
+}) => {
+  try {
+    return await notificationModel.Save({
+      suburbId,
+      title,
+      body,
+      level,
+      attachments,
+      users,
+      metadata,
+      transtime: moment.utc()
+    });
+  } catch (err) {
+    throw err;
+  }
+};
+
+const SendSuburbNotification = async ({
+  suburbId,
+  title,
+  body,
+  level,
+  attachments
+}) => {
+  try {
+    const suburbUsers = (await getUsersBySuburb(suburbId)).filter(user => user.active);
+    const userPushTokensArrays = suburbUsers.map(user => user.pushTokens);
+    const rawUserPushTokens = [].concat.apply([], userPushTokensArrays);
+    const userPushTokens = rawUserPushTokens.reduce((acc, cur) => {
+      if (acc.indexOf(cur) === -1) {
+        acc.push(cur);
+      }
+
+      return acc;
+    }, []);
+    return await sendPushNotification(userPushTokens.map(pushToken => pushToken.token), {
+      sound: NOTIFICATION_DEFAULT_SOUND,
+      body,
+      title,
+      data: {
+        level,
+        attachments
+      }
+    });
+  } catch (err) {
+    throw err;
+  }
+};
+
+const Delete = async notificationId => {
+  try {
+    return await notificationModel.Delete(notificationId);
+  } catch (err) {
+    throw err;
+  }
+};
+
+const GetById = async notificationId => {
+  try {
+    return await notificationModel.GetById(notificationId);
+  } catch (err) {
+    throw err;
+  }
+};
+
+const GetBySuburbId = async (suburbId, minDate) => {
+  try {
+    return await notificationModel.GetBySuburbId(suburbId, minDate);
+  } catch (err) {
+    throw err;
+  }
+};
+
+const GetByUserId = async (suburbId, userId, minDate) => {
+  try {
+    const suburbNotifications = await notificationModel.GetBySuburbId(suburbId, minDate);
+    const userNotifications = await notificationModel.GetByUserId(suburbId, userId, minDate);
+    const allNotifications = [...suburbNotifications, ...userNotifications];
+    const notificationsWithoutUsers = allNotifications.map(({
+      users,
+      ...rest
+    }) => ({ ...rest
+    }));
+    return notificationsWithoutUsers.sort((a, b) => b.transtime - a.transtime);
+  } catch (err) {
+    throw err;
+  }
+};
+
+module.exports = {
+  Save,
+  Delete,
+  GetById,
+  GetBySuburbId,
+  GetByUserId,
+  SendSuburbNotification
 };
 
 /***/ }),
@@ -2834,8 +3179,8 @@ const DIFFERENT_PROJECTS_ERROR_MESSAGE = "PUSH_TOO_MANY_EXPERIENCE_IDS";
 
 const getMessagesBatches = (pushTokens, message) => {
   const validTokens = pushTokens.reduce((tokens, currentToken) => {
-    if (Expo.isExpoPushToken(currentToken.token)) {
-      tokens.push(currentToken.token);
+    if (Expo.isExpoPushToken(currentToken)) {
+      tokens.push(currentToken);
     }
 
     return tokens;
@@ -3874,6 +4219,92 @@ module.exports = Address;
 
 /***/ }),
 
+/***/ "./src/models/Notification.js":
+/*!************************************!*\
+  !*** ./src/models/Notification.js ***!
+  \************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const moment = __webpack_require__(/*! moment */ "moment");
+
+const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
+
+const AttachmentSchema = __webpack_require__(/*! ./schemas/AttachmentSchema */ "./src/models/schemas/AttachmentSchema.js");
+
+const NotificationSchema = new mongoose.Schema({
+  suburbId: {
+    type: String
+  },
+  title: {
+    type: String
+  },
+  body: {
+    type: String
+  },
+  level: {
+    type: String,
+    enum: ["info", "warning", "danger", "success"]
+  },
+  attachments: [AttachmentSchema],
+  metadata: {
+    type: mongoose.Schema.Types.Mixed
+  },
+  users: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  }],
+  transtime: {
+    type: Date,
+    default: moment.utc()
+  }
+});
+NotificationSchema.statics = {
+  Save: function (notificationObject) {
+    const notification = new this(notificationObject);
+    return notification.save();
+  },
+  Delete: function (notificationId) {
+    return this.deleteOne({
+      _id: notificationId
+    });
+  },
+  GetById: function (notificationId) {
+    return this.findOne({
+      _id: notificationId
+    }).lean();
+  },
+  GetBySuburbId: function (suburbId, minDate = moment.utc().add(-90, "days").format("YYYY-MM-DD")) {
+    return this.find({
+      suburbId,
+      transtime: {
+        $gte: moment(minDate)
+      },
+      users: {
+        $exists: true,
+        $size: 0
+      }
+    }).lean();
+  },
+  GetByUserId: function (suburbId, userId, minDate = moment.utc().add(-90, "days").format("YYYY-MM-DD")) {
+    return this.find({
+      suburbId,
+      transtime: {
+        $gte: minDate
+      },
+      users: {
+        $elemMatch: {
+          $in: [userId]
+        }
+      }
+    }).lean();
+  }
+};
+const Notification = mongoose.model("Notification", NotificationSchema);
+module.exports = Notification;
+
+/***/ }),
+
 /***/ "./src/models/globalConfig.js":
 /*!************************************!*\
   !*** ./src/models/globalConfig.js ***!
@@ -3942,6 +4373,8 @@ const Address = __webpack_require__(/*! ./Address */ "./src/models/Address.js");
 
 const GlobalConfig = __webpack_require__(/*! ./globalConfig */ "./src/models/globalConfig.js");
 
+const Notification = __webpack_require__(/*! ./Notification */ "./src/models/Notification.js");
+
 const models = {
   Menu,
   Role,
@@ -3951,17 +4384,19 @@ const models = {
   SuburbConfig,
   SuburbStreet,
   Address,
-  GlobalConfig
+  GlobalConfig,
+  Notification
 };
 
-const connectDb = () => {
+const connectDb = async () => {
   //setup the mongo connection
-  let mConn = mongoose.connect(process.env.DB_CONNECTION, {
+  const mongooseConnection = await mongoose.connect(process.env.DB_CONNECTION, {
     useNewUrlParser: true,
     useUnifiedTopology: true
   });
+  console.log(mongoose.models);
   mongoose.connection.on("error", console.error.bind(console, "Mongo db connection error: "));
-  return mConn;
+  return mongooseConnection;
 };
 
 module.exports = {
@@ -4266,6 +4701,33 @@ RoleSchema.statics = {
 };
 const Role = mongoose.model("Role", RoleSchema);
 module.exports = Role;
+
+/***/ }),
+
+/***/ "./src/models/schemas/AttachmentSchema.js":
+/*!************************************************!*\
+  !*** ./src/models/schemas/AttachmentSchema.js ***!
+  \************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+const mongoose = __webpack_require__(/*! mongoose */ "mongoose");
+
+const moment = __webpack_require__(/*! moment */ "moment");
+
+const AttachmentSchema = new mongoose.Schema({
+  filename: {
+    type: String
+  },
+  url: {
+    type: String
+  },
+  transTime: {
+    type: Date,
+    default: moment.utc()
+  }
+});
+module.exports = AttachmentSchema;
 
 /***/ }),
 
@@ -6013,8 +6475,27 @@ const analytics = __webpack_require__(/*! ../controllers/analytics */ "./src/con
 
 const vision = __webpack_require__(/*! ../controllers/vision */ "./src/controllers/vision.js");
 
+const notification = __webpack_require__(/*! ../controllers/notification */ "./src/controllers/notification.js");
+
+const fs = __webpack_require__(/*! fs */ "fs");
+
 let upload = multer({
   dest: "./uploads/"
+});
+const upload2 = multer();
+router.get("/api/healthCheck", (_req, res) => {
+  const rev = fs.readFileSync(".git/HEAD").toString().trim();
+  let hash;
+
+  if (rev.indexOf(":") === -1) {
+    hash = rev;
+  } else {
+    hash = fs.readFileSync(".git/" + rev.substring(5)).toString().trim();
+  }
+
+  res.status(200).json({
+    hash
+  });
 });
 router.post("/api/checkAuth", siteAuth.checkAuth);
 router.post("/api/isValidToken", siteAuth.isValidToken);
@@ -6087,9 +6568,15 @@ router.post("/api/notification/newPayment", pushNotification.sendUploadPaymentNo
 router.post("/api/notification/approveRejectPayment", pushNotification.sendApproveRejectedPaymentNotification);
 router.post("/api/notification/newReservation", pushNotification.sendNewSpaceReservationNotification);
 router.post("/api/notification/approveRejectReservation", pushNotification.sendApproveRejectedReservationNotification);
-router.post("/api/notification/newSurvey", pushNotification.sendNewSurveyNotification);
+router.post("/api/notification/newSurvey", pushNotification.sendNewSurveyNotification); // internal notifications apis
+
+router.post("/api/alert/save", upload2.any(), notification.Save);
+router.delete("/api/alert/delete", notification.Delete);
+router.get("/api/alert/getById", notification.GetById);
+router.get("/api/alert/getBySuburbId", notification.GetBySuburbId);
+router.get("/api/alert/getByUserId", notification.GetByUserId); // analytics apis
+
 router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
-const upload2 = multer();
 router.post("/api/vision/ocr", upload2.any(), vision.processOCR); // files apis
 
 const blobFilesService = __webpack_require__(/*! ../controllers/blobFiles */ "./src/controllers/blobFiles.js");

@@ -10,7 +10,8 @@
     "build:server": "webpack --config webpack.config.js ",
     "start": "node build/app.server.js",
     "heroku-postbuild": "npm run build:server",
-    "start-all": "npm build:server & npm start"
+    "start-all": "npm build:server & npm start",
+    "run:dev": "node src/server.js"
   },
   "repository": {
     "type": "git",

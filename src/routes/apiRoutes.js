@@ -20,7 +20,26 @@ const analytics = require("../controllers/analytics");
 
 const vision = require("../controllers/vision");
 
+const notification = require("../controllers/notification");
+const fs = require("fs");
+
 let upload = multer({ dest: "./uploads/" });
+
+const upload2 = multer();
+
+router.get("/api/healthCheck", (_req, res) => {
+  const rev = fs.readFileSync(".git/HEAD").toString().trim();
+  let hash;
+  if (rev.indexOf(":") === -1) {
+    hash = rev;
+  } else {
+    hash = fs
+      .readFileSync(".git/" + rev.substring(5))
+      .toString()
+      .trim();
+  }
+  res.status(200).json({ hash });
+});
 
 router.post("/api/checkAuth", siteAuth.checkAuth);
 
@@ -156,9 +175,16 @@ router.post(
   pushNotification.sendNewSurveyNotification
 );
 
-router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
+// internal notifications apis
+router.post("/api/alert/save", upload2.any(), notification.Save);
+router.delete("/api/alert/delete", notification.Delete);
+router.get("/api/alert/getById", notification.GetById);
+router.get("/api/alert/getBySuburbId", notification.GetBySuburbId);
+router.get("/api/alert/getByUserId", notification.GetByUserId);
 
-const upload2 = multer();
+// analytics apis
+
+router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
 
 router.post("/api/vision/ocr", upload2.any(), vision.processOCR);
 
