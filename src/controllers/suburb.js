@@ -377,6 +377,109 @@ exports.setLimitedUsersByAddress = async (req, res) => {
   }
 };
 
+exports.saveSuburbData = async (req, res) => {
+  try {
+    const { accounts, phones, suburbId, mapUrl } = req.body;
+    const result = await suburbService.saveSuburbData({
+      accounts,
+      phones,
+      suburbId,
+      mapUrl,
+    });
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message ||
+        "An unknown error occurs while trying to get automation info.",
+    });
+  }
+};
+
+exports.getSuburbData = async (req, res) => {
+  try {
+    const { suburbId } = req.query;
+    const result = await suburbService.getSuburbData(suburbId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message ||
+        "An unknown error occurs while trying to get automation info.",
+    });
+  }
+};
+
+exports.addAccount = async (req, res) => {
+  try {
+    const { account, suburbId } = req.body;
+    const result = await suburbService.addAccountSuburb(account, suburbId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message ||
+        "An unknown error occurs while trying to get automation info.",
+    });
+  }
+};
+
+exports.addPhone = async (req, res) => {
+  try {
+    const { phone, suburbId } = req.body;
+    const result = await suburbService.addPhoneSuburb(phone, suburbId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message ||
+        "An unknown error occurs while trying to get automation info.",
+    });
+  }
+};
+
+exports.removePhone = async (req, res) => {
+  try {
+    const { suburbId, phoneId } = req.query;
+    const result = await suburbService.removePhone(phoneId, suburbId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message ||
+        "An unknown error occurs while trying to get automation info.",
+    });
+  }
+};
+
+exports.removeAccount = async (req, res) => {
+  try {
+    const { suburbId, accountId } = req.query;
+    const result = await suburbService.removeAccount(accountId, suburbId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message ||
+        "An unknown error occurs while trying to get automation info.",
+    });
+  }
+};
+
+exports.editMap = async (req, res) => {
+  try {
+    const { suburbId, mapUrl } = req.body;
+    const result = await suburbService.editMap(mapUrl, suburbId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message ||
+        "An unknown error occurs while trying to get automation info.",
+    });
+  }
+};
+
 exports.getSuburbAutomationInfo = async (req, res) => {
   try {
     const { suburbId } = req.query;
