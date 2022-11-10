@@ -293,7 +293,7 @@ const SaveSuburbData = async (data) => {
   }
 };
 
-const getSuburbData = async (suburbId) => {
+const GetSuburbData = async (suburbId) => {
   try {
     return await suburbData.GetDataBySuburb(suburbId);
   } catch (error) {
@@ -301,7 +301,7 @@ const getSuburbData = async (suburbId) => {
   }
 };
 
-const addAccountSuburb = async (account, suburbId) => {
+const AddAccountSuburb = async (account, suburbId) => {
   try {
     const data = await suburbData.GetDataBySuburb(suburbId);
     if (data) {
@@ -314,7 +314,7 @@ const addAccountSuburb = async (account, suburbId) => {
   }
 };
 
-const addPhoneSuburb = async (phone, suburbId) => {
+const AddPhoneSuburb = async (phone, suburbId) => {
   try {
     const data = await suburbData.GetDataBySuburb(suburbId);
     if (data) {
@@ -327,7 +327,7 @@ const addPhoneSuburb = async (phone, suburbId) => {
   }
 };
 
-const removePhone = async (phoneId, suburbId) => {
+const RemovePhone = async (phoneId, suburbId) => {
   try {
     return await suburbData.RemovePhone(phoneId, suburbId);
   } catch (error) {
@@ -335,7 +335,7 @@ const removePhone = async (phoneId, suburbId) => {
   }
 };
 
-const removeAccount = async (accountId, suburbId) => {
+const RemoveAccount = async (accountId, suburbId) => {
   try {
     return await suburbData.RemoveAccount(accountId, suburbId);
   } catch (error) {
@@ -343,7 +343,7 @@ const removeAccount = async (accountId, suburbId) => {
   }
 };
 
-const editMap = async (mapUrl, suburbId) => {
+const EditMap = async (mapUrl, suburbId) => {
   try {
     return await suburbData.EditMap(mapUrl, suburbId);
   } catch (error) {
@@ -366,10 +366,10 @@ module.exports = {
   getSuburbStreets,
   getUsersBySuburb,
   SaveSuburbData,
-  getSuburbData,
-  addAccountSuburb,
-  addPhoneSuburb,
-  removePhone,
-  removeAccount,
-  editMap,
+  GetSuburbData,
+  AddAccountSuburb,
+  AddPhoneSuburb,
+  RemovePhone,
+  RemoveAccount,
+  EditMap,
 };

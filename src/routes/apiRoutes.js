@@ -147,19 +147,19 @@ router.get(
   suburb.getSuburbAutomationInfo
 );
 
-router.post("/api/suburb/data", suburb.saveSuburbData);
+router.post("/api/suburb/data", suburb.SaveSuburbData);
 
-router.get("/api/suburb/data", suburb.getSuburbData);
+router.get("/api/suburb/data", suburb.GetSuburbData);
 
-router.post("/api/suburb/addAccount", suburb.addAccount);
+router.post("/api/suburb/addAccount", suburb.AddAccount);
 
-router.post("/api/suburb/addPhone", suburb.addPhone);
+router.post("/api/suburb/addPhone", suburb.AddPhone);
 
-router.post("/api/suburb/editMap", suburb.editMap);
+router.post("/api/suburb/editMap", suburb.EditMap);
 
-router.delete("/api/suburb/removePhone", suburb.removePhone);
+router.delete("/api/suburb/removePhone", suburb.RemovePhone);
 
-router.delete("/api/suburb/removeAccount", suburb.removeAccount);
+router.delete("/api/suburb/removeAccount", suburb.RemoveAccount);
 
 //push notifications
 router.post("/api/notification/test", pushNotification.sendTestNotification);

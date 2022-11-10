@@ -396,10 +396,10 @@ exports.SaveSuburbData = async (req, res) => {
   }
 };
 
-exports.getSuburbData = async (req, res) => {
+exports.GetSuburbData = async (req, res) => {
   try {
     const { suburbId } = req.query;
-    const result = await suburbService.getSuburbData(suburbId);
+    const result = await suburbService.GetSuburbData(suburbId);
     res.status(200).json(result);
   } catch (err) {
     res.status(500).json({
@@ -410,10 +410,10 @@ exports.getSuburbData = async (req, res) => {
   }
 };
 
-exports.addAccount = async (req, res) => {
+exports.AddAccount = async (req, res) => {
   try {
     const { account, suburbId } = req.body;
-    const result = await suburbService.addAccountSuburb(account, suburbId);
+    const result = await suburbService.AddAccountSuburb(account, suburbId);
     res.status(200).json(result);
   } catch (err) {
     res.status(500).json({
@@ -423,10 +423,10 @@ exports.addAccount = async (req, res) => {
   }
 };
 
-exports.addPhone = async (req, res) => {
+exports.AddPhone = async (req, res) => {
   try {
     const { phone, suburbId } = req.body;
-    const result = await suburbService.addPhoneSuburb(phone, suburbId);
+    const result = await suburbService.AddPhoneSuburb(phone, suburbId);
     res.status(200).json(result);
   } catch (err) {
     res.status(500).json({
@@ -436,10 +436,10 @@ exports.addPhone = async (req, res) => {
   }
 };
 
-exports.removePhone = async (req, res) => {
+exports.RemovePhone = async (req, res) => {
   try {
     const { suburbId, phoneId } = req.query;
-    const result = await suburbService.removePhone(phoneId, suburbId);
+    const result = await suburbService.RemovePhone(phoneId, suburbId);
     res.status(200).json(result);
   } catch (err) {
     res.status(500).json({
@@ -449,10 +449,10 @@ exports.removePhone = async (req, res) => {
   }
 };
 
-exports.removeAccount = async (req, res) => {
+exports.RemoveAccount = async (req, res) => {
   try {
     const { suburbId, accountId } = req.query;
-    const result = await suburbService.removeAccount(accountId, suburbId);
+    const result = await suburbService.RemoveAccount(accountId, suburbId);
     res.status(200).json(result);
   } catch (err) {
     res.status(500).json({
@@ -463,10 +463,10 @@ exports.removeAccount = async (req, res) => {
   }
 };
 
-exports.editMap = async (req, res) => {
+exports.EditMap = async (req, res) => {
   try {
     const { suburbId, mapUrl } = req.body;
-    const result = await suburbService.editMap(mapUrl, suburbId);
+    const result = await suburbService.EditMap(mapUrl, suburbId);
     res.status(200).json(result);
   } catch (err) {
     res.status(500).json({
