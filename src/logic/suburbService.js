@@ -281,7 +281,7 @@ const getUsersBySuburb = async (suburbId) => {
   }
 };
 
-const saveSuburbData = async (data) => {
+const SaveSuburbData = async (data) => {
   try {
     if (data) {
       return await suburbData.Save(data);
@@ -343,9 +343,9 @@ const removeAccount = async (accountId, suburbId) => {
   }
 };
 
-const editMap = async (mapId, suburbId) => {
+const editMap = async (mapUrl, suburbId) => {
   try {
-    return await suburbData.EditMap(mapId, suburbId);
+    return await suburbData.EditMap(mapUrl, suburbId);
   } catch (error) {
     throw error;
   }
@@ -365,7 +365,7 @@ module.exports = {
   saveSuburbStreet,
   getSuburbStreets,
   getUsersBySuburb,
-  saveSuburbData,
+  SaveSuburbData,
   getSuburbData,
   addAccountSuburb,
   addPhoneSuburb,

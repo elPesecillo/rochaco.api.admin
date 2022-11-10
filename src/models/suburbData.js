@@ -49,12 +49,8 @@ SuburbDataSchema.statics = {
       { new: true }
     );
   },
-  EditMap: function (newMap, suburbId) {
-    return this.findOneAndUpdate(
-      { suburbId },
-      { mapUrl: newMap },
-      { new: true }
-    );
+  EditMap: function (mapUrl, suburbId) {
+    return this.findOneAndUpdate({ suburbId }, { mapUrl }, { new: true });
   },
 };
 

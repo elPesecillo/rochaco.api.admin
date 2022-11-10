@@ -377,10 +377,10 @@ exports.setLimitedUsersByAddress = async (req, res) => {
   }
 };
 
-exports.saveSuburbData = async (req, res) => {
+exports.SaveSuburbData = async (req, res) => {
   try {
     const { accounts, phones, suburbId, mapUrl } = req.body;
-    const result = await suburbService.saveSuburbData({
+    const result = await suburbService.SaveSuburbData({
       accounts,
       phones,
       suburbId,
@@ -391,7 +391,7 @@ exports.saveSuburbData = async (req, res) => {
     res.status(500).json({
       message:
         err.message ||
-        "An unknown error occurs while trying to get automation info.",
+        "An unknown error occurs while trying to save suburb data.",
     });
   }
 };
@@ -405,7 +405,7 @@ exports.getSuburbData = async (req, res) => {
     res.status(500).json({
       message:
         err.message ||
-        "An unknown error occurs while trying to get automation info.",
+        "An unknown error occurs while trying to get suburb data.",
     });
   }
 };
@@ -418,8 +418,7 @@ exports.addAccount = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message:
-        err.message ||
-        "An unknown error occurs while trying to get automation info.",
+        err.message || "An unknown error occurs while trying to add account.",
     });
   }
 };
@@ -432,8 +431,7 @@ exports.addPhone = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message:
-        err.message ||
-        "An unknown error occurs while trying to get automation info.",
+        err.message || "An unknown error occurs while trying to add phone.",
     });
   }
 };
@@ -446,8 +444,7 @@ exports.removePhone = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message:
-        err.message ||
-        "An unknown error occurs while trying to get automation info.",
+        err.message || "An unknown error occurs while trying to delete phone.",
     });
   }
 };
@@ -461,7 +458,7 @@ exports.removeAccount = async (req, res) => {
     res.status(500).json({
       message:
         err.message ||
-        "An unknown error occurs while trying to get automation info.",
+        "An unknown error occurs while trying to delete account.",
     });
   }
 };
@@ -474,8 +471,7 @@ exports.editMap = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       message:
-        err.message ||
-        "An unknown error occurs while trying to get automation info.",
+        err.message || "An unknown error occurs while trying to edit map.",
     });
   }
 };
