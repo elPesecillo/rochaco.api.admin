@@ -5,6 +5,7 @@ const User = require("../models/user");
 const SuburbConfig = require("../models/suburbConfig");
 const SuburbStreet = require("../models/suburbStreet");
 const ObjectId = require("mongoose").Types.ObjectId;
+const suburbData = require("../models/suburbData");
 
 const CryptoJS = require("crypto-js");
 
@@ -280,6 +281,76 @@ const getUsersBySuburb = async (suburbId) => {
   }
 };
 
+const SaveSuburbData = async (data) => {
+  try {
+    if (data) {
+      return await suburbData.Save(data);
+    } else {
+      return await suburbData.AddAccount(data);
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+const GetSuburbData = async (suburbId) => {
+  try {
+    return await suburbData.GetDataBySuburb(suburbId);
+  } catch (error) {
+    throw error;
+  }
+};
+
+const AddAccountSuburb = async (account, suburbId) => {
+  try {
+    const data = await suburbData.GetDataBySuburb(suburbId);
+    if (data) {
+      return await suburbData.AddAccount(account, suburbId);
+    } else {
+      return await suburbData.Save({ suburbId, accounts: [account] });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+const AddPhoneSuburb = async (phone, suburbId) => {
+  try {
+    const data = await suburbData.GetDataBySuburb(suburbId);
+    if (data) {
+      return await suburbData.AddPhone(phone, suburbId);
+    } else {
+      return await suburbData.Save({ suburbId, phones: [phone] });
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+const RemovePhone = async (phoneId, suburbId) => {
+  try {
+    return await suburbData.RemovePhone(phoneId, suburbId);
+  } catch (error) {
+    throw error;
+  }
+};
+
+const RemoveAccount = async (accountId, suburbId) => {
+  try {
+    return await suburbData.RemoveAccount(accountId, suburbId);
+  } catch (error) {
+    throw error;
+  }
+};
+
+const EditMap = async (mapUrl, suburbId) => {
+  try {
+    return await suburbData.EditMap(mapUrl, suburbId);
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   saveSuburb,
   suburbAddStatus,
@@ -294,4 +365,11 @@ module.exports = {
   saveSuburbStreet,
   getSuburbStreets,
   getUsersBySuburb,
+  SaveSuburbData,
+  GetSuburbData,
+  AddAccountSuburb,
+  AddPhoneSuburb,
+  RemovePhone,
+  RemoveAccount,
+  EditMap,
 };

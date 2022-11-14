@@ -147,6 +147,20 @@ router.get(
   suburb.getSuburbAutomationInfo
 );
 
+router.post("/api/suburb/data", suburb.SaveSuburbData);
+
+router.get("/api/suburb/data", suburb.GetSuburbData);
+
+router.post("/api/suburb/addAccount", suburb.AddAccount);
+
+router.post("/api/suburb/addPhone", suburb.AddPhone);
+
+router.post("/api/suburb/editMap", suburb.EditMap);
+
+router.delete("/api/suburb/removePhone", suburb.RemovePhone);
+
+router.delete("/api/suburb/removeAccount", suburb.RemoveAccount);
+
 //push notifications
 router.post("/api/notification/test", pushNotification.sendTestNotification);
 router.post(
