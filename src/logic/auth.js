@@ -37,6 +37,7 @@ const apiWithKey = [
   "/api/notification/newReservation",
   "/api/notification/approveRejectReservation",
   "/api/notification/newSurvey",
+  "/api/suburb/getSuburbAutomationInfo"
 ];
 
 const protectedApi = ["/api/suburb/approveReject"];
@@ -105,7 +106,7 @@ exports.Auth = class Auth {
       );
     else if (this.isApiWithKey(apiPath)) {
       // check if the api key is valid
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         process.env.PROTECTED_API_KEY === apiKey
           ? resolve({ valid: true, message: "the api key is ok" })
           : reject({ valid: false, message: "unknown api key" });

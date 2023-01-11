@@ -416,3 +416,16 @@ exports.getSuburbAutomationInfo = async (req, res) => {
     });
   }
 };
+
+exports.getSuburbData = async (req, res) => {
+  try{
+    const { suburbId } = req.query;
+    res.status(200).json({hello: `suburbId: ${suburbId}`});
+  }catch(err){
+    res.status(500).json({
+      message:
+        err.message ||
+        "An unknown error occurs while trying to get automation info.",
+    });
+  }
+}

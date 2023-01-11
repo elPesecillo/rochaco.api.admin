@@ -450,8 +450,14 @@ UserSchema.statics = {
   addUserFavs: function (userId, favs) {
     return new Promise((resolve, reject) => {
       this.findOne({ _id: userId }).exec((err, result) => {
-        if (err) reject(err);
-        if (!result) reject({ message: "user not found" });
+        if (err) {
+          reject(err);
+          return;
+        }
+        if (!result) {
+          reject({ message: "user not found" });
+          return;
+        }
         let mergedFavs = mergeArrayObjects(result.favorites || [], favs);
         this.findOneAndUpdate(
           { _id: userId },

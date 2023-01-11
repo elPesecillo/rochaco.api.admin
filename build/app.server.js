@@ -93,7 +93,7 @@
 /*! exports provided: name, version, cryptoKey, description, main, scripts, repository, keywords, author, license, dependencies, devDependencies, default */
 /***/ (function(module) {
 
-module.exports = JSON.parse("{\"name\":\"rochaco_api\",\"version\":\"1.0.0\",\"cryptoKey\":\"secretKey123\",\"description\":\"rochaco management apis\",\"main\":\"index.js\",\"scripts\":{\"test\":\"echo \\\"Error: no test specified\\\" && exit 1\",\"heroku-prebuild\":\"npm install --dev\",\"build:server\":\"webpack --config webpack.config.js \",\"start\":\"node build/app.server.js\",\"heroku-postbuild\":\"npm run build:server\",\"start-all\":\"npm build:server & npm start\"},\"repository\":{\"type\":\"git\",\"url\":\"https://phdez@dev.azure.com/phdez/rochaco_web/_git/rochaco_api\"},\"keywords\":[\"rochaco\",\"api\",\"nodejs\"],\"author\":\"Pascual Hernandez\",\"license\":\"ISC\",\"dependencies\":{\"@azure/cognitiveservices-computervision\":\"^8.0.0\",\"@azure/ms-rest-azure-js\":\"^2.1.0\",\"@sendgrid/mail\":\"^6.5.4\",\"axios\":\"^0.21.1\",\"base-64\":\"^0.1.0\",\"bcryptjs\":\"^2.4.3\",\"body-parser\":\"^1.19.0\",\"cors\":\"^2.8.5\",\"crypto-js\":\"^4.0.0\",\"dotenv\":\"^8.1.0\",\"dropbox-v2-api\":\"^2.4.13\",\"expo-server-sdk\":\"^3.6.0\",\"express\":\"^4.17.1\",\"express-http-proxy\":\"^1.6.2\",\"fs\":\"0.0.1-security\",\"jsonwebtoken\":\"^8.5.1\",\"moment\":\"^2.24.0\",\"mongoose\":\"^5.6.11\",\"morgan\":\"^1.9.1\",\"multer\":\"^1.4.2\",\"request\":\"^2.88.0\"},\"devDependencies\":{\"@babel/core\":\"^7.5.5\",\"babel-loader\":\"^8.0.6\",\"babel-plugin-transform-class-properties\":\"^6.24.1\",\"path\":\"^0.12.7\",\"source-map\":\"^0.7.3\",\"webpack\":\"^4.42.1\",\"webpack-cli\":\"^3.3.11\",\"webpack-node-externals\":\"^1.7.2\"}}");
+module.exports = JSON.parse("{\"name\":\"rochaco_api\",\"version\":\"1.0.0\",\"cryptoKey\":\"secretKey123\",\"description\":\"rochaco management apis\",\"main\":\"index.js\",\"scripts\":{\"test\":\"echo \\\"Error: no test specified\\\" && exit 1\",\"heroku-prebuild\":\"npm install --dev\",\"build:server\":\"webpack --config webpack.config.js \",\"start\":\"node build/app.server.js\",\"heroku-postbuild\":\"npm run build:server\",\"start-all\":\"npm build:server & npm start\",\"run:dev\":\"node src/server.js\"},\"repository\":{\"type\":\"git\",\"url\":\"https://phdez@dev.azure.com/phdez/rochaco_web/_git/rochaco_api\"},\"keywords\":[\"rochaco\",\"api\",\"nodejs\"],\"author\":\"Pascual Hernandez\",\"license\":\"ISC\",\"dependencies\":{\"@azure/cognitiveservices-computervision\":\"^8.0.0\",\"@azure/ms-rest-azure-js\":\"^2.1.0\",\"@sendgrid/mail\":\"^6.5.4\",\"axios\":\"^0.21.1\",\"base-64\":\"^0.1.0\",\"bcryptjs\":\"^2.4.3\",\"body-parser\":\"^1.19.0\",\"cors\":\"^2.8.5\",\"crypto-js\":\"^4.0.0\",\"dotenv\":\"^8.1.0\",\"dropbox-v2-api\":\"^2.4.13\",\"expo-server-sdk\":\"^3.6.0\",\"express\":\"^4.17.1\",\"express-http-proxy\":\"^1.6.2\",\"fs\":\"0.0.1-security\",\"jsonwebtoken\":\"^8.5.1\",\"moment\":\"^2.24.0\",\"mongoose\":\"^5.6.11\",\"morgan\":\"^1.9.1\",\"multer\":\"^1.4.2\",\"request\":\"^2.88.0\"},\"devDependencies\":{\"@babel/core\":\"^7.5.5\",\"babel-loader\":\"^8.0.6\",\"babel-plugin-transform-class-properties\":\"^6.24.1\",\"path\":\"^0.12.7\",\"source-map\":\"^0.7.3\",\"webpack\":\"^4.42.1\",\"webpack-cli\":\"^3.3.11\",\"webpack-node-externals\":\"^1.7.2\"}}");
 
 /***/ }),
 
@@ -1974,6 +1974,21 @@ exports.getSuburbAutomationInfo = async (req, res) => {
   }
 };
 
+exports.getSuburbData = async (req, res) => {
+  try {
+    const {
+      suburbId
+    } = req.query;
+    res.status(200).json({
+      hello: `suburbId: ${suburbId}`
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: err.message || "An unknown error occurs while trying to get automation info."
+    });
+  }
+};
+
 /***/ }),
 
 /***/ "./src/controllers/userAdmin.js":
@@ -2823,7 +2838,7 @@ const openApi = ["/api/checkAuth", "/api/auth/fbtoken", "/api/auth/googletoken",
 const apiWithKey = ["/api/notification/newPayment", // add api key for this kind of requests
 "/api/notification/approveRejectPayment", // add api key for this kind of requests
 "/api/suburb/getAddressesBySuburbId", // add api key for this kind of requests
-"/api/suburb/getSuburbAutomationInfo", "/api/auth/internal/auth", "/api/notification/newReservation", "/api/notification/approveRejectReservation", "/api/notification/newSurvey"];
+"/api/suburb/getSuburbAutomationInfo", "/api/auth/internal/auth", "/api/notification/newReservation", "/api/notification/approveRejectReservation", "/api/notification/newSurvey", "/api/suburb/getSuburbAutomationInfo"];
 const protectedApi = ["/api/suburb/approveReject"];
 exports.Auth = class Auth {
   validateToken(token) {
@@ -2885,7 +2900,7 @@ exports.Auth = class Auth {
       message: "the api is open."
     }));else if (this.isApiWithKey(apiPath)) {
       // check if the api key is valid
-      return new Promise(resolve => {
+      return new Promise((resolve, reject) => {
         process.env.PROTECTED_API_KEY === apiKey ? resolve({
           valid: true,
           message: "the api key is ok"
@@ -5918,10 +5933,18 @@ UserSchema.statics = {
       this.findOne({
         _id: userId
       }).exec((err, result) => {
-        if (err) reject(err);
-        if (!result) reject({
-          message: "user not found"
-        });
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        if (!result) {
+          reject({
+            message: "user not found"
+          });
+          return;
+        }
+
         let mergedFavs = mergeArrayObjects(result.favorites || [], favs);
         this.findOneAndUpdate({
           _id: userId
@@ -6558,6 +6581,7 @@ router.get("/api/suburb/getAllStreets", suburb.getSuburbStreets);
 router.get("/api/suburb/getUsers", suburb.getUsersBySuburb);
 router.get("/api/suburb/migrateAddresses", suburb.migrateAddresses);
 router.get("/api/suburb/getAddressesBySuburbId", suburb.getAddressesBySuburbId);
+router.get("/api/suburb/getSuburbData", suburb.getSuburbData);
 router.get("/api/suburb/getAddressesWithUsersStates", suburb.getAddressesWithUsersStates);
 router.post("/api/suburb/setLimitedUsersByAddress", suburb.setLimitedUsersByAddress);
 router.get("/api/suburb/getSuburbAutomationInfo", suburb.getSuburbAutomationInfo); //push notifications
