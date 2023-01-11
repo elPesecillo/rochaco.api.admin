@@ -1,3 +1,4 @@
+/* eslint-disable prefer-promise-reject-errors */
 const moment = require("moment");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -122,79 +123,69 @@ const UserSchema = new mongoose.Schema({
  */
 const _secretKey = process.env.JWT_SECRET;
 
-let _getExpDate = () => {
-  var expTimeByMin =
+const _getExpDate = () => {
+  const expTimeByMin =
     process.env.EXP_TOKEN != null ? process.env.EXP_TOKEN : "10080";
   return moment().add(expTimeByMin, "minutes").unix();
-};
-
-let _getValidApis = (id) => {
-  //return an array with the valid apis
-  return [];
-};
-
-let _getValidMenus = (id) => {
-  //return an array with the valid menus for the user
-  return [];
 };
 
 /**
  * Method to validate exp from the user token.
  * @param {*} expDate
  */
-let _validateExpDate = function (expDate) {
-  let currentTime = moment().unix();
+const _validateExpDate = function (expDate) {
+  const currentTime = moment().unix();
   return expDate > currentTime;
 };
 
 UserSchema.methods = {
-  validatePassword: function (_password, isTemporary = false) {
+  validatePassword(_password, isTemporary = false) {
     try {
-      var _this = this;
-      let pass = base64.decode(_password);
+      const _this = this;
+      const pass = base64.decode(_password);
 
-      let compareValue = isTemporary ? _this.tempPassword : _this.password;
+      const compareValue = isTemporary ? _this.tempPassword : _this.password;
 
       return new Promise(
         (resolve, reject) => {
           if (_this.temporaryDisabled) {
-            let wait = 10 - this.getDisabledSince();
-            if (wait > 0)
+            const wait = 10 - this.getDisabledSince();
+            if (wait > 0) {
               reject({
                 success: false,
                 message: `El usuario esta temporalmente desabilitado, por favor espere ${wait} minutos para volver a intentar.`,
               });
-            else
-              this.increaseLoginAttempts(true).then((res) => {
+            } else {
+              this.increaseLoginAttempts(true).then(() => {
                 this.validatePassword(_password).then(
                   (result) => resolve(result),
                   (err) => reject(err)
                 );
               });
-          } else
+            }
+          } else {
             bcrypt.compare(pass, compareValue).then((valid) => {
               if (valid) {
-                //reset logint attempts
+                // reset logint attempts
                 this.increaseLoginAttempts(true).then(
-                  (res) => {
+                  () => {
                     resolve({
                       success: true,
                       message: "La contraseña coincide.",
                     });
                   },
-                  (err) =>
-                    reject({ success: false, message: "Un error occurio." })
+                  () => reject({ success: false, message: "Un error occurio." })
                 );
               } else {
-                //increase login attempts
+                // increase login attempts
                 this.increaseLoginAttempts().then(
-                  (res) => {
+                  () => {
                     reject({
                       success: false,
                       message: "La contraseña no es valida.",
                     });
                   },
-                  (err) =>
+                  () =>
                     reject({
                       success: false,
                       message: "Un error occurio, la contraseña no es valida.",
@@ -202,68 +193,69 @@ UserSchema.methods = {
                 );
               }
             });
+          }
         },
-        (err) =>
-          reject({
-            success: false,
-            message: "Ocurrio un error al comparar la contraseña.",
-          })
+        () => {
+          throw Error("Ocurrio un error al comparar la contraseña.");
+        }
       );
     } catch (e) {
       return Promise.reject({
         success: false,
-        message: "Ocurrio un error al comparar la contraseña.",
+        message: e.message || "Ocurrio un error al comparar la contraseña.",
       });
     }
   },
-  getDisabledSince: function () {
-    let disabledSince = this.disabledSince ? this.disabledSince : moment.utc();
-    let start = moment(disabledSince);
-    let end = moment(moment.utc());
+  getDisabledSince() {
+    const disabledSince = this.disabledSince
+      ? this.disabledSince
+      : moment.utc();
+    const start = moment(disabledSince);
+    const end = moment(moment.utc());
     return end.diff(start, "minutes");
   },
-  increaseLoginAttempts: function (reset) {
+  increaseLoginAttempts(reset) {
     if (reset) {
       this.loginAttempts = 0;
       this.temporaryDisabled = false;
       this.disabledSince = null;
     } else {
-      let loginAttempts = this.loginAttempts + 1;
+      const loginAttempts = this.loginAttempts + 1;
       this.loginAttempts = loginAttempts;
       this.temporaryDisabled = loginAttempts > 10;
       this.disabledSince = loginAttempts > 10 ? moment.utc() : null;
     }
     return new Promise((resolve, reject) => {
-      return this.save().then(
-        (res) => {
+      this.save()
+        .then((res) => {
           resolve(res);
-        },
-        (err) => {
+        })
+        .catch((err) => {
           reject(err);
-        }
-      );
+        });
     });
   },
-  generateUserToken: function (_suburb) {
-    let payload = {
-      userId: this._id != undefined ? JSON.parse(JSON.stringify(this._id)) : "",
+  generateUserToken(_suburb) {
+    const payload = {
+      userId:
+        this._id !== undefined ? JSON.parse(JSON.stringify(this._id)) : "",
       userName: `${this.name} ${this.lastName}`,
       loginName: this.loginName,
       suburb: this.suburb || _suburb,
       userType: this.userType,
       exp: _getExpDate(),
-      validApis: _getValidApis(this._id),
+      validApis: [],
       pushTokens: this.pushTokens,
       street: this.street,
       streetNumber: this.streetNumber,
       addressId: this.addressId,
       limited: typeof this.limited === "undefined" ? false : this.limited,
-      //validMenus: _getValidMenus(this._id) //verify if is better put this in another schema i.e. suburb
     };
-    let token = jwt.sign(payload, _secretKey);
+    const token = jwt.sign(payload, _secretKey);
     return token;
   },
-  setUserRole: function (userId, roles) {
+  setUserRole(userId, userRoles) {
+    let roles = userRoles;
     if (!Array.isArray(roles)) roles = [roles];
     return this.update(
       {
@@ -281,7 +273,9 @@ UserSchema.methods = {
       }
     );
   },
-  deleteUserRole: function (users, roles) {
+  deleteUserRole(selectedUsers, userRoles) {
+    let roles = userRoles;
+    let users = selectedUsers;
     if (!Array.isArray(users)) users = [users];
     if (!Array.isArray(roles)) roles = [roles];
 
@@ -293,7 +287,7 @@ UserSchema.methods = {
       },
       {
         $pullAll: {
-          roles: roles,
+          roles,
         },
       },
       {
@@ -301,7 +295,7 @@ UserSchema.methods = {
       }
     );
   },
-  getUserRoles: function (userId) {
+  getUserRoles(userId) {
     return new Promise((resolve, reject) => {
       this.find({
         _id: userId,
@@ -309,14 +303,14 @@ UserSchema.methods = {
         .populate("roles")
         .exec((err, result) => {
           if (err) reject(err);
-          resolve(getCleanResult(result, "roles"));
+          resolve(result);
         });
     });
   },
 };
 
 const mergeArrayObjects = (currentFavs, newFavs) => {
-  let firstMerge = currentFavs.map((item, i) => {
+  const firstMerge = currentFavs.map((item) => {
     let assign = {
       name: item.name,
       vehicle: item.vehicle,
@@ -326,23 +320,21 @@ const mergeArrayObjects = (currentFavs, newFavs) => {
     };
     newFavs.forEach((a2) => {
       if (item.name === a2.name) {
-        assign = Object.assign(
-          {},
-          {
-            name: item.name,
-            vehicle: item.vehicle,
-            subject: item.subject,
-            isService: item.isService,
-            count: item.count || 0 + 1, //add 1 to calculate more used favs
-          },
-          a2
-        );
+        assign = {
+          name: item.name,
+          vehicle: item.vehicle,
+          subject: item.subject,
+          isService: item.isService,
+          count: item.count || 0 + 1, // add 1 to calculate more used favs
+
+          ...a2,
+        };
       }
     });
     return { ...assign };
   });
 
-  let all = [];
+  const all = [];
   newFavs.forEach((item) => {
     let add = true;
     firstMerge.forEach((fm) => {
@@ -351,24 +343,33 @@ const mergeArrayObjects = (currentFavs, newFavs) => {
     if (add) all.push(item);
   });
 
-  let items = [...firstMerge, ...all].sort((a, b) => b.count - a.count);
-  return items.slice(0, items.length <= 30 ? items.length : 30); // solo mantendremos 30 favoritos para no sobrecargar la bd
+  const items = [...firstMerge, ...all].sort((a, b) => b.count - a.count);
+  // solo mantendremos 30 favoritos para no sobrecargar la bd
+  return items.slice(0, items.length <= 30 ? items.length : 30);
 };
 
 const mergePushTokens = (currentPushTokens, newPushToken) => {
-  let tokens = currentPushTokens.map((t) =>
+  const tokens = currentPushTokens.map((t) =>
     t.token === newPushToken.token ? { ...newPushToken } : { ...t._doc }
   );
 
-  let exists = tokens.filter((t) => t.token === newPushToken.token);
+  const exists = tokens.filter((t) => t.token === newPushToken.token);
   return exists.length > 0 ? [...tokens] : [...tokens, newPushToken];
 };
 
 const extractUsersFromDoc = (mUsers) => {
-  let users = mUsers.map((u) => {
-    let { _id, name, lastName, street, streetNumber, active, pushTokens } =
+  const users = mUsers.map((u) => {
+    const { _id, name, lastName, street, streetNumber, active, pushTokens } =
       u._doc;
-    return { _id, name, lastName, street, streetNumber, active, pushTokens };
+    return {
+      _id,
+      name,
+      lastName,
+      street,
+      streetNumber,
+      active,
+      pushTokens,
+    };
   });
   return users;
 };
@@ -377,7 +378,7 @@ UserSchema.statics = {
   /**
    * Method to get a user by login name
    */
-  getLogin: function (_loginName) {
+  getLogin(_loginName) {
     return new Promise((resolve, reject) => {
       this.findOne({
         $and: [
@@ -386,13 +387,13 @@ UserSchema.statics = {
           },
           { active: true },
         ],
-      }) /*.populate({
+      }) /* .populate({
                 path: 'roles',
                 populate: {
                     path: 'menus',
                     model: 'Menu'
                 }
-            })*/
+            }) */
         .exec((err, result) => {
           if (err) reject(err);
           else {
@@ -401,7 +402,7 @@ UserSchema.statics = {
         });
     });
   },
-  getUserByFacebookId: function (_facebookId) {
+  getUserByFacebookId(_facebookId) {
     return new Promise((resolve, reject) => {
       this.findOne({
         facebookId: _facebookId,
@@ -413,7 +414,7 @@ UserSchema.statics = {
       });
     });
   },
-  getUserByGoogleId: function (_googleId) {
+  getUserByGoogleId(_googleId) {
     return new Promise((resolve, reject) => {
       this.findOne({
         googleId: _googleId,
@@ -425,7 +426,7 @@ UserSchema.statics = {
       });
     });
   },
-  getUserByAppleId: function (_appleId) {
+  getUserByAppleId(_appleId) {
     return new Promise((resolve, reject) => {
       this.findOne({
         appleId: _appleId,
@@ -437,7 +438,7 @@ UserSchema.statics = {
       });
     });
   },
-  getUserFavs: function (userId) {
+  getUserFavs(userId) {
     return new Promise((resolve, reject) => {
       this.findOne({ _id: userId }).exec((err, result) => {
         if (err) reject(err);
@@ -447,7 +448,7 @@ UserSchema.statics = {
       });
     });
   },
-  addUserFavs: function (userId, favs) {
+  addUserFavs(userId, favs) {
     return new Promise((resolve, reject) => {
       this.findOne({ _id: userId }).exec((err, result) => {
         if (err) {
@@ -458,13 +459,13 @@ UserSchema.statics = {
           reject({ message: "user not found" });
           return;
         }
-        let mergedFavs = mergeArrayObjects(result.favorites || [], favs);
+        const mergedFavs = mergeArrayObjects(result.favorites || [], favs);
         this.findOneAndUpdate(
           { _id: userId },
           { $set: { favorites: mergedFavs } },
           { new: true },
-          function (err, user) {
-            if (err) reject(err);
+          (error) => {
+            if (error) reject(error);
             else {
               resolve(mergedFavs);
             }
@@ -474,13 +475,13 @@ UserSchema.statics = {
       });
     });
   },
-  removeUserFavs: function (userId, favs) {
+  removeUserFavs(userId, favs) {
     return new Promise((resolve, reject) => {
       this.findOne({ _id: userId }).exec((err, result) => {
         if (err) reject(err);
         if (!result) reject({ message: "user not found" });
-        let filterFavs = (result.favorites || []).filter((item) => {
-          let exists = favs.filter((f) => f.name.trim() === item.name.trim());
+        const filterFavs = (result.favorites || []).filter((item) => {
+          const exists = favs.filter((f) => f.name.trim() === item.name.trim());
           return exists.length === 0;
         });
 
@@ -488,8 +489,8 @@ UserSchema.statics = {
           { _id: userId },
           { $set: { favorites: filterFavs } },
           { new: true },
-          function (err, user) {
-            if (err) reject(err);
+          (error) => {
+            if (error) reject(error);
             else {
               resolve(filterFavs);
             }
@@ -499,20 +500,20 @@ UserSchema.statics = {
       });
     });
   },
-  addUserPushToken: function (userId, pushToken) {
+  addUserPushToken(userId, pushToken) {
     return new Promise((resolve, reject) => {
       this.findOne({ _id: userId }).exec((err, result) => {
         if (err) reject(err);
         if (!result) reject({ message: "user not found" });
-        let mergedPushTokens = mergePushTokens(result.pushTokens, {
+        const mergedPushTokens = mergePushTokens(result.pushTokens, {
           token: pushToken,
         });
         this.findOneAndUpdate(
           { _id: userId },
           { $set: { pushTokens: mergedPushTokens } },
           { new: true },
-          function (err, user) {
-            if (err) reject(err);
+          (error) => {
+            if (error) reject(error);
             else {
               resolve(mergedPushTokens);
             }
@@ -521,7 +522,7 @@ UserSchema.statics = {
       });
     });
   },
-  updateUser: function (objUser) {
+  updateUser(objUser) {
     return this.updateOne(
       {
         _id: objUser._id,
@@ -541,33 +542,33 @@ UserSchema.statics = {
       }
     );
   },
-  deleteUserInfo: function (userId) {
+  deleteUserInfo(userId) {
     return this.deleteOne({ _id: userId });
   },
-  saveUser: function (objUser) {
-    let user = new this(objUser);
+  saveUser(objUser) {
+    const user = new this(objUser);
     return user.save();
   },
-  updateUserPicture: function (userId, photoUrl) {
-    return this.updateOne({ _id: userId }, { $set: { photoUrl: photoUrl } });
+  updateUserPicture(userId, photoUrl) {
+    return this.updateOne({ _id: userId }, { $set: { photoUrl } });
   },
-  updateUserType: function (userId, userType) {
-    return this.updateOne({ _id: userId }, { $set: { userType: userType } });
+  updateUserType(userId, userType) {
+    return this.updateOne({ _id: userId }, { $set: { userType } });
   },
-  enableDisableUser: function (userId, enabled) {
+  enableDisableUser(userId, enabled) {
     return this.updateOne({ _id: userId }, { $set: { active: enabled } });
   },
-  changeLimited: function (userId, limited) {
-    return this.updateOne({ _id: userId }, { $set: { limited: limited } });
+  changeLimited(userId, limited) {
+    return this.updateOne({ _id: userId }, { $set: { limited } });
   },
-  addUserRfid: function (userId, rfId) {
+  addUserRfid(userId, rfId) {
     return new Promise((resolve, reject) => {
       this.findOne({ _id: userId }).exec((err, result) => {
         if (err) reject(err);
         else if (!result) reject({ message: "user not found" });
         else {
-          let currentRfids = result.rfids || [];
-          let mergedRfids = currentRfids.some((item) => item.rfid === rfId)
+          const currentRfids = result.rfids || [];
+          const mergedRfids = currentRfids.some((item) => item.rfid === rfId)
             ? currentRfids
             : [...currentRfids, { rfid: rfId }];
 
@@ -575,8 +576,8 @@ UserSchema.statics = {
             { _id: userId },
             { $set: { rfids: [...mergedRfids] } },
             { new: true },
-            function (err, user) {
-              if (err) reject(err);
+            (error, user) => {
+              if (error) reject(error);
               else {
                 resolve({ userId: user._id, rfids: user.rfids });
               }
@@ -586,21 +587,23 @@ UserSchema.statics = {
       });
     });
   },
-  removeUserRfid: function (userId, rfId) {
+  removeUserRfid(userId, rfId) {
     return new Promise((resolve, reject) => {
       this.findOne({ _id: userId }).exec((err, result) => {
         if (err) reject(err);
         else if (!result) reject({ message: "user not found" });
         else {
-          let currentRfids = result.rfids || [];
-          let filteredRfids = currentRfids.filter((item) => item.rfid !== rfId);
+          const currentRfids = result.rfids || [];
+          const filteredRfids = currentRfids.filter(
+            (item) => item.rfid !== rfId
+          );
 
           this.findOneAndUpdate(
             { _id: userId },
             { $set: { rfids: [...filteredRfids] } },
             { new: true },
-            function (err, user) {
-              if (err) reject(err);
+            (error, user) => {
+              if (error) reject(error);
               else {
                 resolve({ userId: user._id, rfids: user.rfids });
               }
@@ -613,11 +616,11 @@ UserSchema.statics = {
   /**
    * Validate if the user token is active
    */
-  isValidToken: function (_token) {
-    return new Promise(function (resolve, reject) {
-      var isValid = false;
+  isValidToken(_token) {
+    return new Promise((resolve, reject) => {
+      let isValid = false;
       try {
-        jwt.verify(_token, _secretKey, function (err, decoded) {
+        jwt.verify(_token, _secretKey, (err, decoded) => {
           if (decoded) {
             if (_validateExpDate(decoded.exp)) {
               isValid = true;
@@ -635,10 +638,10 @@ UserSchema.statics = {
    * Get the payload of the jwt token
    * @param {String} _token
    */
-  getTokenPayload: function (_token) {
-    return new Promise(function (resolve, reject) {
+  getTokenPayload(_token) {
+    return new Promise((resolve, reject) => {
       try {
-        jwt.verify(_token, _secretKey, function (err, decoded) {
+        jwt.verify(_token, _secretKey, (err, decoded) => {
           resolve(decoded);
         });
       } catch (err) {
@@ -646,19 +649,19 @@ UserSchema.statics = {
       }
     });
   },
-  encryptPassword: function (_password) {
+  encryptPassword(_password) {
     return new Promise((resolve, reject) => {
-      let pass = base64.decode(_password);
-      let saltRounds = 10;
+      const pass = base64.decode(_password);
+      const saltRounds = 10;
       bcrypt.genSalt(saltRounds, (err, salt) => {
-        bcrypt.hash(pass, salt, (err, hash) => {
-          if (!err) resolve({ hash });
-          else reject(err);
+        bcrypt.hash(pass, salt, (error, hash) => {
+          if (!error) resolve({ hash });
+          else reject(error);
         });
       });
     });
   },
-  getUserById: function (id) {
+  getUserById(id) {
     return new Promise((resolve, reject) => {
       this.findOne({
         _id: id,
@@ -672,7 +675,7 @@ UserSchema.statics = {
         });
     });
   },
-  getUserLeanById: function (id) {
+  getUserLeanById(id) {
     return new Promise((resolve, reject) => {
       this.findOne({
         _id: id,
@@ -687,7 +690,7 @@ UserSchema.statics = {
         });
     });
   },
-  getUsersBySuburb: function (suburbId) {
+  getUsersBySuburb(suburbId) {
     return new Promise((resolve, reject) => {
       this.find({ suburb: suburbId })
         .lean()
@@ -717,9 +720,9 @@ UserSchema.statics = {
         });
     });
   },
-  getUsersBySuburbStreet: function (suburbId, street) {
+  getUsersBySuburbStreet(suburbId, street) {
     return new Promise((resolve, reject) => {
-      this.find({ $and: [{ suburb: suburbId }, { street: street }] }).exec(
+      this.find({ $and: [{ suburb: suburbId }, { street }] }).exec(
         (err, result) => {
           if (err) reject(err);
           else {
@@ -729,10 +732,10 @@ UserSchema.statics = {
       );
     });
   },
-  getUsersByAddress: function (suburbId, addressId) {
+  getUsersByAddress(suburbId, addressId) {
     return new Promise((resolve, reject) => {
       this.find({
-        $and: [{ suburb: suburbId }, { addressId: addressId }],
+        $and: [{ suburb: suburbId }, { addressId }],
       }).exec((err, result) => {
         if (err) reject(err);
         else {
@@ -741,7 +744,7 @@ UserSchema.statics = {
       });
     });
   },
-  updateUserTerms: function (userId, termsVersion) {
+  updateUserTerms(userId, termsVersion) {
     return new Promise((resolve, reject) => {
       this.findOne({ _id: userId })
         .lean()
@@ -753,8 +756,8 @@ UserSchema.statics = {
             { _id: userId },
             { $set: { signedTerms: terms } },
             { new: true },
-            function (err, _user) {
-              if (err) reject(err);
+            (error) => {
+              if (error) reject(error);
               else {
                 resolve({ signed: true, termsVersion: terms });
               }
@@ -763,7 +766,7 @@ UserSchema.statics = {
         });
     });
   },
-  isPasswordTemp: function (user, password) {
+  isPasswordTemp(user, password) {
     return new Promise((resolve, reject) => {
       this.findOne({
         loginName: user,
@@ -771,7 +774,7 @@ UserSchema.statics = {
         if (err) reject(err);
         else if (
           !result ||
-          result.tempPassword == "" ||
+          result.tempPassword === "" ||
           result.tempPassword == null
         ) {
           resolve(false);
@@ -787,13 +790,13 @@ UserSchema.statics = {
       });
     });
   },
-  updatePassword: function (userId, password, tempPassword) {
+  updatePassword(userId, password, tempPassword) {
     return new Promise((resolve, reject) => {
       this.findOne({
         _id: userId,
       }).exec((err, result) => {
         if (err) reject(err);
-        else if (result.tempPassword == "") {
+        else if (result.tempPassword === "") {
           resolve(false);
         } else {
           bcrypt.compare(tempPassword, result.tempPassword).then((valid) => {
@@ -808,8 +811,8 @@ UserSchema.statics = {
                     { _id: userId },
                     { $set: { tempPassword: null, password: HashPassword } },
                     { new: true },
-                    function (err, user) {
-                      if (err) reject(err);
+                    (error) => {
+                      if (error) reject(error);
                       else {
                         resolve({
                           success: true,
@@ -832,10 +835,10 @@ UserSchema.statics = {
       });
     });
   },
-  updateTempPassword: function (email) {
+  updateTempPassword(email) {
     return new Promise((resolve, reject) => {
       this.findOne({
-        email: email,
+        email,
       }).exec((err, result) => {
         if (err) reject(err);
         else if (!result) {
@@ -843,7 +846,7 @@ UserSchema.statics = {
             message: "Email does not exist.",
           });
         } else {
-          let tempPassword =
+          const tempPassword =
             Math.random().toString(36).substring(2, 8).toUpperCase() +
             Math.random().toString(36).substring(2, 4).toUpperCase();
 
@@ -855,7 +858,7 @@ UserSchema.statics = {
 
               this.findOneAndUpdate(
                 {
-                  email: email,
+                  email,
                 },
                 {
                   $set: {
@@ -865,8 +868,8 @@ UserSchema.statics = {
                 {
                   new: true,
                 },
-                function (err) {
-                  if (err) reject(err);
+                (error) => {
+                  if (error) reject(error);
                   else {
                     resolve(tempPassword);
                   }
@@ -879,7 +882,7 @@ UserSchema.statics = {
       });
     });
   },
-  getAdminUsers: function (suburbId) {
+  getAdminUsers(suburbId) {
     return this.find({ suburb: suburbId, userType: "suburbAdmin" }).lean();
   },
   getIfUserIsLimited(userId) {
@@ -897,7 +900,7 @@ UserSchema.statics = {
         });
     });
   },
-  updateCurrentPassword: function (userId, password, newPassword) {
+  updateCurrentPassword(userId, password, newPassword) {
     return new Promise((resolve, reject) => {
       this.findOne({ _id: userId })
         .lean()
@@ -914,8 +917,8 @@ UserSchema.statics = {
                         $set: { tempPassword: null, password: resEncrypt.hash },
                       },
                       { new: true },
-                      function (err, user) {
-                        if (err) reject(err);
+                      (error) => {
+                        if (error) reject(error);
                         else {
                           resolve({
                             success: true,
@@ -926,7 +929,7 @@ UserSchema.statics = {
                       }
                     );
                   })
-                  .catch((err) => {
+                  .catch(() => {
                     reject({
                       success: false,
                       message: "La contraseña actual no es correcta.",

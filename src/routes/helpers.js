@@ -8,12 +8,13 @@ const map = {
 };
 
 const getMap = (url) => {
-  let proxyMap = map;
-  let urlParts = url.split("/");
+  const proxyMap = map;
+  const urlParts = url.split("/");
   let foundMap = null;
-  for (let i = 0; i <= urlParts.length; i++) {
+  for (let i = 0; i <= urlParts.length; i += 1) {
     if (!foundMap) {
-      let innerArray = Array.apply(null, {
+      // eslint-disable-next-line prefer-spread
+      const innerArray = Array.apply(null, {
         length: i + 1,
       }).map(Function.call, Number);
       let uri = "";
@@ -28,7 +29,7 @@ const getMap = (url) => {
 
 const getQueryParams = (queryParams) => {
   let queryString = `?`;
-  let params = { ...queryParams, code: process.env.API_PAYMENTS_KEY };
+  const params = { ...queryParams, code: process.env.API_PAYMENTS_KEY };
   Object.keys(params).forEach((p) => {
     queryString = `${queryString}${p}=${params[p]}&`;
   });
@@ -36,16 +37,17 @@ const getQueryParams = (queryParams) => {
 };
 
 exports.rewriteURL = (protocol, host, url, queryParams) => {
-  let completeUrl = `${protocol}://${host}${url}`;
-  let path = getMap(url);
+  const completeUrl = `${protocol}://${host}${url}`;
+  const path = getMap(url);
   if (path) {
-    let regex = new RegExp(Object.keys(path.pathRewrite)[0]);
-    var replaced = completeUrl.replace(
+    const regex = new RegExp(Object.keys(path.pathRewrite)[0]);
+    const replaced = completeUrl.replace(
       regex,
       path.pathRewrite[Object.keys(path.pathRewrite)[0]]
     );
     return Object.keys(queryParams).length > 0
       ? `${path.target}${replaced}${getQueryParams(queryParams)}`
       : `${path.target}${replaced}?code=${process.env.API_PAYMENTS_KEY}`;
-  } else return completeUrl;
+  }
+  return completeUrl;
 };

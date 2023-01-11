@@ -1,5 +1,7 @@
 const router = require("express").Router();
 
+const multer = require("multer");
+const fs = require("fs");
 const siteAuth = require("../controllers/siteAuth");
 
 const menus = require("../controllers/menus");
@@ -10,8 +12,6 @@ const signup = require("../controllers/signup");
 
 const handleFiles = require("../controllers/handleFile");
 
-const multer = require("multer");
-
 const suburb = require("../controllers/suburb");
 
 const pushNotification = require("../controllers/pushNotification");
@@ -21,9 +21,8 @@ const analytics = require("../controllers/analytics");
 const vision = require("../controllers/vision");
 
 const notification = require("../controllers/notification");
-const fs = require("fs");
 
-let upload = multer({ dest: "./uploads/" });
+const upload = multer({ dest: "./uploads/" });
 
 const upload2 = multer();
 
@@ -34,7 +33,7 @@ router.get("/api/healthCheck", (_req, res) => {
     hash = rev;
   } else {
     hash = fs
-      .readFileSync(".git/" + rev.substring(5))
+      .readFileSync(`.git/${rev.substring(5)}`)
       .toString()
       .trim();
   }
@@ -59,7 +58,7 @@ router.post("/api/signUp", signup.signUp);
 
 router.post("/api/auth/internal/auth", siteAuth.internalAuth);
 
-//user apis
+// user apis
 const userAdmin = require("../controllers/userAdmin");
 
 router.post("/api/user/:userType", userAdmin.createUserByType);
@@ -94,16 +93,16 @@ router.post("/api/saveEmailUser", userAdmin.saveEmailUser);
 router.post("/api/saveUserBySuburb", userAdmin.saveUserBySuburbId);
 router.post("/api/deleteUserInfo", userAdmin.deleteUserInfo);
 router.post("/api/generateTempPassword", userAdmin.generateTempPassword);
-//logged user APIs
+// logged user APIs
 router.get("/api/me/menu", menus.getMenusByUser);
 
-//postal codes
+// postal codes
 router.get("/api/cp/getCPInfo", postalCodes.getPostalCodeInfo);
 
-//handle files
+// handle files
 router.post("/api/file/upload", upload.any(), handleFiles.uploadFile);
 
-//suburb apis
+// suburb apis
 router.post("/api/suburb/approveReject", suburb.approveReject);
 
 router.get("/api/suburb/info", suburb.getSuburbByAdminId);
@@ -149,7 +148,7 @@ router.get(
   suburb.getSuburbAutomationInfo
 );
 
-//push notifications
+// push notifications
 router.post("/api/notification/test", pushNotification.sendTestNotification);
 router.post(
   "/api/notification/arrive",
@@ -192,7 +191,8 @@ router.post("/api/vision/ocr", upload2.any(), vision.processOCR);
 
 // files apis
 const blobFilesService = require("../controllers/blobFiles");
+
 router.post("/api/blob/uploadFile", blobFilesService.uploadBlobs);
-//router.post("/api/blob/uploadFile", upload2.any(), blobFilesService.uploadBlobs);
+// router.post("/api/blob/uploadFile", upload2.any(), blobFilesService.uploadBlobs);
 
 module.exports = router;

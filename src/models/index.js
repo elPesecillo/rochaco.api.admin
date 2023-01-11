@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const mongoose = require("mongoose");
 const Menu = require("./menu");
 const Role = require("./role");
@@ -8,7 +9,7 @@ const SuburbStreet = require("./suburbStreet");
 const PostalCode = require("./postalCode");
 const Address = require("./Address");
 const GlobalConfig = require("./globalConfig");
-const Notification = require("./Notification")
+const Notification = require("./Notification");
 
 const models = {
   Menu,
@@ -24,14 +25,13 @@ const models = {
 };
 
 const connectDb = async () => {
-  //setup the mongo connection
+  // setup the mongo connection
   const mongooseConnection = await mongoose.connect(process.env.DB_CONNECTION, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
 
-  console.log(mongoose.models)
-
+  console.log(mongoose.models);
 
   mongoose.connection.on(
     "error",

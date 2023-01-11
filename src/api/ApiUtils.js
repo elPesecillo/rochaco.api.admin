@@ -4,8 +4,7 @@ exports.handleResponse = (response) => {
     response.status === 202 ||
     response.statusText === "OK" ||
     response.statusText === "Created"
-  )
-    return response.data;
+  ) { return response.data; }
   if (response.status === 400) {
     // So, a server-side validation error occurred.
     // Server side validation returns a string error message, so parse as text instead of json.
@@ -18,7 +17,7 @@ exports.handleResponse = (response) => {
 // In a real app, would likely call an error logging service.
 exports.handleError = (error) => {
   // eslint-disable-next-line no-console
-  console.error("API call failed. " + error);
+  console.error(`API call failed. ${error}`);
   return error && error.response && error.response.data
     ? error.response.data
     : error;

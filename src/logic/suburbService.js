@@ -1,18 +1,19 @@
+/* eslint-disable prefer-promise-reject-errors */
+const { ObjectId } = require("mongoose").Types;
+const CryptoJS = require("crypto-js");
 const Suburb = require("../models/suburb");
-const suburbStatus = require("../constants/types").suburbStatus;
+require("mongoose");
+
+const { suburbStatus } = require("../constants/types");
 const SuburbInvite = require("../models/suburbInvite");
 const User = require("../models/user");
 const SuburbConfig = require("../models/suburbConfig");
 const SuburbStreet = require("../models/suburbStreet");
-const ObjectId = require("mongoose").Types.ObjectId;
 
-const CryptoJS = require("crypto-js");
-
-var pjson = require("../../package.json");
-const { Mongoose } = require("mongoose");
+const pjson = require("../../package.json");
 
 const getSuburbStatus = (statusName) => {
-  let status = suburbStatus.filter((st) => st.status === statusName);
+  const status = suburbStatus.filter((st) => st.status === statusName);
   return status[0];
 };
 
@@ -23,101 +24,101 @@ const encryption = (data) => {
 
 const decryption = (data) => {
   if (!data) return "";
-  var bytes = CryptoJS.AES.decrypt(data, pjson.cryptoKey);
+  const bytes = CryptoJS.AES.decrypt(data, pjson.cryptoKey);
   return bytes.toString(CryptoJS.enc.Utf8);
 };
 
-const saveSuburb = (suburbObj) => {
-  return new Promise((resolve, reject) => {
+const saveSuburb = (suburbObj) =>
+  new Promise((resolve, reject) => {
     Suburb.SaveSuburb(suburbObj).then((sub, err) => {
-      if (!err)
+      if (!err) {
         resolve({
           success: true,
           message: "La colonia fue guardada correctamente.",
           id: sub.id,
         });
-      else
+      } else {
         reject({
           success: false,
           message:
             err.message || "Ocurrio un error al intentar guardar la colonia.",
         });
+      }
     });
   });
-};
 
-const suburbAddStatus = (id, status) => {
-  return new Promise((resolve, reject) => {
+const suburbAddStatus = (id, status) =>
+  new Promise((resolve, reject) => {
     Suburb.UpdateStatus(id, status).then((sub, err) => {
-      if (!err)
+      if (!err) {
         resolve({
           success: true,
           message: "El status de la colonia fue actualizado correctamente.",
         });
-      else
+      } else {
         reject({
           success: false,
           message:
             err.message ||
             "Ocurrio un error al intentar actualizar el estatus de la colonia.",
         });
+      }
     });
   });
-};
 
-const suburbAddStatusByName = (name, postalCode, status) => {
-  return new Promise((resolve, reject) => {
+const suburbAddStatusByName = (name, postalCode, status) =>
+  new Promise((resolve, reject) => {
     Suburb.UpdateStatusByName(name, postalCode, status).then((sub, err) => {
-      if (!err)
+      if (!err) {
         resolve({
           success: true,
           message: "El status de la colonia fue actualizado correctamente.",
         });
-      else
+      } else {
         reject({
           success: false,
           message:
             err.message ||
             "Ocurrio un error al intentar actualizar el estatus de la colonia.",
         });
+      }
     });
   });
-};
 
-const getSuburbByAdminUser = (userId) => {
-  return new Promise((resolve, reject) => {
+const getSuburbByAdminUser = (userId) =>
+  new Promise((resolve, reject) => {
     Suburb.GetSuburbByUserId(userId).then((sub, err) => {
       if (!err) resolve(sub);
-      else
+      else {
         reject({
           success: false,
           message:
             err.message ||
             "Ocurrio un error al intentar obtener la colonia por usuario administrador.",
         });
+      }
     });
   });
-};
 
-const getSuburbById = (suburbId) => {
-  return new Promise((resolve, reject) => {
+const getSuburbById = (suburbId) =>
+  new Promise((resolve, reject) => {
     Suburb.GetSuburb(suburbId)
       .then((sub, err) => {
         if (!err) resolve(sub);
-        else
+        else {
           reject({
             success: false,
             message:
               err.message || "Ocurrio un error al intentar obtener la colonia.",
           });
+        }
       })
       .catch((err) => reject(err));
   });
-};
 
-const addSuburbInvite = (suburbId, name, street, streetNumber, userType) => {
-  return new Promise((resolve, reject) => {
-    let _code =
+const addSuburbInvite = (suburbId, name, street, streetNumber, userType) =>
+  new Promise((resolve, reject) => {
+    const _code =
       Math.random().toString(36).substring(2, 4).toUpperCase() +
       Math.random().toString(36).substring(2, 4).toUpperCase();
     console.log(encryption(street));
@@ -131,36 +132,37 @@ const addSuburbInvite = (suburbId, name, street, streetNumber, userType) => {
     }).then((subInv, err) => {
       if (!err) {
         Suburb.AddSuburbInvite(suburbId, subInv._id.toString()).then(
-          (sub, err) => {
-            if (!err) resolve(subInv);
-            else
+          (sub, error) => {
+            if (!error) resolve(subInv);
+            else {
               reject({
                 success: false,
                 message:
-                  err.message ||
+                  error.message ||
                   "Ocurrio un error al intentar agregar una invitacion a usuario",
               });
+            }
           }
         );
-      } else
+      } else {
         reject({
           success: false,
           message:
             err.message ||
             "Ocurrio un error al intentar agregar una invitacion a usuario",
         });
+      }
     });
   });
-};
 
-const getSuburbInvite = (code) => {
-  return new Promise((resolve, reject) => {
+const getSuburbInvite = (code) =>
+  new Promise((resolve, reject) => {
     SuburbInvite.GetInviteByCode(code)
       .then((subInvite, err) => {
         if (!err) {
           Suburb.GetSuburbBasicInfo(subInvite.suburbId.toString()).then(
-            (suburb, err) => {
-              if (!err) {
+            (suburb, error) => {
+              if (!error) {
                 const { street, streetNumber, ...props } = subInvite._doc;
                 const result = {
                   suburb: {
@@ -177,19 +179,20 @@ const getSuburbInvite = (code) => {
                 reject({
                   success: false,
                   message:
-                    err.message ||
+                    error.message ||
                     "Ocurrio un error al intentar obtener la invitación",
                 });
               }
             }
           );
-        } else
+        } else {
           reject({
             success: false,
             message:
               err.message ||
               "Ocurrio un error al intentar obtener la invitación",
           });
+        }
       })
       .catch((err) => {
         reject({
@@ -200,29 +203,27 @@ const getSuburbInvite = (code) => {
         });
       });
   });
-};
 
 const saveSuburbConfig = async (suburbId, config) => {
   try {
-    let suburbData = await Suburb.GetSuburb(suburbId);
+    const suburbData = await Suburb.GetSuburb(suburbId);
     if (!ObjectId.isValid(suburbData.config)) {
-      let saveConfig = await SuburbConfig.SaveConfig(config);
+      const saveConfig = await SuburbConfig.SaveConfig(config);
       await Suburb.SaveSuburbConfig(suburbId, saveConfig._id);
       return {
         success: true,
         message: "la configuracion fue agregada con exito.",
         id: saveConfig.id,
       };
-    } else {
-      let updateConfig = await SuburbConfig.UpdateConfig(
-        suburbData.config.toString(),
-        config
-      );
-      return {
-        success: true,
-        message: "la configuracion fue actualizada con exito.",
-      };
     }
+    await SuburbConfig.UpdateConfig(
+      suburbData.config.toString(),
+      config
+    );
+    return {
+      success: true,
+      message: "la configuracion fue actualizada con exito.",
+    };
   } catch (err) {
     throw err;
   }
@@ -238,27 +239,26 @@ const getSuburbConfig = async (suburbId) => {
 
 const saveSuburbStreet = async (suburbId, street) => {
   try {
-    let suburbData = await Suburb.GetSuburbStreets(suburbId);
-    let selectedStreet = suburbData.streets
+    const suburbData = await Suburb.GetSuburbStreets(suburbId);
+    const selectedStreet = suburbData.streets
       ? suburbData.streets.filter(
-          (st) => st.street.toLowerCase() === street.street.toLowerCase()
-        )
+        (st) => st.street.toLowerCase() === street.street.toLowerCase()
+      )
       : [];
     if (selectedStreet.length === 0) {
-      let saveStreet = await SuburbStreet.SaveStreet(street);
+      const saveStreet = await SuburbStreet.SaveStreet(street);
       await Suburb.SaveSuburbStreet(suburbId, saveStreet._id);
       return {
         success: true,
         message: "la calle fue agregada con exito.",
         id: saveStreet.id,
       };
-    } else {
-      let updateStreet = await SuburbStreet.UpdateStreet(
-        selectedStreet[0]._id,
-        street
-      );
-      return { success: true, message: "la calle fue actualizada con exito." };
     }
+    await SuburbStreet.UpdateStreet(
+      selectedStreet[0]._id,
+      street
+    );
+    return { success: true, message: "la calle fue actualizada con exito." };
   } catch (err) {
     throw err;
   }

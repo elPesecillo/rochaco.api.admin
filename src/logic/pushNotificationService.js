@@ -1,4 +1,10 @@
-const Expo = require("expo-server-sdk").Expo;
+// TODO: refactor this file to enhance performance
+// TODO: remove eslint-disable comments
+
+/* eslint-disable no-await-in-loop */
+/* eslint-disable no-restricted-syntax */
+/* eslint-disable no-console */
+const { Expo } = require("expo-server-sdk");
 
 const expo = new Expo();
 
@@ -15,13 +21,40 @@ const getMessagesBatches = (pushTokens, message) => {
   return expo.chunkPushNotifications(messages);
 };
 
+const handlePushNotificationsFromDifferentProjects = async (
+  projects,
+  notifications
+) => {
+  try {
+    const projectChunks = Object.keys(projects).map((key) => {
+      const projectTokens = projects[key];
+      // eslint-disable-next-line max-len
+      const projectNotifications = projectTokens.map((token) => notifications.find((notification) => notification.to === token));
+      return projectNotifications;
+    });
+    const tickets = [];
+    for (const projectChunk of projectChunks) {
+      try {
+        const ticketChunk = await expo.sendPushNotificationsAsync(projectChunk);
+        tickets.push(ticketChunk);
+      } catch (err) {
+        console.log(err);
+      }
+    }
+    return tickets;
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+};
+
 const sendExpoNotification = async (chunks) => {
   try {
-    //(async () => {
+    // (async () => {
     // Send the chunks to the Expo push notification service. There are
     // different strategies you could use. A simple one is to send one chunk at a
     // time, which nicely spreads the load out over time:
-    let tickets = [];
+    const tickets = [];
     for (const chunk of chunks) {
       try {
         const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
@@ -39,42 +72,15 @@ const sendExpoNotification = async (chunks) => {
               error.details,
               chunk
             );
+          // eslint-disable-next-line prefer-spread
           tickets.push([].concat.apply([], diffProjectsTickets));
         }
       }
     }
     return tickets;
-    //})();
+    // })();
   } catch (err) {
     console.log("send expo notification error", err);
-    throw err;
-  }
-};
-
-const handlePushNotificationsFromDifferentProjects = async (
-  projects,
-  notifications
-) => {
-  try {
-    const projectChunks = Object.keys(projects).map((key) => {
-      const projectTokens = projects[key];
-      const projectNotifications = projectTokens.map((token) => {
-        return notifications.find((notification) => notification.to === token);
-      });
-      return projectNotifications;
-    });
-    let tickets = [];
-    for (const projectChunk of projectChunks) {
-      try {
-        const ticketChunk = await expo.sendPushNotificationsAsync(projectChunk);
-        tickets.push(ticketChunk);
-      } catch (err) {
-        console.log(err);
-      }
-    }
-    return tickets;
-  } catch (err) {
-    console.log(err);
     throw err;
   }
 };
@@ -95,8 +101,8 @@ const checkTickets = async (tickets) => {
   // notifications to devices that have blocked notifications or have uninstalled
   // your app. Expo does not control this policy and sends back the feedback from
   // Apple and Google so you can handle it appropriately.
-  let receiptIds = [];
-  for (let ticket of tickets) {
+  const receiptIds = [];
+  for (const ticket of tickets) {
     // NOTE: Not all tickets have IDs; for example, tickets for notifications
     // that could not be enqueued will have error information and no receipt ID.
     if (ticket.id) {
@@ -104,21 +110,22 @@ const checkTickets = async (tickets) => {
     }
   }
 
-  let receiptIdChunks = expo.chunkPushNotificationReceiptIds(receiptIds);
-  //(async () => {
+  const receiptIdChunks = expo.chunkPushNotificationReceiptIds(receiptIds);
+  // (async () => {
   // Like sending notifications, there are different strategies you could use
   // to retrieve batches of receipts from the Expo service.
-  for (let chunk of receiptIdChunks) {
+  for (const chunk of receiptIdChunks) {
     try {
-      let receipts = await expo.getPushNotificationReceiptsAsync(chunk);
+      const receipts = await expo.getPushNotificationReceiptsAsync(chunk);
       console.log(receipts);
 
       // The receipts specify whether Apple or Google successfully received the
       // notification and information about an error, if one occurred.
-      for (let receiptId in receipts) {
-        let { status, message, details } = receipts[receiptId];
+      // eslint-disable-next-line guard-for-in
+      for (const receiptId in receipts) {
+        const { status, message, details } = receipts[receiptId];
         if (status === "ok") {
-          //continue;
+          // continue;
         } else if (status === "error") {
           console.error(
             `There was an error sending a notification: ${message}`
@@ -135,17 +142,17 @@ const checkTickets = async (tickets) => {
       console.error(error);
     }
   }
-  //})();
+  // })();
 };
 
 const sendPushNotification = async (pushTokens, message) => {
   try {
     console.log("getting chunks...");
-    let chunks = getMessagesBatches(pushTokens, message);
+    const chunks = getMessagesBatches(pushTokens, message);
     console.log("chunks", chunks);
 
     console.log("send push notifications");
-    let tickets = await sendExpoNotification(chunks);
+    const tickets = await sendExpoNotification(chunks);
     console.log("await check tickets");
     await checkTickets(tickets);
   } catch (ex) {

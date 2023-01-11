@@ -1,21 +1,19 @@
+/* eslint-disable prefer-promise-reject-errors */
 const User = require("../models/user");
 const viewPermissions = require("../logic/viewPermissions");
-const axios = require("axios").default;
-const validateRecaptcha = require("../logic/auth").validateRecaptcha;
+const { validateRecaptcha } = require("../logic/auth");
 
-const validateActiveUser = (user) => {
-  return user.active;
-};
+const validateActiveUser = (user) => user.active;
 
-const validateUser = (userLogin, password, isTemporary = false) => {
-  return new Promise((resolve, reject) => {
-    User.getLogin(userLogin).then((login, err) => {
+const validateUser = (userLogin, password, isTemporary = false) =>
+  new Promise((resolve, reject) => {
+    User.getLogin(userLogin).then((login) => {
       if (login) {
-        let validPass = login.validatePassword(password, isTemporary);
+        const validPass = login.validatePassword(password, isTemporary);
         validPass.then(
-          (result) => {
-            //generate jwt token
-            let token = login.generateUserToken();
+          () => {
+            // generate jwt token
+            const token = login.generateUserToken();
             resolve({ success: true, message: token });
           },
           (err) => {
@@ -25,14 +23,14 @@ const validateUser = (userLogin, password, isTemporary = false) => {
             });
           }
         );
-      } else
+      } else {
         reject({
           succes: false,
           message: "El usuario no existe, o esta deshabilitado.",
         });
+      }
     });
   });
-};
 
 exports.internalAuth = async (req, res) => {
   try {
@@ -45,21 +43,21 @@ exports.internalAuth = async (req, res) => {
   }
 };
 
-exports.checkAuth = async (req, res, next) => {
+exports.checkAuth = async (req, res) => {
   try {
-    //over here check the db to know if the auth is valid
-    let { user, password, captchaToken, isTemporary = false } = req.body;
+    // over here check the db to know if the auth is valid
+    const { user, password, captchaToken, isTemporary = false } = req.body;
 
-    let validCaptcha = await validateRecaptcha(captchaToken);
+    const validCaptcha = await validateRecaptcha(captchaToken);
     if (validCaptcha) {
-      let usr = await validateUser(user, password, isTemporary); //.then(
+      const usr = await validateUser(user, password, isTemporary); // .then(
 
       if (usr) {
         if (usr.success) {
           // var session = req.session;
           // session.token = result.message;
           // session.user = user;
-          let userData = (await User.getLogin(user)).toObject();
+          const userData = (await User.getLogin(user)).toObject();
 
           res.status("200").json({
             ...usr,
@@ -68,13 +66,15 @@ exports.checkAuth = async (req, res, next) => {
             createdAt: userData.transtime,
             id: userData._id.toString(),
           });
-        } else
+        } else {
           res.status("401").json({ success: false, message: "Unauthorized" });
+        }
       } else {
         res.status("401").json({ success: false, message: "Unauthorized" });
       }
     } else res.status("401").json({ success: false, message: "Unauthorized" });
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.log("error", err);
     res.status("404").json({ token: null, message: err });
   }
@@ -82,25 +82,27 @@ exports.checkAuth = async (req, res, next) => {
 
 exports.getTokenByFacebookId = async (req, res) => {
   try {
-    let { id, captchaToken } = req.query;
-    //let validCaptcha = await validateRecaptcha(captchaToken);
-    //if (validCaptcha) {
-    let usr = await User.getUserByFacebookId(id);
+    const { id } = req.query;
+    // let validCaptcha = await validateRecaptcha(captchaToken);
+    // if (validCaptcha) {
+    const usr = await User.getUserByFacebookId(id);
     if (usr) {
       if (validateActiveUser(usr._doc)) {
-        let token = usr.generateUserToken();
+        const token = usr.generateUserToken();
         res.status("200").json({ token });
-      } else
+      } else {
         res.status("401").json({
           token: null,
           message:
             "Tu usuario esta desactivado, para mayor información contacta el administrador de tu fraccionamiento.",
         });
+      }
     } else {
       res.status("404").json({ token: null });
     }
-    //} else res.status("401").json({ token: null });
+    // } else res.status("401").json({ token: null });
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.log("error", err);
     res.status("404").json({ token: null });
   }
@@ -108,25 +110,27 @@ exports.getTokenByFacebookId = async (req, res) => {
 
 exports.getTokenByGoogleId = async (req, res) => {
   try {
-    let { id, captchaToken } = req.query;
-    let validCaptcha = await validateRecaptcha(captchaToken);
+    const { id, captchaToken } = req.query;
+    const validCaptcha = await validateRecaptcha(captchaToken);
     if (validCaptcha) {
-      let usr = await User.getUserByGoogleId(id);
+      const usr = await User.getUserByGoogleId(id);
       if (usr) {
         if (validateActiveUser(usr._doc)) {
-          let token = usr.generateUserToken();
+          const token = usr.generateUserToken();
           res.status("200").json({ token });
-        } else
+        } else {
           res.status("401").json({
             token: null,
             message:
               "Tu usuario esta desactivado, para mayor información contacta el administrador de tu fraccionamiento.",
           });
+        }
       } else {
         res.status("404").json({ token: null });
       }
     } else res.status("401").json({ token: null });
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.log("error", err);
     res.status("404").json({ token: null });
   }
@@ -134,55 +138,54 @@ exports.getTokenByGoogleId = async (req, res) => {
 
 exports.getTokenByAppleId = async (req, res) => {
   try {
-    let { id, captchaToken } = req.query;
-    let validCaptcha = await validateRecaptcha(captchaToken);
+    const { id, captchaToken } = req.query;
+    const validCaptcha = await validateRecaptcha(captchaToken);
     if (validCaptcha) {
-      let usr = await User.getUserByAppleId(id);
+      const usr = await User.getUserByAppleId(id);
       if (usr) {
         if (validateActiveUser(usr._doc)) {
-          let token = usr.generateUserToken();
+          const token = usr.generateUserToken();
           res.status("200").json({ token });
-        } else
+        } else {
           res.status("401").json({
             token: null,
             message:
               "Tu usuario esta desactivado, para mayor información contacta el administrador de tu fraccionamiento.",
           });
+        }
       } else {
         res.status("404").json({ token: null });
       }
     } else res.status("401").json({ token: null });
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.log("error", err);
     res.status("404").json({ token: null });
   }
 };
 
-exports.isValidToken = (req, res, next) => {
-  let token = req.headers["authorization"];
-  return new Promise((resolve, reject) => {
-    User.isValidToken(token).then(
-      (isValid) => {
-        if (isValid)
-          res
-            .status("200")
-            .json({ valid: true, message: "the token is valid" });
-        else
-          res.status("401")({
-            valid: false,
-            message: "the token is not valid",
-          });
-      },
-      (err) => res.status("500")(err)
-    );
-  });
+exports.isValidToken = (req, res) => {
+  const token = req.headers.authorization;
+  User.isValidToken(token)
+    .then((isValid) => {
+      if (isValid) {
+        res.status("200").json({ valid: true, message: "the token is valid" });
+      } else {
+        res.status("401")({
+          valid: false,
+          message: "the token is not valid",
+        });
+      }
+    })
+    .catch((err) => res.status("500")(err));
 };
 
-exports.validateTokenPath = (req, res, next) => {
-  let { token, user, path } = req.body;
-  //over here add logic to check if a path is valid for the given context (user-> userType and jwt token)
+exports.validateTokenPath = (req, res) => {
+  const { token, user, path } = req.body;
+  // over here add logic to check if a path is valid
+  // for the given context (user-> userType and jwt token)
   viewPermissions.permissionValid(path, token, user).then(
-    (result) => {
+    () => {
       res.status("200").json({ valid: true, message: "ok :)" });
     },
     (err) => {
@@ -191,15 +194,17 @@ exports.validateTokenPath = (req, res, next) => {
   );
 };
 
-exports.logOff = (req, res, next) => {
-  if (req.session)
+exports.logOff = (req, res) => {
+  if (req.session) {
     req.session.destroy((err) => {
-      if (err)
+      if (err) {
         res.status("500").json({
           success: false,
           message:
             err.message || "An unknow error occurs while trying to log off.",
         });
+      }
       res.status("200").json({ success: true, message: "session destroyed." });
     });
+  }
 };

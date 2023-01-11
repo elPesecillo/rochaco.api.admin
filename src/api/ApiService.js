@@ -2,7 +2,7 @@ const axios = require("axios");
 const { handleError, handleResponse } = require("./ApiUtils");
 
 const httpRequest = (method, url, request, _headers) => {
-  let hdrs = { ..._headers };
+  const hdrs = { ..._headers };
   return axios({
     method,
     url,
@@ -13,20 +13,21 @@ const httpRequest = (method, url, request, _headers) => {
       const result = handleResponse(res);
       return Promise.resolve(result);
     })
-    .catch((err) => {
-      //throw handleError(err);
-      return Promise.reject(handleError(err));
-    });
+    .catch((err) =>
+      // throw handleError(err);
+      Promise.reject(handleError(err))
+    );
 };
 
 const get = (url, request, headers) => {
   let queryString = "";
   if (request && Object.keys(request).length > 0) {
     queryString += "?";
-    let len = Object.keys(request).length,
-      cnt = 0;
-    for (let key in request) {
-      cnt++;
+    const len = Object.keys(request).length;
+    let cnt = 0;
+    // eslint-disable-next-line guard-for-in, no-restricted-syntax
+    for (const key in request) {
+      cnt += 1;
       queryString += `${key}=${request[key].toString()}`;
       if (len > cnt) queryString += "&";
     }
@@ -34,29 +35,25 @@ const get = (url, request, headers) => {
   return httpRequest("get", `${url}${queryString}`, null, headers);
 };
 
-const deleteRequest = (url, request, headers) => {
-  return httpRequest("delete", url, request, headers);
-};
+const deleteRequest = (url, request, headers) =>
+  httpRequest("delete", url, request, headers);
 
-const post = (url, request, headers) => {
-  return httpRequest("post", url, request, headers);
-};
+const post = (url, request, headers) =>
+  httpRequest("post", url, request, headers);
 
-const put = (url, request, headers) => {
-  return httpRequest("put", url, request, headers);
-};
+const put = (url, request, headers) =>
+  httpRequest("put", url, request, headers);
 
-const patch = (url, request, headers) => {
-  return httpRequest("patch", url, request, headers);
-};
+const patch = (url, request, headers) =>
+  httpRequest("patch", url, request, headers);
 
 const postForm = async (url, formData, headers) => {
   try {
-    let hdrs = {
+    const hdrs = {
       ...headers,
       "Content-Type": "multipart/form-data",
     };
-    let res = await axios.post(url, formData, { headers: hdrs });
+    const res = await axios.post(url, formData, { headers: hdrs });
     return handleResponse(res);
   } catch (err) {
     return handleError(err);

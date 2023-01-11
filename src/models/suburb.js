@@ -2,8 +2,8 @@ const mongoose = require("mongoose");
 const moment = require("moment");
 const SuburbStatusSchema = require("./schemas/suburbStatusSchema");
 const SuburbFileSchema = require("./schemas/suburbFileSchema");
-const suburbConfig = require("./suburbConfig");
-const suburbStreet = require("./suburbStreet");
+require("./suburbConfig");
+require("./suburbStreet");
 
 const SuburbSchema = new mongoose.Schema({
   name: {
@@ -56,11 +56,12 @@ const SuburbSchema = new mongoose.Schema({
 });
 
 SuburbSchema.statics = {
-  SaveSuburb: function (suburbObj) {
-    let suburb = new this(suburbObj);
+  SaveSuburb(suburbObj) {
+    const suburb = new this(suburbObj);
     return suburb.save();
   },
-  UpdateStatus: function (id, status) {
+  UpdateStatus(id, newStatus) {
+    let status = newStatus;
     if (!Array.isArray(status)) status = [status];
     return this.updateOne(
       { _id: id },
@@ -76,14 +77,15 @@ SuburbSchema.statics = {
       }
     );
   },
-  UpdateStatusByName: function (name, postalCode) {
-    if (!Array.isArray(status)) status = [status];
+  UpdateStatusByName(name, newPostalCode) {
+    let postalCode = newPostalCode;
+    if (!Array.isArray(postalCode)) postalCode = [postalCode];
     return this.updateOne(
-      { name: name, postalCode: postalCode },
+      { name, postalCode },
       {
         $addToSet: {
           status: {
-            $each: status,
+            $each: postalCode,
           },
         },
       },
@@ -92,7 +94,8 @@ SuburbSchema.statics = {
       }
     );
   },
-  AddSuburbInvite: function (id, userInviteId) {
+  AddSuburbInvite(id, newUserInviteId) {
+    let userInviteId = newUserInviteId;
     if (!Array.isArray(userInviteId)) userInviteId = [userInviteId];
     return this.updateOne(
       { _id: id },
@@ -106,7 +109,7 @@ SuburbSchema.statics = {
       { multi: true }
     );
   },
-  GetSuburb: function (id) {
+  GetSuburb(id) {
     return new Promise((resolve, reject) => {
       this.findOne({
         _id: id,
@@ -115,7 +118,7 @@ SuburbSchema.statics = {
         .populate("suburbInvites", "SuburbInvite")
         .exec((err, result) => {
           if (err) reject(err);
-          let {
+          const {
             name,
             location,
             postalCode,
@@ -138,14 +141,14 @@ SuburbSchema.statics = {
         });
     });
   },
-  GetSuburbBasicInfo: function (id) {
+  GetSuburbBasicInfo(id) {
     return new Promise((resolve, reject) => {
       this.findOne({
         _id: id,
       }).exec((err, result) => {
         if (err || !result) reject(err);
         if (result) {
-          let { name, location, postalCode, active, transtime } = result;
+          const { name, location, postalCode, active, transtime } = result;
           resolve({
             name,
             location,
@@ -157,18 +160,18 @@ SuburbSchema.statics = {
       });
     });
   },
-  GetSuburbByName: function (postalCode, name) {
+  GetSuburbByName(postalCode, name) {
     return new Promise((resolve, reject) => {
       this.findOne({
-        postalCode: postalCode,
-        name: name,
+        postalCode,
+        name,
       }).exec((err, result) => {
         if (err) reject(err);
         resolve(result);
       });
     });
   },
-  GetSuburbByUserId: function (userId) {
+  GetSuburbByUserId(userId) {
     return new Promise((resolve, reject) => {
       this.findOne({ userAdmins: mongoose.Types.ObjectId(userId) }).exec(
         (err, result) => {
@@ -178,7 +181,7 @@ SuburbSchema.statics = {
       );
     });
   },
-  SaveSuburbConfig: function (id, configId) {
+  SaveSuburbConfig(id, configId) {
     return this.updateOne(
       {
         _id: id,
@@ -188,7 +191,7 @@ SuburbSchema.statics = {
       }
     );
   },
-  GetSuburbConfig: function (id) {
+  GetSuburbConfig(id) {
     return new Promise((resolve, reject) => {
       this.findOne({
         _id: id,
@@ -197,14 +200,15 @@ SuburbSchema.statics = {
         .exec((err, result) => {
           if (err || !result) reject(err || "No se encontro la configuracion");
           else {
-            let { config } = result;
+            const { config } = result;
             if (config) resolve({ ...config._doc });
             else resolve({});
           }
         });
     });
   },
-  SaveSuburbStreet: function (id, streetId) {
+  SaveSuburbStreet(id, newStreetId) {
+    let streetId = newStreetId;
     if (!Array.isArray(streetId)) streetId = [streetId];
     return this.updateOne(
       { _id: id },
@@ -212,7 +216,7 @@ SuburbSchema.statics = {
       { multi: true }
     );
   },
-  GetSuburbStreets: function (id) {
+  GetSuburbStreets(id) {
     return new Promise((resolve, reject) => {
       this.findOne({
         _id: id,
@@ -222,7 +226,7 @@ SuburbSchema.statics = {
         .exec((err, result) => {
           if (err) reject(err);
           if (result) {
-            let { streets } = result;
+            const { streets } = result;
             if (streets) resolve({ streets: [...streets] });
             else resolve({ streets: [] });
           } else resolve({ streets: [] });

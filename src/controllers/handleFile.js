@@ -1,13 +1,13 @@
-const userServices = require("../logic/userService");
-const suburbService = require("../logic/suburbService");
-//const fetchDbx = require('isomorphic-fetch');
+// const fetchDbx = require('isomorphic-fetch');
 const fs = require("fs");
 // const Dropbox = require("dropbox").Dropbox;
 const dropboxV2Api = require("dropbox-v2-api");
 const sgMail = require("@sendgrid/mail");
+const suburbService = require("../logic/suburbService");
+const userServices = require("../logic/userService");
 
 const getFileName = (nodeFileName, originalName) => {
-  let idx = originalName.lastIndexOf(".");
+  const idx = originalName.lastIndexOf(".");
   return `${nodeFileName}.${originalName.substring(idx + 1)}`;
 };
 
@@ -25,7 +25,7 @@ const uploadFileDropbox = (file) => {
         },
         readStream: fs.createReadStream(`${file.destination}/${file.filename}`),
       },
-      (err, result, response) => {
+      (err, result) => {
         if (!err) resolve(result);
         else reject(err);
       }
@@ -33,19 +33,20 @@ const uploadFileDropbox = (file) => {
   });
 };
 
-const base64_encode = (file_path) => {
+const base64Encode = (filePath) => {
   // read binary data
-  var bitmap = fs.readFileSync(file_path);
+  const bitmap = fs.readFileSync(filePath);
   // convert binary data to base64 encoded string
-  return new Buffer.from(bitmap, "base64").toString("base64"); //.toString('base64');
+  // eslint-disable-next-line new-cap
+  return new Buffer.from(bitmap, "base64").toString("base64"); // .toString('base64');
 };
 
 const getEmailAttachments = (files) => {
-  let attachments = [];
+  const attachments = [];
   files.forEach((file) => {
     attachments.push({
       filename: `${file.originalname}`,
-      content: base64_encode(`${file.destination}/${file.filename}`),
+      content: base64Encode(`${file.destination}/${file.filename}`),
     });
   });
   return attachments;
@@ -73,6 +74,7 @@ const deleteTemporaryFiles = (files) => {
   files.forEach((file) => {
     fs.unlink(`${file.destination}/${file.filename}`, (err) => {
       if (err) throw err;
+      // eslint-disable-next-line no-console
       console.log(
         `path file ${file.destination}/${file.filename} has been deleted.`
       );
@@ -82,7 +84,7 @@ const deleteTemporaryFiles = (files) => {
 
 const processFileUpload = async (files, data) => {
   try {
-    let {
+    const {
       userId,
       name,
       lastName,
@@ -93,17 +95,17 @@ const processFileUpload = async (files, data) => {
       suburbName,
       recaptchaToken,
     } = data;
-    let validCaptcha = await userServices.validateRecaptcha(recaptchaToken);
-    let proms = [];
+    await userServices.validateRecaptcha(recaptchaToken);
+    const proms = [];
     files.forEach((file) => {
       proms.push(uploadFileDropbox(file));
     });
-    let uploadedFiles = await Promise.all(proms);
+    await Promise.all(proms);
 
-    let saveSuburb = await suburbService.saveSuburb({
+    const saveSuburb = await suburbService.saveSuburb({
       name: suburbName,
       location: section,
-      postalCode: postalCode,
+      postalCode,
       active: true,
       userAdmins: [userId],
       status: [suburbService.getSuburbStatus("pending")],
@@ -115,7 +117,7 @@ const processFileUpload = async (files, data) => {
       })),
     });
 
-    let updateUser = await userServices.updateUser({
+    await userServices.updateUser({
       _id: userId,
       name,
       lastName,
@@ -133,9 +135,9 @@ const processFileUpload = async (files, data) => {
   }
 };
 
-exports.uploadFile = async (req, res, next) => {
+exports.uploadFile = async (req, res) => {
   try {
-    let {
+    const {
       userId,
       name,
       lastName,
@@ -146,7 +148,7 @@ exports.uploadFile = async (req, res, next) => {
       suburbName,
       recaptchaToken,
     } = req.body;
-    let processFiles = await processFileUpload(req.files, {
+    await processFileUpload(req.files, {
       userId,
       name,
       lastName,
@@ -170,7 +172,7 @@ exports.sendTempPassEmail = async (email, tempPassword, files = []) => {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     const msg = {
-      to: email, //process.env.OWNER_EMAILS.split(","),
+      to: email, // process.env.OWNER_EMAILS.split(","),
       from: "support@neighby.com",
       subject: "Solicitud de cambio de contraseña.",
       text: `Solicitud de cambio de contraseña.`,

@@ -12,7 +12,7 @@ exports.signUp = (req, res, next) => {
     });
     return;
   }
-  let {
+  const {
     email,
     name,
     lastName,
@@ -80,47 +80,4 @@ exports.signUp = (req, res, next) => {
     };
     user.saveEmailUser(req, res, next);
   }
-  //mandar llamar registro aqui
-  // if (googleId || facebookId)
-  //     axios({
-  //         method: 'post',
-  //         url: googleId ? `${process.env.ADMIN_API_HOST}/api/saveGoogleUser` : `${process.env.ADMIN_API_HOST}/api/saveFacebookUser`,
-  //         data: {
-  //             name,
-  //             lastName,
-  //             loginName: googleId ? googleId : facebookId,
-  //             email,
-  //             cellphone,
-  //             googleId,
-  //             facebookId,
-  //             token
-  //         }
-  //     }).then(resS => {
-  //         res.send({ success: true, message: resS.data.message || "Ok" });
-  //     })
-  //         .catch(err => {
-  //             let errMsg = err && err.response && err.response.data && err.response.data.message ? err.response.data.message : err.message || "No se pudo guardar el usuario.";
-  //             res.send({ success: false, message: errMsg });
-  //         });
-  // else {
-  //     axios({
-  //         method: 'post',
-  //         url: `${process.env.ADMIN_API_HOST}/api/saveEmailUser`,
-  //         data: {
-  //             name,
-  //             lastName,
-  //             loginName: email,
-  //             email,
-  //             cellphone,
-  //             password,
-  //             token
-  //         }
-  //     }).then(resS => {
-  //         res.send({ success: true, message: resS.data.message || "Ok" });
-  //     })
-  //         .catch(err => {
-  //             let errMsg = err && err.response && err.response.data && err.response.data.message ? err.response.data.message : err.message || "No se pudo guardar el usuario.";
-  //             res.send({ success: false, message: errMsg });
-  //         });
-  // }
 };

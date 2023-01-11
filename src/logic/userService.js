@@ -1,11 +1,12 @@
-const User = require("../models/user");
+/* eslint-disable prefer-promise-reject-errors */
 const request = require("request");
+const User = require("../models/user");
 const GlobalConfig = require("../models/globalConfig");
-const userTypes = require("../constants/types").userTypes;
-const AddressService = require("../logic/addressService");
+const { userTypes } = require("../constants/types");
+const AddressService = require("./addressService");
 
-const saveUser = (userObj) => {
-  return new Promise((resolve, reject) => {
+const saveUser = (userObj) =>
+  new Promise((resolve, reject) => {
     User.getLogin(userObj.loginName).then(
       async (login) => {
         if (login) {
@@ -14,31 +15,32 @@ const saveUser = (userObj) => {
             message: "El usuario existe actualmente en la base de datos.",
           });
         } else {
-          let addressId = (
+          const addressId = (
             await AddressService.getAddressByNameAndNumber(
               userObj.street,
               userObj.streetNumber
             )
           )._id.toString();
-          //create the user
+          // create the user
           User.saveUser(
             userObj.userType
               ? { ...userObj, addressId }
               : { ...userObj, userType: userTypes.guest, addressId }
           ).then(
             (usr, err) => {
-              //check if there is an error
-              if (!err)
+              // check if there is an error
+              if (!err) {
                 resolve({
                   success: true,
                   message: "Has sido registrado correctamente.",
                   userData: { ...usr },
                 });
-              else
+              } else {
                 reject({
                   success: false,
                   message: err.message || "No se pudo registrar el usuario.",
                 });
+              }
             },
             (err) => {
               reject({ success: false, message: err.message });
@@ -55,29 +57,28 @@ const saveUser = (userObj) => {
       }
     );
   });
-};
 
-const updateUser = async (userObj) => {
-  return new Promise((resolve, reject) => {
+const updateUser = async (userObj) =>
+  new Promise((resolve, reject) => {
     User.updateUser(userObj).then(
       (usr, err) => {
-        if (!err)
+        if (!err) {
           resolve({
             success: true,
             message: "Ha sido actualizado correctamente.",
           });
-        else
+        } else {
           reject({
             success: false,
             message: err.message || "No se pudo actualizar el usuario.",
           });
+        }
       },
       (err) => {
         reject({ success: false, message: err.message });
       }
     );
   });
-};
 
 const updateUserPicture = async (userId, photoUrl) => {
   try {
@@ -93,35 +94,37 @@ const validateRecaptcha = async (token) => {
 
   return new Promise((resolve, reject) => {
     request.post(verificationURL, (error, resG, body) => {
-      if (error)
+      if (error) {
         reject({
           success: false,
           message:
             "Por favor intenta de nuevo (no es posible validar recaptcha).",
         });
-      let status = JSON.parse(body);
-      if (!status.success)
+      }
+      const status = JSON.parse(body);
+      if (!status.success) {
         reject({ success: false, message: "Por favor intenta de nuevo." });
-      else if (status.score <= 0.5)
+      } else if (status.score <= 0.5) {
         reject({
           success: false,
           message: "Por favor intenta de nuevo (score demasiado bajo).",
         });
-      else resolve({ success: true, message: "recaptcha valido." });
+      } else resolve({ success: true, message: "recaptcha valido." });
     });
   });
 };
 
-const saveUserWithPassword = async (userObj) => {
+const saveUserWithPassword = async (newUser) => {
+  const userObj = { ...newUser };
   const { password } = userObj;
   return new Promise((resolve, reject) => {
     User.encryptPassword(password).then(
       async (resEncrypt) => {
         try {
-          let encryptedPassword = resEncrypt.hash;
+          const encryptedPassword = resEncrypt.hash;
           userObj.password = encryptedPassword;
 
-          let addressId = (
+          const addressId = (
             await AddressService.getAddressByNameAndNumber(
               userObj.street,
               userObj.streetNumber
@@ -152,7 +155,7 @@ const saveUserWithPassword = async (userObj) => {
 const getUserByType = async (userType) => {
   try {
     return await User.find({
-      userType: userType,
+      userType,
     });
   } catch (ex) {
     return ex;
@@ -161,7 +164,7 @@ const getUserByType = async (userType) => {
 
 const getUserByToken = async (token) => {
   try {
-    let payload = await User.getTokenPayload(token);
+    const payload = await User.getTokenPayload(token);
     return await User.findById(payload.userId);
   } catch (ex) {
     return ex;
@@ -178,7 +181,7 @@ const getUserById = async (id) => {
 
 const getUserFavorites = async (userId) => {
   try {
-    let payload = await User.getUserFavs(userId);
+    const payload = await User.getUserFavs(userId);
     return payload;
   } catch (ex) {
     throw ex;
@@ -187,7 +190,7 @@ const getUserFavorites = async (userId) => {
 
 const saveUserFavorites = async (userId, favs) => {
   try {
-    let payload = await User.addUserFavs(userId, favs);
+    const payload = await User.addUserFavs(userId, favs);
     return payload;
   } catch (ex) {
     throw ex;
@@ -196,7 +199,7 @@ const saveUserFavorites = async (userId, favs) => {
 
 const removeUserFavorites = async (userId, favs) => {
   try {
-    let payload = await User.removeUserFavs(userId, favs);
+    const payload = await User.removeUserFavs(userId, favs);
     return payload;
   } catch (ex) {
     throw ex;
@@ -205,7 +208,7 @@ const removeUserFavorites = async (userId, favs) => {
 
 const addUserPushToken = async (userId, pushToken) => {
   try {
-    let payload = await User.addUserPushToken(userId, pushToken);
+    const payload = await User.addUserPushToken(userId, pushToken);
     return payload;
   } catch (ex) {
     throw ex;
@@ -214,7 +217,7 @@ const addUserPushToken = async (userId, pushToken) => {
 
 const getUsersBySuburb = async (suburbId) => {
   try {
-    let users = await User.getUsersBySuburb(suburbId);
+    const users = await User.getUsersBySuburb(suburbId);
     return users;
   } catch (err) {
     throw err;
@@ -223,7 +226,7 @@ const getUsersBySuburb = async (suburbId) => {
 
 const getUsersBySuburbStreet = async (suburbId, street) => {
   try {
-    let users = await User.getUsersBySuburbStreet(suburbId, street);
+    const users = await User.getUsersBySuburbStreet(suburbId, street);
     return users;
   } catch (err) {
     throw err;
@@ -232,10 +235,10 @@ const getUsersBySuburbStreet = async (suburbId, street) => {
 
 const getUsersByAddress = async (suburbId, street, streetNumber) => {
   try {
-    let addressId = (
+    const addressId = (
       await AddressService.getAddressByNameAndNumber(street, streetNumber)
     )._id.toString();
-    let users = await User.getUsersByAddress(suburbId, addressId);
+    const users = await User.getUsersByAddress(suburbId, addressId);
     return users;
   } catch (err) {
     throw err;
@@ -252,7 +255,7 @@ const getUsersByAddressId = async (suburbId, addressId) => {
 
 const getAdminUsers = async (suburbId) => {
   try {
-    let adminUsers = await User.getAdminUsers(suburbId);
+    const adminUsers = await User.getAdminUsers(suburbId);
     return adminUsers;
   } catch (err) {
     throw err;
@@ -261,7 +264,7 @@ const getAdminUsers = async (suburbId) => {
 
 const isPasswordTemp = async (user, password) => {
   try {
-    let isPasTemp = await User.isPasswordTemp(user, password);
+    const isPasTemp = await User.isPasswordTemp(user, password);
     return isPasTemp;
   } catch (err) {
     throw err;
@@ -270,7 +273,7 @@ const isPasswordTemp = async (user, password) => {
 
 const updatePassword = async (user, password, tempPassword) => {
   try {
-    let updatePass = await User.updatePassword(user, password, tempPassword);
+    const updatePass = await User.updatePassword(user, password, tempPassword);
     return updatePass;
   } catch (err) {
     throw err;
@@ -279,7 +282,7 @@ const updatePassword = async (user, password, tempPassword) => {
 
 const deleteUserInfo = async (userId) => {
   try {
-    let payload = await User.deleteUserInfo(userId);
+    const payload = await User.deleteUserInfo(userId);
     return payload;
   } catch (ex) {
     throw ex;
@@ -288,11 +291,11 @@ const deleteUserInfo = async (userId) => {
 
 const getSignedUserTerms = async (userId) => {
   try {
-    let user = await User.getUserLeanById(userId);
-    let terms = await GlobalConfig.GetTermsAndCons();
-    let userTerms = user.signedTerms || [];
-    //logic to check if the latest term is signed
-    let latestTerms = terms
+    const user = await User.getUserLeanById(userId);
+    const terms = await GlobalConfig.GetTermsAndCons();
+    const userTerms = user.signedTerms || [];
+    // logic to check if the latest term is signed
+    const latestTerms = terms
       .map((t) => parseFloat(t))
       .reduce((i, n) => (i > n ? i : n));
     return {
@@ -306,7 +309,7 @@ const getSignedUserTerms = async (userId) => {
 
 const signUserTerms = async (userId, termsVersion) => {
   try {
-    let updateTerms = await User.updateUserTerms(userId, termsVersion);
+    const updateTerms = await User.updateUserTerms(userId, termsVersion);
     return updateTerms;
   } catch (ex) {
     throw ex;
@@ -315,7 +318,7 @@ const signUserTerms = async (userId, termsVersion) => {
 
 const updateTempPassword = async (email) => {
   try {
-    let updatePass = await User.updateTempPassword(email);
+    const updatePass = await User.updateTempPassword(email);
 
     return updatePass;
   } catch (ex) {
@@ -337,8 +340,9 @@ const updateCurrentPassword = async (userId, currentPassword, newPassword) => {
 
 const updateUserType = async (userId, userType) => {
   try {
-    if (["neighbor", "guard", "suburbAdmin"].indexOf(userType) === -1)
-      throw `The user type ${userType} is not valid.`;
+    if (["neighbor", "guard", "suburbAdmin"].indexOf(userType) === -1) {
+      throw Error(`The user type ${userType} is not valid.`);
+    }
     return await User.updateUserType(userId, userType);
   } catch (ex) {
     throw ex;

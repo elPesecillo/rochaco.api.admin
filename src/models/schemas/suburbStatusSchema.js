@@ -17,6 +17,6 @@ const SuburbStatusSchema = new mongoose.Schema({
   },
 });
 
-//const SuburbStatus = mongoose.model("SuburbStatus", SuburbStatusSchema);
+// const SuburbStatus = mongoose.model("SuburbStatus", SuburbStatusSchema);
 
 module.exports = SuburbStatusSchema;

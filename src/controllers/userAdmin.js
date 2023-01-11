@@ -1,11 +1,12 @@
 const userService = require("../logic/userService");
-const userTypes = require("../constants/types").userTypes;
+const { userTypes } = require("../constants/types");
 const SuburbInvite = require("../models/suburbInvite");
-const validateRecaptcha = require("../logic/auth").validateRecaptcha;
-const handleFile = require("../controllers/handleFile");
-exports.saveGoogleUser = (req, res, next) => {
-  //get user data here
-  let {
+const { validateRecaptcha } = require("../logic/auth");
+const handleFile = require("./handleFile");
+
+exports.saveGoogleUser = (req, res) => {
+  // get user data here
+  const {
     name,
     lastName,
     loginName,
@@ -17,10 +18,10 @@ exports.saveGoogleUser = (req, res, next) => {
     appleId,
     token,
   } = req.body;
-  //validate the captcha here
+  // validate the captcha here
   userService.validateRecaptcha(token).then(
-    (resV) => {
-      //save the user here
+    () => {
+      // save the user here
       userService
         .saveUser({
           name,
@@ -35,7 +36,7 @@ exports.saveGoogleUser = (req, res, next) => {
           userConfirmed: true,
         })
         .then(
-          (resSave) => {
+          () => {
             res.status("200").json({
               success: true,
               message: res.message || "Has sido registrado correctamente.",
@@ -56,8 +57,8 @@ exports.saveGoogleUser = (req, res, next) => {
   );
 };
 
-exports.saveFacebookUser = (req, res, next) => {
-  let {
+exports.saveFacebookUser = (req, res) => {
+  const {
     name,
     lastName,
     loginName,
@@ -69,10 +70,10 @@ exports.saveFacebookUser = (req, res, next) => {
     appleId,
     token,
   } = req.body;
-  //validate the captcha here
+  // validate the captcha here
   userService.validateRecaptcha(token).then(
-    (resV) => {
-      //save the user here
+    () => {
+      // save the user here
       userService
         .saveUser({
           name,
@@ -87,7 +88,7 @@ exports.saveFacebookUser = (req, res, next) => {
           userConfirmed: true,
         })
         .then(
-          (resSave) => {
+          () => {
             res.status("200").json({
               success: true,
               message: res.message || "Has sido registrado correctamente.",
@@ -108,8 +109,8 @@ exports.saveFacebookUser = (req, res, next) => {
   );
 };
 
-exports.saveAppleUser = (req, res, next) => {
-  let {
+exports.saveAppleUser = (req, res) => {
+  const {
     name,
     lastName,
     loginName,
@@ -121,10 +122,10 @@ exports.saveAppleUser = (req, res, next) => {
     appleId,
     token,
   } = req.body;
-  //validate the captcha here
+  // validate the captcha here
   userService.validateRecaptcha(token).then(
-    (resV) => {
-      //save the user here
+    () => {
+      // save the user here
       userService
         .saveUser({
           name,
@@ -139,7 +140,7 @@ exports.saveAppleUser = (req, res, next) => {
           userConfirmed: true,
         })
         .then(
-          (resSave) => {
+          () => {
             res.status("200").json({
               success: true,
               message: res.message || "Has sido registrado correctamente.",
@@ -161,10 +162,10 @@ exports.saveAppleUser = (req, res, next) => {
 };
 
 exports.updateUserPicture = (req, res) => {
-  let { userId, photoUrl } = req.body;
+  const { userId, photoUrl } = req.body;
   userService
     .updateUserPicture(userId, photoUrl)
-    .then((updated) => {
+    .then(() => {
       res
         .status("200")
         .json({ success: true, message: "profile picture updated." });
@@ -176,8 +177,8 @@ exports.updateUserPicture = (req, res) => {
     });
 };
 
-exports.saveEmailUser = (req, res, next) => {
-  let {
+exports.saveEmailUser = (req, res) => {
+  const {
     name,
     lastName,
     loginName,
@@ -189,17 +190,18 @@ exports.saveEmailUser = (req, res, next) => {
     appleId,
     token,
   } = req.body;
-  //validate the captcha here
+  // validate the captcha here
   userService.validateRecaptcha(token).then(
-    (resV) => {
-      //if the user is registered through email credentials the user needs to be confirmed through an email
+    () => {
+      // if the user is registered through email credentials
+      // the user needs to be confirmed through an email
       userService
         .saveUserWithPassword({
           name,
           lastName,
           loginName,
           email,
-          password: password,
+          password,
           cellphone,
           facebookId,
           googleId,
@@ -207,7 +209,7 @@ exports.saveEmailUser = (req, res, next) => {
           userConfirmed: false,
         })
         .then(
-          (resSave) => {
+          () => {
             res.status("200").json({
               success: true,
               message: res.message || "Has sido registrado correctamente.",
@@ -230,14 +232,14 @@ exports.saveEmailUser = (req, res, next) => {
 
 exports.generateTempPassword = async (req, res) => {
   try {
-    let { email, captchaToken } = req.body;
-    let validCaptcha = await validateRecaptcha(captchaToken);
+    const { email, captchaToken } = req.body;
+    const validCaptcha = await validateRecaptcha(captchaToken);
 
     if (validCaptcha) {
-      let tempPass = await userService.updateTempPassword(email);
+      const tempPass = await userService.updateTempPassword(email);
 
       if (tempPass) {
-        let sendMail = await handleFile.sendTempPassEmail(email, tempPass);
+        await handleFile.sendTempPassEmail(email, tempPass);
 
         res.status("200").json({
           message: "Se ha enviado el correo correctamente.",
@@ -247,11 +249,13 @@ exports.generateTempPassword = async (req, res) => {
           message: "Hubo un problema al enviar el correo.",
         });
       }
-    } else
+    } else {
       res.status("401").json({
         message: "Hubo un problema al enviar el correo.",
       });
+    }
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.log("error", err);
     res.status("404").json({
       message: err.message || "Hubo un problema al enviar el correo.",
@@ -259,7 +263,7 @@ exports.generateTempPassword = async (req, res) => {
   }
 };
 
-exports.createUserByType = async (req, res, next) => {
+exports.createUserByType = async (req, res) => {
   try {
     const { name, lastName, loginName, email, cellphone } = req.body;
     const userType = userTypes[req.params.userType];
@@ -289,7 +293,7 @@ exports.createUserByType = async (req, res, next) => {
 
 exports.saveUserBySuburbId = async (req, res) => {
   try {
-    let {
+    const {
       name,
       lastName,
       loginName,
@@ -307,9 +311,9 @@ exports.saveUserBySuburbId = async (req, res) => {
       userType,
       captchaToken, // add captcha here
     } = req.body;
-    let validCaptcha = await validateRecaptcha(captchaToken);
+    const validCaptcha = await validateRecaptcha(captchaToken);
     if (validCaptcha) {
-      let getcode = await SuburbInvite.GetInviteByCode(code);
+      await SuburbInvite.GetInviteByCode(code);
       let save = null;
       if (password && password.trim() !== "") {
         save = await userService.saveUserWithPassword({
@@ -348,7 +352,7 @@ exports.saveUserBySuburbId = async (req, res) => {
           userConfirmed: true,
         });
       }
-      let updateCode = await SuburbInvite.UpdateSuburbInviteUsed(
+      const updateCode = await SuburbInvite.UpdateSuburbInviteUsed(
         code,
         save.userData._doc._id.toString()
       );
@@ -365,7 +369,7 @@ exports.saveUserBySuburbId = async (req, res) => {
   }
 };
 
-exports.getUserByType = async (req, res, next) => {
+exports.getUserByType = async (req, res) => {
   try {
     const userType = userTypes[req.params.userType];
     if (!userType) {
@@ -381,7 +385,7 @@ exports.getUserByType = async (req, res, next) => {
   }
 };
 
-exports.getUserInfo = async (req, res, next) => {
+exports.getUserInfo = async (req, res) => {
   try {
     userService.getUserByToken(req.query.token).then(
       (result) => {
@@ -400,9 +404,9 @@ exports.getUserInfo = async (req, res, next) => {
   }
 };
 
-exports.getUserById = async (req, res, next) => {
+exports.getUserById = async (req, res) => {
   try {
-    let result = await userService.getUserById(req.query.id);
+    const result = await userService.getUserById(req.query.id);
     res.status("200").json(result);
   } catch (err) {
     res
@@ -411,9 +415,9 @@ exports.getUserById = async (req, res, next) => {
   }
 };
 
-exports.getUserFavs = async (req, res, next) => {
+exports.getUserFavs = async (req, res) => {
   try {
-    let userFavs = await userService.getUserFavorites(req.query.userId);
+    const userFavs = await userService.getUserFavorites(req.query.userId);
     res.status("200").json(userFavs);
   } catch (err) {
     res
@@ -422,10 +426,10 @@ exports.getUserFavs = async (req, res, next) => {
   }
 };
 
-exports.addUserFavs = async (req, res, next) => {
+exports.addUserFavs = async (req, res) => {
   try {
-    let { favs, userId } = req.body;
-    let userFavs = await userService.saveUserFavorites(userId, favs);
+    const { favs, userId } = req.body;
+    const userFavs = await userService.saveUserFavorites(userId, favs);
     res.status("200").json(userFavs);
   } catch (err) {
     res
@@ -434,10 +438,10 @@ exports.addUserFavs = async (req, res, next) => {
   }
 };
 
-exports.removeUserFavs = async (req, res, next) => {
+exports.removeUserFavs = async (req, res) => {
   try {
-    let { favs, userId } = req.body;
-    let userFavs = await userService.removeUserFavorites(userId, favs);
+    const { favs, userId } = req.body;
+    const userFavs = await userService.removeUserFavorites(userId, favs);
     res.status("200").json(userFavs);
   } catch (err) {
     res
@@ -446,10 +450,10 @@ exports.removeUserFavs = async (req, res, next) => {
   }
 };
 
-exports.addUserPushToken = async (req, res, next) => {
+exports.addUserPushToken = async (req, res) => {
   try {
-    let { pushToken, userId } = req.body;
-    let pushTokens = await userService.addUserPushToken(userId, pushToken);
+    const { pushToken, userId } = req.body;
+    const pushTokens = await userService.addUserPushToken(userId, pushToken);
     res.status("200").json(pushTokens);
   } catch (err) {
     res
@@ -460,8 +464,8 @@ exports.addUserPushToken = async (req, res, next) => {
 
 exports.getUsersByAddress = async (req, res) => {
   try {
-    let { suburbId, street, streetNumber } = req.query;
-    let users = await userService.getUsersByAddress(
+    const { suburbId, street, streetNumber } = req.query;
+    const users = await userService.getUsersByAddress(
       suburbId,
       street,
       streetNumber
@@ -474,10 +478,10 @@ exports.getUsersByAddress = async (req, res) => {
   }
 };
 
-exports.deleteUserInfo = async (req, res, next) => {
+exports.deleteUserInfo = async (req, res) => {
   try {
-    let { userId } = req.body;
-    let removeUserInfo = await userService.deleteUserInfo(userId);
+    const { userId } = req.body;
+    const removeUserInfo = await userService.deleteUserInfo(userId);
     res.status("200").json(removeUserInfo);
   } catch (err) {
     res
@@ -488,8 +492,8 @@ exports.deleteUserInfo = async (req, res, next) => {
 
 exports.getSignedUserTerms = async (req, res) => {
   try {
-    let { userId } = req.query;
-    let signedUserTerms = await userService.getSignedUserTerms(userId);
+    const { userId } = req.query;
+    const signedUserTerms = await userService.getSignedUserTerms(userId);
     res.status("200").json(signedUserTerms);
   } catch (err) {
     res
@@ -500,10 +504,10 @@ exports.getSignedUserTerms = async (req, res) => {
 
 exports.isPasswordTemp = async (req, res) => {
   try {
-    let { user, password } = req.query;
-    let buff = Buffer.from(password, "base64");
-    let decodedPassword = buff.toString("utf-8");
-    let isPassTemp = await userService.isPasswordTemp(user, decodedPassword);
+    const { user, password } = req.query;
+    const buff = Buffer.from(password, "base64");
+    const decodedPassword = buff.toString("utf-8");
+    const isPassTemp = await userService.isPasswordTemp(user, decodedPassword);
     res.status("200").json(isPassTemp);
   } catch (err) {
     res.status("400").json({
@@ -515,14 +519,14 @@ exports.isPasswordTemp = async (req, res) => {
 
 exports.updatePassword = async (req, res) => {
   try {
-    let { userId, password, tempPassword } = req.body;
-    let buff = Buffer.from(password, "base64");
-    let decodedPassword = buff.toString("utf-8");
+    const { userId, password, tempPassword } = req.body;
+    const buff = Buffer.from(password, "base64");
+    const decodedPassword = buff.toString("utf-8");
 
-    let buff2 = Buffer.from(tempPassword, "base64");
-    let decodedTempPassword = buff2.toString("utf-8");
+    const buff2 = Buffer.from(tempPassword, "base64");
+    const decodedTempPassword = buff2.toString("utf-8");
 
-    let isPassTemp = await userService.updatePassword(
+    const isPassTemp = await userService.updatePassword(
       userId,
       decodedPassword,
       decodedTempPassword
@@ -538,10 +542,11 @@ exports.updatePassword = async (req, res) => {
 
 exports.updateCurrentPassword = async (req, res) => {
   try {
-    let { userId, currentPassword, newPassword } = req.body;
+    const { userId } = req.body;
+    let { currentPassword, newPassword } = req.body;
     currentPassword = Buffer.from(currentPassword, "base64").toString("utf-8");
     newPassword = Buffer.from(newPassword, "base64").toString("utf-8");
-    let result = await userService.updateCurrentPassword(
+    const result = await userService.updateCurrentPassword(
       userId,
       currentPassword,
       newPassword
@@ -557,8 +562,8 @@ exports.updateCurrentPassword = async (req, res) => {
 
 exports.signUserTerms = async (req, res) => {
   try {
-    let { userId, termsVersion } = req.body;
-    let update = await userService.signUserTerms(userId, termsVersion);
+    const { userId, termsVersion } = req.body;
+    const update = await userService.signUserTerms(userId, termsVersion);
     res.status("200").json(update);
   } catch (err) {
     res
@@ -569,8 +574,8 @@ exports.signUserTerms = async (req, res) => {
 
 exports.updateUserType = async (req, res) => {
   try {
-    let { userId, userType } = req.body;
-    let update = await userService.updateUserType(userId, userType);
+    const { userId, userType } = req.body;
+    const update = await userService.updateUserType(userId, userType);
     res.status("200").json(update);
   } catch (err) {
     res
@@ -581,8 +586,8 @@ exports.updateUserType = async (req, res) => {
 
 exports.enableDisableUser = async (req, res) => {
   try {
-    let { userId, enabled } = req.body;
-    let update = await userService.enableDisableUser(userId, enabled);
+    const { userId, enabled } = req.body;
+    const update = await userService.enableDisableUser(userId, enabled);
     res.status("200").json(update);
   } catch (err) {
     res
@@ -593,8 +598,8 @@ exports.enableDisableUser = async (req, res) => {
 
 exports.changeLimited = async (req, res) => {
   try {
-    let { userId, limited } = req.body;
-    let update = await userService.changeLimited(userId, limited);
+    const { userId, limited } = req.body;
+    const update = await userService.changeLimited(userId, limited);
     res.status("200").json(update);
   } catch (err) {
     res
@@ -605,8 +610,8 @@ exports.changeLimited = async (req, res) => {
 
 exports.getIfUserIsLimited = async (req, res) => {
   try {
-    let { userId } = req.query;
-    let isLimited = await userService.getIfUserIsLimited(userId);
+    const { userId } = req.query;
+    const isLimited = await userService.getIfUserIsLimited(userId);
     res.status("200").json(isLimited);
   } catch (err) {
     res
@@ -617,8 +622,8 @@ exports.getIfUserIsLimited = async (req, res) => {
 
 exports.addUserRfid = async (req, res) => {
   try {
-    let { userId, rfid } = req.body;
-    let update = await userService.addUserRfid(userId, rfid);
+    const { userId, rfid } = req.body;
+    const update = await userService.addUserRfid(userId, rfid);
     res.status("200").json(update);
   } catch (err) {
     res
@@ -629,8 +634,8 @@ exports.addUserRfid = async (req, res) => {
 
 exports.removeUserRfid = async (req, res) => {
   try {
-    let { userId, rfid } = req.body;
-    let update = await userService.removeUserRfid(userId, rfid);
+    const { userId, rfid } = req.body;
+    const update = await userService.removeUserRfid(userId, rfid);
     res.status("200").json(update);
   } catch (err) {
     res
