@@ -1,0 +1,22 @@
+const AUTOMATIC_DEBT_TYPE = "automatic";
+const MANUAL_DEBT_TYPE = "manual";
+const CHARGE_EVERY_MONTH = "month";
+const CHARGE_EVERY_NA = "N/A";
+
+const DEBT_STATUS_PENDING = "pending";
+const DEBT_STATUS_PAID = "paid";
+const DEBT_STATUS_EXPIRED = "expired";
+const DEBT_STATUS_CANCELLED = "cancelled";
+const DEBT_STATUS_IN_REVIEW = "in review";
+
+module.exports = {
+  AUTOMATIC_DEBT_TYPE,
+  MANUAL_DEBT_TYPE,
+  CHARGE_EVERY_MONTH,
+  CHARGE_EVERY_NA,
+  DEBT_STATUS_PENDING,
+  DEBT_STATUS_PAID,
+  DEBT_STATUS_EXPIRED,
+  DEBT_STATUS_CANCELLED,
+  DEBT_STATUS_IN_REVIEW,
+};
