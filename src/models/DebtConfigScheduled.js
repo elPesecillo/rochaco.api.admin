@@ -13,11 +13,6 @@ const DebtConfigScheduledSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-  errors: [
-    {
-      type: String,
-    },
-  ],
   lastPeriod: {
     type: Date,
   },

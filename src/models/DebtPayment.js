@@ -1,18 +1,27 @@
 const mongoose = require("mongoose");
-const CommentSchema = require("./schemas/CommentSchema");
+const {
+  PAYMENT_STATUS_PENDING,
+  PAYMENT_STATUS_IN_REVIEW,
+  PAYMENT_STATUS_APPROVED,
+  PAYMENT_STATUS_REJECTED,
+} = require("../constants/DebtTypes");
+
+const MAX_LIMIT = 50;
 
 const DebtPaymentSchema = new mongoose.Schema({
   suburbId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Suburb",
-  },
-  amount: {
-    type: Number,
     required: true,
   },
   addressId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Address",
+    required: true,
+  },
+  amount: {
+    type: Number,
+    required: true,
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -20,10 +29,62 @@ const DebtPaymentSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["pending", "approved", "rejected"],
+    enum: [
+      PAYMENT_STATUS_PENDING,
+      PAYMENT_STATUS_IN_REVIEW,
+      PAYMENT_STATUS_APPROVED,
+      PAYMENT_STATUS_REJECTED,
+    ],
   },
-  comments: [CommentSchema],
+  receiptData: [
+    {
+      url: {
+        type: String,
+      },
+      fileName: {
+        type: String,
+      },
+      date: {
+        type: Date,
+        default: Date.now,
+        required: true,
+      },
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+    },
+  ],
+  statusHistory: [
+    {
+      status: {
+        type: String,
+        enum: [
+          PAYMENT_STATUS_PENDING,
+          PAYMENT_STATUS_IN_REVIEW,
+          PAYMENT_STATUS_APPROVED,
+          PAYMENT_STATUS_REJECTED,
+        ],
+      },
+      date: {
+        type: Date,
+        default: Date.now,
+      },
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      comment: {
+        type: String,
+      },
+    },
+  ],
   createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  timeStamp: {
     type: Date,
     default: Date.now,
   },
@@ -41,7 +102,82 @@ const DebtPaymentSchema = new mongoose.Schema({
   ],
 });
 
-DebtPaymentSchema.statics = {};
+DebtPaymentSchema.statics = {
+  async GetById(paymentId) {
+    return this.findById(paymentId).lean();
+  },
+  async SavePayment(payment) {
+    const newPayment = new this(payment);
+    return newPayment.save();
+  },
+  async UpdatePayment(paymentId, payment) {
+    const query = {
+      _id: paymentId,
+    };
+    const update = {
+      $set: payment,
+    };
+    return this.findOneAndUpdate(query, update);
+  },
+  async UpdateStatus(paymentId, status, userId, comment) {
+    const query = {
+      _id: paymentId,
+    };
+    const update = {
+      $set: { status, timeStamp: Date.now() },
+      $push: {
+        statusHistory: {
+          status,
+          date: Date.now(),
+          userId,
+          comment,
+        },
+      },
+    };
+    return this.findOneAndUpdate(query, update, { new: true });
+  },
+  async GetBySuburbPaginated(suburbId, statuses, page, limit) {
+    let selectedLimit = parseInt(limit, 10);
+    let selectedPage = parseInt(page, 10);
+    if (page < 0) {
+      selectedPage = 0;
+    }
+    if (selectedLimit > MAX_LIMIT) {
+      selectedLimit = MAX_LIMIT;
+    }
+    const query = {
+      suburbId,
+      status: { $in: statuses },
+    };
+    return this.find(query)
+      .populate("addressId")
+      .populate("debts.debtId")
+      .sort({ createdAt: -1 })
+      .skip(selectedPage * selectedLimit)
+      .limit(limit)
+      .lean();
+  },
+  async GetByAddressPaginated(addressId, statuses, page, limit) {
+    let selectedLimit = parseInt(limit, 10);
+    let selectedPage = parseInt(page, 10);
+    if (page < 0) {
+      selectedPage = 0;
+    }
+    if (selectedLimit > MAX_LIMIT) {
+      selectedLimit = MAX_LIMIT;
+    }
+    const query = {
+      addressId,
+      status: { $in: statuses },
+    };
+    return this.find(query)
+      .populate("addressId", "debts.debtId")
+      .sort({ createdAt: -1 })
+      .skip(selectedPage * selectedLimit)
+      .limit(limit)
+      .lean();
+  },
+};
 
 const DebtPayment = mongoose.model("DebtPayment", DebtPaymentSchema);
 

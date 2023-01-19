@@ -8,6 +8,11 @@ const debug = require("debug")("rochacoapi:server");
 const app = require("./app");
 
 /**
+ * Get job scheduler
+ */
+const { InitDebtJobs } = require("./jobs");
+
+/**
  * Normalize a port into a number, string, or false.
  */
 function normalizePort(val) {
@@ -72,6 +77,11 @@ function onListening() {
   const bind = typeof addr === "string" ? `pipe ${addr}` : `port ${addr.port}`;
   debug(`Listening on ${bind}`);
 }
+
+/**
+ * Start the debt jobs
+ */
+InitDebtJobs();
 
 /**
  * Listen on provided port, on all network interfaces.

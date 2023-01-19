@@ -37,8 +37,20 @@ DebtAssignationConfigSchema.statics = {
   async SaveMany(debtAssignationConfigs) {
     return this.insertMany(debtAssignationConfigs);
   },
-  async DeleteMany(debtAssignationIds) {
-    return this.deleteMany({ _id: { $in: debtAssignationIds } });
+  async DeleteMany(debtAssignments) {
+    if (debtAssignments.length === 0) {
+      return Promise.resolve();
+    }
+    return this.deleteMany({
+      $and: [
+        {
+          debtConfigId: debtAssignments[0].debtConfigId,
+        },
+        {
+          addressId: { $in: debtAssignments.map((d) => d.addressId) },
+        },
+      ],
+    });
   },
 };
 

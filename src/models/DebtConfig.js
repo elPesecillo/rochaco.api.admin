@@ -85,6 +85,12 @@ DebtConfigSchema.statics = {
   async GetConfigBySuburbId(suburbId) {
     return this.find({ suburbId, active: true }).lean();
   },
+  async GetConfigById(configId) {
+    return this.findOne({ _id: configId }).lean();
+  },
+  async GetAutomaticConfigs() {
+    return this.find({ type: AUTOMATIC_DEBT_TYPE, active: true }).lean();
+  },
   async SaveConfig(config) {
     return this.create(config);
   },

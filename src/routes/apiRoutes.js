@@ -22,6 +22,8 @@ const vision = require("../controllers/vision");
 
 const notification = require("../controllers/notification");
 
+const debt = require("../controllers/Debt");
+
 const upload = multer({ dest: "./uploads/" });
 
 const upload2 = multer();
@@ -41,21 +43,13 @@ router.get("/api/healthCheck", (_req, res) => {
 });
 
 router.post("/api/checkAuth", siteAuth.checkAuth);
-
 router.post("/api/isValidToken", siteAuth.isValidToken);
-
 router.post("/api/validateTokenPath", siteAuth.validateTokenPath);
-
 router.post("/api/logOff", siteAuth.logOff);
-
 router.get("/api/auth/fbtoken", siteAuth.getTokenByFacebookId);
-
 router.get("/api/auth/googletoken", siteAuth.getTokenByGoogleId);
-
 router.get("/api/auth/appletoken", siteAuth.getTokenByAppleId);
-
 router.post("/api/signUp", signup.signUp);
-
 router.post("/api/auth/internal/auth", siteAuth.internalAuth);
 
 // user apis
@@ -104,45 +98,28 @@ router.post("/api/file/upload", upload.any(), handleFiles.uploadFile);
 
 // suburb apis
 router.post("/api/suburb/approveReject", suburb.approveReject);
-
 router.get("/api/suburb/info", suburb.getSuburbByAdminId);
-
 router.get("/api/suburb/get", suburb.getSuburbById);
-
 router.post("/api/suburb/addSuburbInvite", suburb.addSuburbInvite);
-
 router.get("/api/suburb/getInviteByCode", suburb.getSuburbInvite);
-
 router.get("/api/suburb/getStreets", suburb.getStreets);
-
 router.get("/api/suburb/getStreetNumbers", suburb.getStreetNumbers);
-
 router.post("/api/suburb/updateConfig", suburb.saveSuburbConfig);
-
 router.get("/api/suburb/getConfig", suburb.getSuburbConfig);
-
 router.post("/api/suburb/saveStreet", suburb.saveSuburbStreet);
-
 router.get("/api/suburb/getAllStreets", suburb.getSuburbStreets);
-
 router.get("/api/suburb/getUsers", suburb.getUsersBySuburb);
-
 router.get("/api/suburb/migrateAddresses", suburb.migrateAddresses);
-
 router.get("/api/suburb/getAddressesBySuburbId", suburb.getAddressesBySuburbId);
-
 router.get("/api/suburb/getSuburbData", suburb.getSuburbData);
-
 router.get(
   "/api/suburb/getAddressesWithUsersStates",
   suburb.getAddressesWithUsersStates
 );
-
 router.post(
   "/api/suburb/setLimitedUsersByAddress",
   suburb.setLimitedUsersByAddress
 );
-
 router.get(
   "/api/suburb/getSuburbAutomationInfo",
   suburb.getSuburbAutomationInfo
@@ -170,7 +147,6 @@ router.post(
   "/api/notification/approveRejectReservation",
   pushNotification.sendApproveRejectedReservationNotification
 );
-
 router.post(
   "/api/notification/newSurvey",
   pushNotification.sendNewSurveyNotification
@@ -186,13 +162,33 @@ router.get("/api/alert/getByUserId", notification.GetByUserId);
 // analytics apis
 
 router.get("/api/analytics/GetVisits", analytics.getSuburbVisits);
-
 router.post("/api/vision/ocr", upload2.any(), vision.processOCR);
 
 // files apis
 const blobFilesService = require("../controllers/blobFiles");
 
 router.post("/api/blob/uploadFile", blobFilesService.uploadBlobs);
-// router.post("/api/blob/uploadFile", upload2.any(), blobFilesService.uploadBlobs);
+
+// debt apis
+router.get("/api/debt/getDebtConfigBySuburbId", debt.GetDebtConfigBySuburbId);
+router.post("/api/debt/saveDebtConfig", debt.SaveDebtConfig);
+router.post("/api/debt/updateDebtConfig", debt.UpdateDebtConfig);
+router.delete("/api/debt/deleteDebtConfig", debt.DeactivateDebtConfig);
+router.get(
+  "/api/debt/getDebtAssignmentsByDebtConfigId",
+  debt.GetDebtAssignmentsByDebtConfigId
+);
+router.post("/api/debt/updateDebtAssignments", debt.UpdateDebtAssignments);
+router.get(
+  "/api/debt/getDebtsBySuburbPaginated",
+  debt.GetDebtsBySuburbPaginated
+);
+router.get("/api/debt/getDebtsByAddressId", debt.GetDebtsByAddressId);
+router.get("/api/debt/getDebtPaymentBySuburb", debt.GetDebtPaymentBySuburb);
+router.post("/api/debt/saveDebtPayment", upload2.any(), debt.SaveDebtPayment);
+router.post("/api/debt/acceptDebtPayment", debt.AcceptDebtPayment);
+router.post("/api/debt/rejectDebtPayment", debt.RejectDebtPayment);
+router.post("/api/debt/editDebtPayment", upload2.any(), debt.EditDebtPayment);
+router.post("/api/debt/adminEditDebtPayment", debt.AdminEditDebtPayment);
 
 module.exports = router;

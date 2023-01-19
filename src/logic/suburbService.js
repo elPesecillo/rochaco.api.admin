@@ -216,10 +216,7 @@ const saveSuburbConfig = async (suburbId, config) => {
         id: saveConfig.id,
       };
     }
-    await SuburbConfig.UpdateConfig(
-      suburbData.config.toString(),
-      config
-    );
+    await SuburbConfig.UpdateConfig(suburbData.config.toString(), config);
     return {
       success: true,
       message: "la configuracion fue actualizada con exito.",
@@ -254,10 +251,7 @@ const saveSuburbStreet = async (suburbId, street) => {
         id: saveStreet.id,
       };
     }
-    await SuburbStreet.UpdateStreet(
-      selectedStreet[0]._id,
-      street
-    );
+    await SuburbStreet.UpdateStreet(selectedStreet[0]._id, street);
     return { success: true, message: "la calle fue actualizada con exito." };
   } catch (err) {
     throw err;
@@ -280,6 +274,11 @@ const getUsersBySuburb = async (suburbId) => {
   }
 };
 
+const GetAllSuburbs = async () => {
+  const suburbs = await Suburb.GetAllSuburbs();
+  return suburbs;
+};
+
 module.exports = {
   saveSuburb,
   suburbAddStatus,
@@ -294,4 +293,5 @@ module.exports = {
   saveSuburbStreet,
   getSuburbStreets,
   getUsersBySuburb,
+  GetAllSuburbs,
 };

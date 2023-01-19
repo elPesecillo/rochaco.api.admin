@@ -17,6 +17,7 @@ const SuburbSchema = new mongoose.Schema({
   },
   active: {
     type: Boolean,
+    default: true,
   },
   transtime: {
     type: Date,
@@ -232,6 +233,10 @@ SuburbSchema.statics = {
           } else resolve({ streets: [] });
         });
     });
+  },
+  async GetAllSuburbs() {
+    const suburbs = await this.find({ active: true }).lean();
+    return suburbs;
   },
 };
 
