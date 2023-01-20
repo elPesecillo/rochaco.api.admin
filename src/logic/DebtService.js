@@ -525,6 +525,14 @@ const EditDebtPayment = async (debtPayment) => {
       })),
     ];
   }
+  // update debts status to pending
+  await Debt.UpdateManyDebtStatus(
+    oldDebtPayment.debts.map((debt) => debt.debtId.toString()),
+    DEBT_STATUS_PENDING,
+    debtPayment.userId,
+    oldDebtPayment
+  );
+
   // remove old debts payments
   await Debt.RemoveDebtsPayments(
     oldDebtPayment.debts.map((debt) => debt.debtId.toString()),
@@ -561,23 +569,33 @@ const EditDebtPayment = async (debtPayment) => {
 };
 
 const AdminEditDebtPayment = async (debtPayment) => {
-  const { debts, amount } = debtPayment;
+  const { debtPaymentId, debts, amount } = debtPayment;
   const status = PAYMENT_STATUS_APPROVED;
   const { oldDebtPayment } = await DebtPaymentValidations(
     debts,
     amount,
-    debtPayment._id.toString(),
+    debtPaymentId,
     PAYMENT_STATUS_PENDING
   );
+
+  // update debts status to pending
+  await Debt.UpdateManyDebtStatus(
+    oldDebtPayment.debts.map((debt) => debt.debtId.toString()),
+    DEBT_STATUS_PENDING,
+    debtPayment.userId,
+    oldDebtPayment
+  );
+
   // remove old debts payments
   await Debt.RemoveDebtsPayments(
-    oldDebtPayment.debts.map((debt) => debt._id),
-    debtPayment._id
+    oldDebtPayment.debts.map((debt) => debt.debtId.toString()),
+    debtPaymentId
   );
 
   // update payment
   const updatedPayment = (
-    await DebtPayment.UpdatePayment(debtPayment._id.toString(), {
+    await DebtPayment.UpdatePayment(debtPaymentId, {
+      ...oldDebtPayment,
       ...debtPayment,
       status,
       statusHistory: [
@@ -592,6 +610,8 @@ const AdminEditDebtPayment = async (debtPayment) => {
       timeStamp: new Date(),
     })
   ).toObject();
+
+  // update debts status to paid
   await Debt.UpdateManyDebtStatus(
     updatedPayment.debts.map((debt) => debt.debtId.toString()),
     DEBT_STATUS_PAID,

@@ -137,7 +137,8 @@ DebtSchema.statics = {
                   amount: selectedDebt.amount,
                 },
               },
-            }
+            },
+            { new: true }
           )
         );
       }

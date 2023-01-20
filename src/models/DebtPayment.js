@@ -117,7 +117,7 @@ DebtPaymentSchema.statics = {
     const update = {
       $set: payment,
     };
-    return this.findOneAndUpdate(query, update);
+    return this.findOneAndUpdate(query, update, { new: true });
   },
   async UpdateStatus(paymentId, status, userId, comment) {
     const query = {
