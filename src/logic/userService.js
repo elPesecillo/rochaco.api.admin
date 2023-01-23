@@ -33,7 +33,7 @@ const saveUser = (userObj) =>
                 resolve({
                   success: true,
                   message: "Has sido registrado correctamente.",
-                  userData: { ...usr },
+                  userData: { ...usr.toObject() },
                 });
               } else {
                 reject({

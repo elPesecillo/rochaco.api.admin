@@ -61,12 +61,14 @@ const UserSchema = new mongoose.Schema({
    * valid user types:
    *  guest -> a guest user
    *  guard -> a guard of the suburb
-   *  admin -> an administrator of the suburb
-   *  sudo  -> an administrator of the app
+   *  neighbor -> a neighbor of the suburb
+   *  suburbAdmin -> an administrator of the suburb
+   *  admin  -> an administrator of the app
    */
   userType: {
     type: String,
     default: "guest",
+    enum: ["guest", "guard", "neighbor", "suburbAdmin", "admin"],
   },
   userConfirmed: {
     type: Boolean,

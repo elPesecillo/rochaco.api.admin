@@ -26,7 +26,7 @@ const {
 const DebtConfigScheduled = require("../models/DebtConfigScheduled");
 const { UploadBlob } = require("./blobService");
 
-const ValidateDebtConfig = (debt) => {
+const ValidateDebtConfig = async (debt) => {
   const errors = {};
   if (
     debt.type === AUTOMATIC_DEBT_TYPE &&
@@ -34,6 +34,12 @@ const ValidateDebtConfig = (debt) => {
   ) {
     errors.automaticConfig =
       "Charge on day, charge every, and generate up to are required for automatic debts";
+  }
+  if (debt._id) {
+    const debtConfig = await DebtConfig.GetConfigById(debt._id);
+    if (!debtConfig) {
+      errors.debtConfig = "Debt config not found";
+    }
   }
   return errors;
 };
@@ -44,7 +50,7 @@ const GetDebtConfigsBySuburbId = async (suburbId) => {
 };
 
 const SaveDebtConfig = async (debt) => {
-  const errors = ValidateDebtConfig(debt);
+  const errors = await ValidateDebtConfig(debt);
   if (Object.keys(errors).length > 0) {
     throw new Error(JSON.stringify(errors));
   }
@@ -60,7 +66,7 @@ const SaveDebtConfig = async (debt) => {
 
 const UpdateDebtConfig = async (updateDebt) => {
   const debt = updateDebt;
-  const errors = ValidateDebtConfig(debt);
+  const errors = await ValidateDebtConfig(debt);
   if (Object.keys(errors).length > 0) {
     throw new Error(JSON.stringify(errors));
   }

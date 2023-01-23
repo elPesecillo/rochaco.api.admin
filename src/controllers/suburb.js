@@ -224,12 +224,9 @@ exports.saveSuburbStreet = async (req, res) => {
   try {
     const { suburbId, street } = req.body;
     if (ObjectId.isValid(suburbId)) {
-      await addressService.saveSuburbStreet(suburbId, street);
+      const addresses = await addressService.saveSuburbStreet(suburbId, street);
 
-      res.status(200).json({
-        success: true,
-        message: "La calle fue guardada correctamente.",
-      });
+      res.status(200).json(addresses);
     } else {
       res.status(400).json({
         success: false,

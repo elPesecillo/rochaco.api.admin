@@ -18,18 +18,10 @@ const AddressSchema = new mongoose.Schema({
 });
 
 AddressSchema.statics = {
-  SaveSuburbStreet(suburbId, name, numbers) {
+  async SaveSuburbStreet(suburbId, name, numbers) {
     const addresses = numbers.map((number) => ({ suburbId, name, number }));
-    return new Promise((resolve, reject) => {
-      // eslint-disable-next-line no-use-before-define
-      Address.insertMany(addresses)
-        .then((value) => {
-          resolve(value);
-        })
-        .catch((err) => {
-          reject(err);
-        });
-    });
+
+    return this.insertMany(addresses);
   },
   GetStreetsBySuburb(suburbId) {
     return new Promise((resolve, reject) => {
@@ -78,9 +70,7 @@ AddressSchema.statics = {
     });
   },
   GetAddressesBySuburb(suburbId) {
-    return this.find({ suburbId })
-      .sort({ name: 'asc', number: 'asc' })
-      .lean();
+    return this.find({ suburbId }).sort({ name: "asc", number: "asc" }).lean();
   },
   GetAddressByNameAndNumber(streetName, number) {
     return this.findOne({ name: streetName, number }).lean();
