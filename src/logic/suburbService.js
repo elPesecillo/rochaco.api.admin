@@ -305,10 +305,21 @@ const AddAccountSuburb = async (account, suburbId) => {
   try {
     const data = await suburbData.GetDataBySuburb(suburbId);
     if (data) {
-      return await suburbData.AddAccount(account, suburbId);
+      const get = await suburbData.AddAccount(account, suburbId);
+      return get.accounts[get.accounts.length - 1];
     } else {
-      return await suburbData.Save({ suburbId, accounts: [account] });
+      const add = await suburbData.Save({ suburbId, accounts: [account] });
+      return add.accounts[add.accounts.length - 1];
     }
+  } catch (error) {
+    throw error;
+  }
+};
+
+const UpdateAccountSuburb = async (account, suburbId) => {
+  try {
+    const get = await suburbData.UpdateAccount(account, suburbId);
+    return get.accounts[get.accounts.length - 1];
   } catch (error) {
     throw error;
   }
@@ -316,12 +327,23 @@ const AddAccountSuburb = async (account, suburbId) => {
 
 const AddPhoneSuburb = async (phone, suburbId) => {
   try {
-    const data = await suburbData.GetDataBySuburb(suburbId);
-    if (data) {
-      return await suburbData.AddPhone(phone, suburbId);
+    const dataSuburb = await suburbData.GetDataBySuburb(suburbId);
+    if (dataSuburb) {
+      const get = await suburbData.AddPhone(phone, suburbId);
+      return get.phones[get.phones.length - 1];
     } else {
-      return await suburbData.Save({ suburbId, phones: [phone] });
+      const add = await suburbData.Save({ suburbId, phones: [phone] });
+      return add.phones[add.phones.length - 1];
     }
+  } catch (error) {
+    throw error;
+  }
+};
+
+const UpdatePhoneSuburb = async (phone, suburbId) => {
+  try {
+    const get = await suburbData.UpdatePhone(phone, suburbId);
+    return get.phones[get.phones.length - 1];
   } catch (error) {
     throw error;
   }
@@ -345,7 +367,8 @@ const RemoveAccount = async (accountId, suburbId) => {
 
 const EditMap = async (mapUrl, suburbId) => {
   try {
-    return await suburbData.EditMap(mapUrl, suburbId);
+    const get = (await suburbData.EditMap(mapUrl, suburbId)).toObject();
+    return get.mapUrl;
   } catch (error) {
     throw error;
   }
@@ -368,7 +391,9 @@ module.exports = {
   SaveSuburbData,
   GetSuburbData,
   AddAccountSuburb,
+  UpdateAccountSuburb,
   AddPhoneSuburb,
+  UpdatePhoneSuburb,
   RemovePhone,
   RemoveAccount,
   EditMap,

@@ -19,7 +19,7 @@ SuburbDataSchema.statics = {
     return data.save();
   },
   GetDataBySuburb: function (suburbId) {
-    return this.find({ suburbId }).lean();
+    return this.findOne({ suburbId }).lean();
   },
   AddAccount: function (newAccount, suburbId) {
     return this.findOneAndUpdate(
@@ -28,10 +28,36 @@ SuburbDataSchema.statics = {
       { new: true }
     );
   },
+  UpdateAccount: function (account, suburbId) {
+    return this.findOneAndUpdate(
+      { suburbId, "accounts._id": account.id },
+      {
+        $set: {
+          "accounts.$.account": account.account,
+          "accounts.$.CLABE": account.CLABE,
+          "accounts.$.cardNumber": account.cardNumber,
+          "accounts.$.holder": account.holder,
+        },
+      },
+      { new: true }
+    );
+  },
   AddPhone: function (newPhone, suburbId) {
     return this.findOneAndUpdate(
       { suburbId },
       { $push: { phones: newPhone } },
+      { new: true }
+    );
+  },
+  UpdatePhone: function (phone, suburbId) {
+    return this.findOneAndUpdate(
+      { suburbId, "phones._id": phone.id },
+      {
+        $set: {
+          "phones.$.name": phone.name,
+          "phones.$.phoneNumber": phone.phoneNumber,
+        },
+      },
       { new: true }
     );
   },

@@ -153,7 +153,11 @@ router.get("/api/suburb/data", suburb.GetSuburbData);
 
 router.post("/api/suburb/addAccount", suburb.AddAccount);
 
+router.post("/api/suburb/updateAccount", suburb.UpdateAccount);
+
 router.post("/api/suburb/addPhone", suburb.AddPhone);
+
+router.post("/api/suburb/updatePhone", suburb.UpdatePhone);
 
 router.post("/api/suburb/editMap", suburb.EditMap);
 
