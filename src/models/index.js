@@ -10,6 +10,7 @@ const PostalCode = require("./postalCode");
 const Address = require("./Address");
 const GlobalConfig = require("./globalConfig");
 const Notification = require("./Notification");
+const SuburbData = require("./suburbData");
 
 const models = {
   Menu,
@@ -21,7 +22,8 @@ const models = {
   SuburbStreet,
   Address,
   GlobalConfig,
-  Notification
+  Notification,
+  SuburbData,
 };
 
 const connectDb = async () => {

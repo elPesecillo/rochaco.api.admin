@@ -9,6 +9,7 @@ const SuburbInvite = require("../models/suburbInvite");
 const User = require("../models/user");
 const SuburbConfig = require("../models/suburbConfig");
 const SuburbStreet = require("../models/suburbStreet");
+const suburbData = require("../models/suburbData");
 
 const pjson = require("../../package.json");
 
@@ -239,8 +240,8 @@ const saveSuburbStreet = async (suburbId, street) => {
     const suburbData = await Suburb.GetSuburbStreets(suburbId);
     const selectedStreet = suburbData.streets
       ? suburbData.streets.filter(
-        (st) => st.street.toLowerCase() === street.street.toLowerCase()
-      )
+          (st) => st.street.toLowerCase() === street.street.toLowerCase()
+        )
       : [];
     if (selectedStreet.length === 0) {
       const saveStreet = await SuburbStreet.SaveStreet(street);
@@ -279,6 +280,99 @@ const GetAllSuburbs = async () => {
   return suburbs;
 };
 
+const SaveSuburbData = async (data) => {
+  try {
+    if (data) {
+      return await suburbData.Save(data);
+    } else {
+      return await suburbData.AddAccount(data);
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+const GetSuburbData = async (suburbId) => {
+  try {
+    return await suburbData.GetDataBySuburb(suburbId);
+  } catch (error) {
+    throw error;
+  }
+};
+
+const AddAccountSuburb = async (account, suburbId) => {
+  try {
+    const data = await suburbData.GetDataBySuburb(suburbId);
+    if (data) {
+      const get = await suburbData.AddAccount(account, suburbId);
+      return get.accounts[get.accounts.length - 1];
+    } else {
+      const add = await suburbData.Save({ suburbId, accounts: [account] });
+      return add.accounts[add.accounts.length - 1];
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+const UpdateAccountSuburb = async (account, suburbId) => {
+  try {
+    const get = await suburbData.UpdateAccount(account, suburbId);
+    return get.accounts[get.accounts.length - 1];
+  } catch (error) {
+    throw error;
+  }
+};
+
+const AddPhoneSuburb = async (phone, suburbId) => {
+  try {
+    const dataSuburb = await suburbData.GetDataBySuburb(suburbId);
+    if (dataSuburb) {
+      const get = await suburbData.AddPhone(phone, suburbId);
+      return get.phones[get.phones.length - 1];
+    } else {
+      const add = await suburbData.Save({ suburbId, phones: [phone] });
+      return add.phones[add.phones.length - 1];
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+const UpdatePhoneSuburb = async (phone, suburbId) => {
+  try {
+    const get = await suburbData.UpdatePhone(phone, suburbId);
+    return get.phones[get.phones.length - 1];
+  } catch (error) {
+    throw error;
+  }
+};
+
+const RemovePhone = async (phoneId, suburbId) => {
+  try {
+    return await suburbData.RemovePhone(phoneId, suburbId);
+  } catch (error) {
+    throw error;
+  }
+};
+
+const RemoveAccount = async (accountId, suburbId) => {
+  try {
+    return await suburbData.RemoveAccount(accountId, suburbId);
+  } catch (error) {
+    throw error;
+  }
+};
+
+const EditMap = async (mapUrl, suburbId) => {
+  try {
+    const get = (await suburbData.EditMap(mapUrl, suburbId)).toObject();
+    return get.mapUrl;
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   saveSuburb,
   suburbAddStatus,
@@ -294,4 +388,13 @@ module.exports = {
   getSuburbStreets,
   getUsersBySuburb,
   GetAllSuburbs,
+  SaveSuburbData,
+  GetSuburbData,
+  AddAccountSuburb,
+  UpdateAccountSuburb,
+  AddPhoneSuburb,
+  UpdatePhoneSuburb,
+  RemovePhone,
+  RemoveAccount,
+  EditMap,
 };
