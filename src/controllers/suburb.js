@@ -423,10 +423,36 @@ exports.AddAccount = async (req, res) => {
   }
 };
 
+exports.UpdateAccount = async (req, res) => {
+  try {
+    const { account, suburbId } = req.body;
+    const result = await suburbService.UpdateAccountSuburb(account, suburbId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to add phone.",
+    });
+  }
+};
+
 exports.AddPhone = async (req, res) => {
   try {
     const { phone, suburbId } = req.body;
     const result = await suburbService.AddPhoneSuburb(phone, suburbId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to add phone.",
+    });
+  }
+};
+
+exports.UpdatePhone = async (req, res) => {
+  try {
+    const { phone, suburbId } = req.body;
+    const result = await suburbService.UpdatePhoneSuburb(phone, suburbId);
     res.status(200).json(result);
   } catch (err) {
     res.status(500).json({
