@@ -122,7 +122,6 @@ const addSuburbInvite = (suburbId, name, street, streetNumber, userType) =>
     const _code =
       Math.random().toString(36).substring(2, 4).toUpperCase() +
       Math.random().toString(36).substring(2, 4).toUpperCase();
-    console.log(encryption(street));
     SuburbInvite.SaveSuburbInvite({
       code: _code,
       suburbId,
@@ -207,8 +206,8 @@ const getSuburbInvite = (code) =>
 
 const saveSuburbConfig = async (suburbId, config) => {
   try {
-    const suburbData = await Suburb.GetSuburb(suburbId);
-    if (!ObjectId.isValid(suburbData.config)) {
+    const suburb = await Suburb.GetSuburb(suburbId);
+    if (!ObjectId.isValid(suburb.config)) {
       const saveConfig = await SuburbConfig.SaveConfig(config);
       await Suburb.SaveSuburbConfig(suburbId, saveConfig._id);
       return {
@@ -217,7 +216,7 @@ const saveSuburbConfig = async (suburbId, config) => {
         id: saveConfig.id,
       };
     }
-    await SuburbConfig.UpdateConfig(suburbData.config.toString(), config);
+    await SuburbConfig.UpdateConfig(suburb.config.toString(), config);
     return {
       success: true,
       message: "la configuracion fue actualizada con exito.",
@@ -237,11 +236,11 @@ const getSuburbConfig = async (suburbId) => {
 
 const saveSuburbStreet = async (suburbId, street) => {
   try {
-    const suburbData = await Suburb.GetSuburbStreets(suburbId);
-    const selectedStreet = suburbData.streets
-      ? suburbData.streets.filter(
-          (st) => st.street.toLowerCase() === street.street.toLowerCase()
-        )
+    const suburbStreets = await Suburb.GetSuburbStreets(suburbId);
+    const selectedStreet = suburbStreets.streets
+      ? suburbStreets.streets.filter(
+        (st) => st.street.toLowerCase() === street.street.toLowerCase()
+      )
       : [];
     if (selectedStreet.length === 0) {
       const saveStreet = await SuburbStreet.SaveStreet(street);
@@ -284,9 +283,8 @@ const SaveSuburbData = async (data) => {
   try {
     if (data) {
       return await suburbData.Save(data);
-    } else {
-      return await suburbData.AddAccount(data);
     }
+    return await suburbData.AddAccount(data);
   } catch (error) {
     throw error;
   }
@@ -306,10 +304,9 @@ const AddAccountSuburb = async (account, suburbId) => {
     if (data) {
       const get = await suburbData.AddAccount(account, suburbId);
       return get.accounts[get.accounts.length - 1];
-    } else {
-      const add = await suburbData.Save({ suburbId, accounts: [account] });
-      return add.accounts[add.accounts.length - 1];
     }
+    const add = await suburbData.Save({ suburbId, accounts: [account] });
+    return add.accounts[add.accounts.length - 1];
   } catch (error) {
     throw error;
   }
@@ -330,10 +327,10 @@ const AddPhoneSuburb = async (phone, suburbId) => {
     if (dataSuburb) {
       const get = await suburbData.AddPhone(phone, suburbId);
       return get.phones[get.phones.length - 1];
-    } else {
-      const add = await suburbData.Save({ suburbId, phones: [phone] });
-      return add.phones[add.phones.length - 1];
     }
+
+    const add = await suburbData.Save({ suburbId, phones: [phone] });
+    return add.phones[add.phones.length - 1];
   } catch (error) {
     throw error;
   }

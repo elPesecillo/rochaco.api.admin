@@ -182,6 +182,7 @@ router.post("/api/blob/uploadFile", blobFilesService.uploadBlobs);
 
 // debt apis
 router.get("/api/debt/getDebtConfigBySuburbId", debt.GetDebtConfigBySuburbId);
+router.get("/api/debt/getDebtConfigById", debt.GetDebtConfigById);
 router.post("/api/debt/saveDebtConfig", debt.SaveDebtConfig);
 router.post("/api/debt/updateDebtConfig", debt.UpdateDebtConfig);
 router.delete("/api/debt/deleteDebtConfig", debt.DeactivateDebtConfig);

@@ -10,6 +10,16 @@ exports.GetDebtConfigBySuburbId = async (req, res) => {
   }
 };
 
+exports.GetDebtConfigById = async (req, res) => {
+  try {
+    const { debtConfigId } = req.query;
+    const result = await debtService.GetDebtConfigById(debtConfigId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.SaveDebtConfig = async (req, res) => {
   try {
     const { debtConfig } = req.body;

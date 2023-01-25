@@ -49,6 +49,11 @@ const GetDebtConfigsBySuburbId = async (suburbId) => {
   return debts;
 };
 
+const GetDebtConfigById = async (debtConfigId) => {
+  const debt = await DebtConfig.GetConfigById(debtConfigId);
+  return debt;
+};
+
 const SaveDebtConfig = async (debt) => {
   const errors = await ValidateDebtConfig(debt);
   if (Object.keys(errors).length > 0) {
@@ -632,6 +637,7 @@ const AdminEditDebtPayment = async (debtPayment) => {
 module.exports = {
   GetDebtConfigsBySuburbId,
   SaveDebtConfig,
+  GetDebtConfigById,
   UpdateDebtConfig,
   DeactivateDebtConfig,
   GetDebtAssignmentsByDebtConfigId,
