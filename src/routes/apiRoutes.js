@@ -110,6 +110,7 @@ router.post("/api/suburb/saveStreet", suburb.saveSuburbStreet);
 router.get("/api/suburb/getAllStreets", suburb.getSuburbStreets);
 router.get("/api/suburb/getUsers", suburb.getUsersBySuburb);
 router.get("/api/suburb/migrateAddresses", suburb.migrateAddresses);
+router.get("/api/suburb/getAddresses", suburb.getAddressesBySuburbId);
 router.get("/api/suburb/getAddressesBySuburbId", suburb.getAddressesBySuburbId);
 router.get("/api/suburb/getSuburbData", suburb.getSuburbData);
 router.get(
@@ -191,6 +192,7 @@ router.get(
   debt.GetDebtAssignmentsByDebtConfigId
 );
 router.post("/api/debt/updateDebtAssignments", debt.UpdateDebtAssignments);
+router.post("/api/debt/applyDebtsToAddresses", debt.ApplyDebtsToAddresses);
 router.get(
   "/api/debt/getDebtsBySuburbPaginated",
   debt.GetDebtsBySuburbPaginated

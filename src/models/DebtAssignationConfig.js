@@ -32,16 +32,35 @@ DebtAssignationConfigSchema.statics = {
     return this.find({ suburbId }).lean();
   },
   async GetAssignationsByDebtConfigId(debtConfigId) {
-    return this.find({ debtConfigId }).lean();
+    return this.find({ debtConfigId }).populate("addressId").lean();
   },
   async SaveMany(debtAssignationConfigs) {
-    return this.insertMany(debtAssignationConfigs);
+    const savedAssignations = await this.insertMany(debtAssignationConfigs);
+    const populatedAssignations = await this.find({
+      _id: { $in: savedAssignations.map((a) => a._id.toString()) },
+    })
+      .populate("addressId")
+      .lean();
+
+    return populatedAssignations;
   },
   async DeleteMany(debtAssignments) {
     if (debtAssignments.length === 0) {
       return Promise.resolve();
     }
-    return this.deleteMany({
+    const assignmentsToDelete = await this.find({
+      $and: [
+        {
+          debtConfigId: debtAssignments[0].debtConfigId,
+        },
+        {
+          addressId: { $in: debtAssignments.map((d) => d.addressId) },
+        },
+      ],
+    })
+      .populate("addressId")
+      .lean();
+    await this.deleteMany({
       $and: [
         {
           debtConfigId: debtAssignments[0].debtConfigId,
@@ -51,6 +70,8 @@ DebtAssignationConfigSchema.statics = {
         },
       ],
     });
+
+    return assignmentsToDelete;
   },
 };
 

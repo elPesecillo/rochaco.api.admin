@@ -75,10 +75,16 @@ const getAddressesBySuburbId = async (suburbId) => {
   }
 };
 
+const GetAddressesByAddressesIds = async (addressesIds) => {
+  const addresses = await Address.GetAddressesByAddressesIds(addressesIds);
+  return addresses;
+};
+
 module.exports = {
   migrateAddresses,
   getSuburbStreets,
   saveSuburbStreet,
   getAddressByNameAndNumber,
   getAddressesBySuburbId,
+  GetAddressesByAddressesIds,
 };
