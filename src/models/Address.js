@@ -23,6 +23,9 @@ AddressSchema.statics = {
 
     return this.insertMany(addresses);
   },
+  async GetAddressesByAddressesIds(addressesIds) {
+    return this.find({ _id: { $in: addressesIds } }).lean();
+  },
   GetStreetsBySuburb(suburbId) {
     return new Promise((resolve, reject) => {
       this.find({ suburbId })

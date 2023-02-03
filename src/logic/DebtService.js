@@ -7,6 +7,7 @@ const DebtPayment = require("../models/DebtPayment");
 const Address = require("./addressService");
 const {
   AUTOMATIC_DEBT_TYPE,
+  MANUAL_DEBT_TYPE,
   DEBT_STATUS_PENDING,
   DEBT_STATUS_PAID,
   DEBT_STATUS_IN_REVIEW,
@@ -132,7 +133,7 @@ const UpdateDebtAssignments = async (debtAssignations) => {
     }))
   );
   return {
-    deleted: deletedDebtAssignations?.n > 0 ? debtsToDelete : [],
+    deleted: deletedDebtAssignations,
     saved: savedDebtAssignations,
   };
 };
@@ -275,6 +276,37 @@ const GenerateAutomaticDebts = async (debtConfigId) => {
     }`,
     data: debtsSaved,
   };
+};
+
+const ApplyDebtsToAddresses = async (debtConfigId, addressesIds) => {
+  const debtConfig = await DebtConfig.GetConfigById(debtConfigId);
+  if (debtConfig.type !== MANUAL_DEBT_TYPE) {
+    throw new Error(`Debt config is not manual ${debtConfigId}`);
+  }
+
+  const addresses = await Address.GetAddressesByAddressesIds(addressesIds);
+
+  const currentDay = dayjs(new Date()).startOf("day");
+  const debts = addresses.map((address) => ({
+    suburbId: debtConfig.suburbId,
+    addressId: address._id,
+    status: DEBT_STATUS_PENDING,
+    chargeDate: dayjs(currentDay).add(
+      Number.parseInt(debtConfig.chargeOnDay, 10) - 1,
+      "day"
+    ),
+    expirationDate: dayjs(currentDay).add(
+      Number.parseInt(debtConfig.chargeExpiresOnDay, 10) - 1,
+      "day"
+    ),
+    periodDate: currentDay,
+    amount: debtConfig.amount,
+    missingAmount: debtConfig.missingAmount,
+  }));
+  const debtsSaved = await Debt.SaveDebts(debts);
+
+  // TODO: send push notification to affected users
+  return debtsSaved;
 };
 
 const GetDebtsBySuburbPaginated = async (
@@ -644,6 +676,7 @@ module.exports = {
   UpdateDebtAssignments,
   GetAutomaticDebtConfigs,
   GenerateAutomaticDebts,
+  ApplyDebtsToAddresses,
   GetDebtsBySuburbPaginated,
   GetDebtsByAddressId,
   GetDebtPaymentBySuburb,

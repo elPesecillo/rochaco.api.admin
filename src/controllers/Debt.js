@@ -72,6 +72,19 @@ exports.UpdateDebtAssignments = async (req, res) => {
   }
 };
 
+exports.ApplyDebtsToAddresses = async (req, res) => {
+  try {
+    const { debtConfigId, addressesIds } = req.body;
+    const result = await debtService.ApplyDebtsToAddresses(
+      debtConfigId,
+      addressesIds
+    );
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.GetDebtsBySuburbPaginated = async (req, res) => {
   try {
     const { suburbId, statuses, page, pageSize } = req.query;

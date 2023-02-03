@@ -103,7 +103,7 @@ DebtConfigSchema.statics = {
     return this.findOneAndUpdate(
       { _id: configId },
       { active: false, timeStamp: new Date() },
-      {}
+      { new: true }
     );
   },
 };
