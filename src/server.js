@@ -1,40 +1,24 @@
+/* eslint-disable no-console */
 /**
  * Module dependencies.
  */
 
-var app = require('./app');
-var debug = require('debug')('rochacoapi:server');
-var http = require('http');
+const http = require("http");
+const debug = require("debug")("rochacoapi:server");
+const app = require("./app");
 
 /**
- * Get port from environment and store in Express.
+ * Get job scheduler
  */
-
-var port = normalizePort(process.env.PORT || '4010');
-app.set('port', port);
-
-/**
- * Create HTTP server.
- */
-
-var server = http.createServer(app);
-
-/**
- * Listen on provided port, on all network interfaces.
- */
-
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
+const { InitDebtJobs } = require("./jobs");
 
 /**
  * Normalize a port into a number, string, or false.
  */
-
 function normalizePort(val) {
-  var port = parseInt(val, 10);
+  const port = parseInt(val, 10);
 
-  if (isNaN(port)) {
+  if (Number.isNaN(port)) {
     // named pipe
     return val;
   }
@@ -48,26 +32,35 @@ function normalizePort(val) {
 }
 
 /**
- * Event listener for HTTP server "error" event.
+ * Get port from environment and store in Express.
+ */
+const port = normalizePort(process.env.PORT || "4010");
+app.set("port", port);
+
+/**
+ * Create HTTP server.
  */
 
+const server = http.createServer(app);
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
 function onError(error) {
-  if (error.syscall !== 'listen') {
+  if (error.syscall !== "listen") {
     throw error;
   }
 
-  var bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
+  const bind = typeof port === "string" ? `Pipe ${port}` : `Port ${port}`;
 
   // handle specific listen errors with friendly messages
   switch (error.code) {
-    case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
+    case "EACCES":
+      console.error(`${bind} requires elevated privileges`);
       process.exit(1);
       break;
-    case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
+    case "EADDRINUSE":
+      console.error(`${bind} is already in use`);
       process.exit(1);
       break;
     default:
@@ -78,12 +71,21 @@ function onError(error) {
 /**
  * Event listener for HTTP server "listening" event.
  */
-
 function onListening() {
   console.log("running on port", process.env.PORT);
-  var addr = server.address();
-  var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + addr.port;
-  debug('Listening on ' + bind);
+  const addr = server.address();
+  const bind = typeof addr === "string" ? `pipe ${addr}` : `port ${addr.port}`;
+  debug(`Listening on ${bind}`);
 }
+
+/**
+ * Start the debt jobs
+ */
+InitDebtJobs();
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+server.listen(port);
+server.on("error", onError);
+server.on("listening", onListening);

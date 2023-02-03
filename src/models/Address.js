@@ -18,37 +18,32 @@ const AddressSchema = new mongoose.Schema({
 });
 
 AddressSchema.statics = {
-  SaveSuburbStreet: function (suburbId, name, numbers) {
-    let addresses = numbers.map((number) => ({ suburbId, name, number }));
-    return new Promise((resolve, reject) => {
-      Address.insertMany(addresses)
-        .then((value) => {
-          resolve(value);
-        })
-        .catch((err) => {
-          reject(err);
-        });
-    });
+  async SaveSuburbStreet(suburbId, name, numbers) {
+    const addresses = numbers.map((number) => ({ suburbId, name, number }));
+
+    return this.insertMany(addresses);
   },
-  GetStreetsBySuburb: function (suburbId) {
+  GetStreetsBySuburb(suburbId) {
     return new Promise((resolve, reject) => {
-      this.find({ suburbId: suburbId })
+      this.find({ suburbId })
         .lean()
         .exec((err, result) => {
           if (err) reject(err);
           if (result) {
-            let addresses = result.map((s) => ({
+            const addresses = result.map((s) => ({
               street: s.name,
               number: s.number,
               transtime: s.transtime,
             }));
-            let streets = addresses.reduce((streets, street) => {
+            // eslint-disable-next-line no-shadow
+            const streets = addresses.reduce((streets, street) => {
               if (
                 streets.filter((s) => s.street === street.street).length > 0
               ) {
-                let existing = streets.filter(
+                const existing = streets.filter(
                   (s) => s.street === street.street
                 )[0];
+                // eslint-disable-next-line no-param-reassign
                 streets = [
                   ...streets.filter((s) => s.street !== street.street),
                   {
@@ -57,6 +52,7 @@ AddressSchema.statics = {
                   },
                 ];
               } else {
+                // eslint-disable-next-line no-param-reassign
                 streets = [
                   ...streets,
                   {
@@ -68,18 +64,16 @@ AddressSchema.statics = {
               }
               return streets;
             }, []);
-            resolve({ streets: streets });
+            resolve({ streets });
           }
         });
     });
   },
-  GetAddressesBySuburb: function (suburbId) {
-    return this.find({ suburbId: suburbId })
-      .sort({ name: 'asc', number: 'asc' })
-      .lean();
+  GetAddressesBySuburb(suburbId) {
+    return this.find({ suburbId }).sort({ name: "asc", number: "asc" }).lean();
   },
-  GetAddressByNameAndNumber: function (streetName, number) {
-    return this.findOne({ name: streetName, number: number }).lean();
+  GetAddressByNameAndNumber(streetName, number) {
+    return this.findOne({ name: streetName, number }).lean();
   },
 };
 

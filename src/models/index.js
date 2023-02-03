@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const mongoose = require("mongoose");
 const Menu = require("./menu");
 const Role = require("./role");
@@ -26,7 +27,7 @@ const models = {
 };
 
 const connectDb = async () => {
-  //setup the mongo connection
+  // setup the mongo connection
   const mongooseConnection = await mongoose.connect(process.env.DB_CONNECTION, {
     useNewUrlParser: true,
     useUnifiedTopology: true,

@@ -33,17 +33,17 @@ const NotificationSchema = new mongoose.Schema({
 });
 
 NotificationSchema.statics = {
-  Save: function (notificationObject) {
+  Save(notificationObject) {
     const notification = new this(notificationObject);
     return notification.save();
   },
-  Delete: function (notificationId) {
+  Delete(notificationId) {
     return this.deleteOne({ _id: notificationId });
   },
-  GetById: function (notificationId) {
+  GetById(notificationId) {
     return this.findOne({ _id: notificationId }).lean();
   },
-  GetBySuburbId: function (
+  GetBySuburbId(
     suburbId,
     minDate = moment.utc().add(-90, "days").format("YYYY-MM-DD")
   ) {
@@ -53,7 +53,7 @@ NotificationSchema.statics = {
       users: { $exists: true, $size: 0 },
     }).lean();
   },
-  GetByUserId: function (
+  GetByUserId(
     suburbId,
     userId,
     minDate = moment.utc().add(-90, "days").format("YYYY-MM-DD")

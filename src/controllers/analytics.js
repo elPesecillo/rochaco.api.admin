@@ -5,9 +5,10 @@ const apiKey = process.env.API_ANALYTICS_KEY;
 
 exports.getSuburbVisits = async (req, res) => {
   try {
-    let { suburbId, startDate, endDate, offset } = req.query;
+    const { suburbId, startDate, endDate } = req.query;
+    let { offset } = req.query;
     if (!offset) offset = 5;
-    let response = await Api.get(`${apiAnalytics}/GetVisitsInfo`, {
+    const response = await Api.get(`${apiAnalytics}/GetVisitsInfo`, {
       code: apiKey,
       suburbId,
       startDate,
@@ -16,6 +17,7 @@ exports.getSuburbVisits = async (req, res) => {
     });
     res.status("200").json(response);
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.error(err);
     res
       .status("400")

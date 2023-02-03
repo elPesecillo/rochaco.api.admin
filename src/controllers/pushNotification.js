@@ -1,3 +1,4 @@
+const moment = require("moment");
 const pushNotificationService = require("../logic/pushNotificationService");
 const {
   getUserLeanById,
@@ -5,7 +6,6 @@ const {
   getUsersByAddressId,
   getUsersBySuburb,
 } = require("../logic/userService");
-const moment = require("moment");
 const notificationService = require("../logic/notificationService");
 
 const NOTIFICATION_DEFAULT_SOUND = "default";
@@ -19,9 +19,9 @@ const NOTIFICATION_UPDATE_RESERVATION =
   "Notificación de actualización de reservación";
 const NOTIFICATION_NEW_SURVEY = "Notificación de nueva encuesta";
 
-exports.sendTestNotification = async (req, res, next) => {
+exports.sendTestNotification = async (req, res) => {
   try {
-    let result = await pushNotificationService.sendPushNotification(
+    const result = await pushNotificationService.sendPushNotification(
       ["ExponentPushToken[TRMrLcG4VUxVUwmsCXPIyw]"],
       {
         sound: "default",
@@ -69,6 +69,7 @@ exports.sendArriveNotification = async (req, res) => {
     );
     res.status(200).json(result);
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.log("notification error details: ", err);
     res.status(400).json(err);
   }
@@ -78,8 +79,8 @@ exports.sendUploadPaymentNotification = async (req, res) => {
   try {
     const { suburbId, userId, paymentType } = req.body;
     const users = await getAdminUsers(suburbId);
-    //esto es solo para pruebas
-    //users = users.filter((u) => u.facebookId === "10221055228718114");
+    // esto es solo para pruebas
+    // users = users.filter((u) => u.facebookId === "10221055228718114");
 
     const user = await getUserLeanById(userId);
     const metadata = {
@@ -99,7 +100,7 @@ exports.sendUploadPaymentNotification = async (req, res) => {
       users: [user._id],
       metadata,
     });
-    let promises = [];
+    const promises = [];
     users.forEach((u) => {
       promises.push(
         pushNotificationService.sendPushNotification(
@@ -111,6 +112,7 @@ exports.sendUploadPaymentNotification = async (req, res) => {
     const sendNotifications = await Promise.all(promises);
     res.status(200).json(sendNotifications);
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.log("notification error details: ", err);
     res.status(400).json(err);
   }
@@ -121,14 +123,25 @@ exports.sendApproveRejectedPaymentNotification = async (req, res) => {
     const { suburbId, addressId, status, comment, paymentName } = req.body;
     const users = await getUsersByAddressId(suburbId, addressId);
 
+    let statusMessage = "";
+    if (status === "approved") {
+      statusMessage = `Tu pago de ${paymentName} ha sido aceptado`;
+    } else if (status === "rejected") {
+      statusMessage = `Tu pago de ${paymentName} ha sido rechazado por la siguiente razón: ${comment}`;
+    } else {
+      statusMessage = `Tu pago ${paymentName} esta siendo procesado.`;
+    }
+    let title = "";
+    if (status === "approved") {
+      title = "Pago aceptado";
+    } else if (status === "rejected") {
+      title = "Pago rechazado";
+    } else {
+      title = "Cambio en el estatus de tus pagos";
+    }
     const metadata = {
       sound: NOTIFICATION_DEFAULT_SOUND,
-      body:
-        status === "approved"
-          ? `Tu pago de ${paymentName} ha sido aceptado`
-          : status === "rejected"
-          ? `Tu pago de ${paymentName} ha sido rechazado por la siguiente razón: ${comment}`
-          : `Tu pago ${paymentName} esta siendo procesado.`,
+      body: status === statusMessage,
       data: {
         redirect: {
           stack: "Payments",
@@ -138,12 +151,7 @@ exports.sendApproveRejectedPaymentNotification = async (req, res) => {
           filter: status,
         },
       },
-      title:
-        status === "approved"
-          ? "Pago aceptado"
-          : status === "rejected"
-          ? "Pago rechazado"
-          : "Cambio en el estatus de tus pagos",
+      title,
     };
     await notificationService.Save({
       suburbId,
@@ -154,7 +162,7 @@ exports.sendApproveRejectedPaymentNotification = async (req, res) => {
       metadata,
     });
 
-    let promises = [];
+    const promises = [];
     users.forEach((u) => {
       promises.push(
         pushNotificationService.sendPushNotification(
@@ -169,6 +177,7 @@ exports.sendApproveRejectedPaymentNotification = async (req, res) => {
     const sendNotifications = await Promise.all(promises);
     res.status(200).json(sendNotifications);
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.log("notification error details: ", err);
     res.status(400).json(err);
   }
@@ -198,10 +207,10 @@ exports.sendNewSpaceReservationNotification = async (req, res) => {
       title: NOTIFICATION_UPDATE_RESERVATION,
       body: metadata.body,
       level: NOTIFICATION_INFO_LEVEL,
-      users: adminUsers.map((user) => user._id),
+      users: adminUsers.map((adminUser) => adminUser._id),
       metadata,
     });
-    let promises = [];
+    const promises = [];
     adminUsers.forEach((u) => {
       promises.push(
         pushNotificationService.sendPushNotification(
@@ -211,9 +220,10 @@ exports.sendNewSpaceReservationNotification = async (req, res) => {
       );
     });
 
-    let sendNotifications = await Promise.all(promises);
+    const sendNotifications = await Promise.all(promises);
     res.status(200).json(sendNotifications);
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.log("notification error details: ", err);
     res.status(400).json(err);
   }
@@ -235,7 +245,7 @@ const getReservationStatusMessage = (status, comment) => {
 exports.sendApproveRejectedReservationNotification = async (req, res) => {
   try {
     const { suburbId, addressId, status, comment, reservationId } = req.body;
-    let promises = [];
+    const promises = [];
     const users = await getUsersByAddressId(suburbId, addressId);
     const metadata = {
       sound: NOTIFICATION_DEFAULT_SOUND,
@@ -269,9 +279,10 @@ exports.sendApproveRejectedReservationNotification = async (req, res) => {
       );
     });
 
-    let sendNotifications = await Promise.all(promises);
+    const sendNotifications = await Promise.all(promises);
     res.status(200).json(sendNotifications);
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.log("notification error details: ", err);
     res.status(400).json(err);
   }
@@ -284,6 +295,7 @@ exports.sendNewSurveyNotification = async (req, res) => {
     if (users) {
       const activeUsers = users.filter((user) => user.active);
       const userPushTokensArrays = activeUsers.map((user) => user.pushTokens);
+      // eslint-disable-next-line prefer-spread
       const rawUserPushTokens = [].concat.apply([], userPushTokensArrays);
       const userPushTokens = rawUserPushTokens.reduce((acc, cur) => {
         if (acc.indexOf(cur) === -1) {
@@ -323,6 +335,7 @@ exports.sendNewSurveyNotification = async (req, res) => {
       res.status(404).json({ message: "users not found" });
     }
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.log("notification error details", err);
     res.status(500).json(err);
   }
