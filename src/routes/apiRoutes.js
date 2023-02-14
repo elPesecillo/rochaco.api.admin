@@ -200,6 +200,7 @@ router.get(
 router.get("/api/debt/getDebtsByAddressId", debt.GetDebtsByAddressId);
 router.get("/api/debt/getDebtPaymentBySuburb", debt.GetDebtPaymentBySuburb);
 router.post("/api/debt/saveDebtPayment", upload2.any(), debt.SaveDebtPayment);
+router.get("/api/debt/getDebtPaymentById", debt.GetDebtPaymentById);
 router.post("/api/debt/acceptDebtPayment", debt.AcceptDebtPayment);
 router.post("/api/debt/rejectDebtPayment", debt.RejectDebtPayment);
 router.post("/api/debt/editDebtPayment", upload2.any(), debt.EditDebtPayment);

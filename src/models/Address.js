@@ -18,6 +18,15 @@ const AddressSchema = new mongoose.Schema({
 });
 
 AddressSchema.statics = {
+  async GetAddressesByCoincidences(suburbId, address) {
+    return this.find({
+      suburbId,
+      $or: [
+        { name: { $regex: address, $options: "i" } },
+        { number: { $regex: address, $options: "i" } },
+      ],
+    }).lean();
+  },
   async SaveSuburbStreet(suburbId, name, numbers) {
     const addresses = numbers.map((number) => ({ suburbId, name, number }));
 

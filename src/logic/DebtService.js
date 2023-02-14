@@ -406,14 +406,29 @@ const UpdateDebtsExpired = async (suburbId, currentDate = new Date()) => {
   };
 };
 
-const GetDebtPaymentBySuburb = async (suburbId, statuses, page, limit) => {
+const GetDebtPaymentBySuburb = async (
+  suburbId,
+  statuses,
+  address,
+  page,
+  limit
+) => {
   const selectedStatuses =
     statuses === "all"
       ? `${PAYMENT_STATUS_PENDING},${PAYMENT_STATUS_APPROVED},${PAYMENT_STATUS_REJECTED},${PAYMENT_STATUS_IN_REVIEW}`
       : statuses;
+  let addressesIds = [];
+  const filterByAddress = address.trim() !== "";
+  if (address.trim() !== "") {
+    addressesIds = (
+      await Address.GetAddressesByCoincidences(suburbId, address)
+    ).map((foundAddress) => foundAddress._id.toString());
+  }
   const payments = await DebtPayment.GetBySuburbPaginated(
     suburbId,
     selectedStatuses.split(","),
+    addressesIds,
+    filterByAddress,
     page,
     limit
   );
@@ -496,6 +511,11 @@ const SaveDebtPayment = async (debtPayment) => {
 
   // TODO: send push notification to admins
   return savedPayment;
+};
+
+const GetDebtPaymentById = async (paymentId) => {
+  const payment = await DebtPayment.GetDetailsById(paymentId);
+  return payment;
 };
 
 const AcceptDebtPayment = async (paymentId, userId, comment) => {
@@ -683,6 +703,7 @@ module.exports = {
   UpdateDebtsReadyToBeCharged,
   UpdateDebtsExpired,
   SaveDebtPayment,
+  GetDebtPaymentById,
   AcceptDebtPayment,
   RejectDebtPayment,
   EditDebtPayment,

@@ -106,6 +106,12 @@ DebtPaymentSchema.statics = {
   async GetById(paymentId) {
     return this.findById(paymentId).lean();
   },
+  async GetDetailsById(paymentId) {
+    return this.findById(paymentId)
+      .populate("debts.debtId")
+      .populate("addressId")
+      .lean();
+  },
   async SavePayment(payment) {
     const newPayment = new this(payment);
     return newPayment.save();
@@ -136,7 +142,14 @@ DebtPaymentSchema.statics = {
     };
     return this.findOneAndUpdate(query, update, { new: true });
   },
-  async GetBySuburbPaginated(suburbId, statuses, page, limit) {
+  async GetBySuburbPaginated(
+    suburbId,
+    statuses,
+    addressesIds,
+    filterByAddress,
+    page,
+    limit
+  ) {
     let selectedLimit = parseInt(limit, 10);
     let selectedPage = parseInt(page, 10);
     if (page < 0) {
@@ -149,13 +162,21 @@ DebtPaymentSchema.statics = {
       suburbId,
       status: { $in: statuses },
     };
-    return this.find(query)
+    if (filterByAddress) {
+      query.addressId = { $in: addressesIds };
+    }
+
+    const total = await this.countDocuments(query);
+
+    const debtPayments = await this.find(query)
       .populate("addressId")
       .populate("debts.debtId")
       .sort({ createdAt: -1 })
       .skip(selectedPage * selectedLimit)
       .limit(limit)
       .lean();
+
+    return { total, debtPayments, page, pageSize: limit };
   },
   async GetByAddressPaginated(addressId, statuses, page, limit) {
     let selectedLimit = parseInt(limit, 10);
