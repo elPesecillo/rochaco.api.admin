@@ -19,13 +19,27 @@ const AddressSchema = new mongoose.Schema({
 
 AddressSchema.statics = {
   async GetAddressesByCoincidences(suburbId, address) {
-    return this.find({
-      suburbId,
-      $or: [
-        { name: { $regex: address, $options: "i" } },
-        { number: { $regex: address, $options: "i" } },
+    return this.aggregate(
+      [
+        {
+          $project: {
+            address: { $concat: ["$name", " ", "$number"] },
+            suburbId: 1,
+            doc: "$$ROOT",
+          },
+        },
+        {
+          $match: {
+            suburbId,
+            address: { $regex: address, $options: "i" },
+          },
+        },
       ],
-    }).lean();
+      (err, result) => {
+        if (err) throw err;
+        return result?.map((r) => r.doc);
+      }
+    );
   },
   async SaveSuburbStreet(suburbId, name, numbers) {
     const addresses = numbers.map((number) => ({ suburbId, name, number }));
