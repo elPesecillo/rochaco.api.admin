@@ -48,7 +48,7 @@ exports.sendArriveNotification = async (req, res) => {
       body: guest.isService
         ? `Tu servicio ${guest.name} ha llegado.`
         : `Tu invitado ${guest.name} ha llegado.`,
-      data: { redirect: "myVisits" },
+      data: { redirect: { stack: "Invite", screen: "MyVisits" } },
       title: `Hola ${user.name}`,
     };
 
