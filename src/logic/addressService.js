@@ -80,6 +80,11 @@ const GetAddressesByAddressesIds = async (addressesIds) => {
   return addresses;
 };
 
+const GetAddressesByCoincidences = async (suburbId, address) => {
+  const addresses = await Address.GetAddressesByCoincidences(suburbId, address);
+  return addresses;
+};
+
 module.exports = {
   migrateAddresses,
   getSuburbStreets,
@@ -87,4 +92,5 @@ module.exports = {
   getAddressByNameAndNumber,
   getAddressesBySuburbId,
   GetAddressesByAddressesIds,
+  GetAddressesByCoincidences,
 };

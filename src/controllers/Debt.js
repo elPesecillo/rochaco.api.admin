@@ -112,10 +112,11 @@ exports.GetDebtsByAddressId = async (req, res) => {
 
 exports.GetDebtPaymentBySuburb = async (req, res) => {
   try {
-    const { suburbId, statuses, page, limit = 10 } = req.query;
+    const { suburbId, statuses, address, page, limit = 10 } = req.query;
     const result = await debtService.GetDebtPaymentBySuburb(
       suburbId,
       statuses,
+      address,
       Number.parseInt(page, 10),
       Number.parseInt(limit, 10)
     );
@@ -148,6 +149,16 @@ exports.SaveDebtPayment = async (req, res) => {
     res.status(200).json(result);
   } catch (err) {
     res.status(500).json({ message: err?.message || err });
+  }
+};
+
+exports.GetDebtPaymentById = async (req, res) => {
+  try {
+    const { paymentId } = req.query;
+    const result = await debtService.GetDebtPaymentById(paymentId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
