@@ -418,7 +418,7 @@ const GetDebtPaymentBySuburb = async (
       ? `${PAYMENT_STATUS_PENDING},${PAYMENT_STATUS_APPROVED},${PAYMENT_STATUS_REJECTED},${PAYMENT_STATUS_IN_REVIEW}`
       : statuses;
   let addressesIds = [];
-  const filterByAddress = address.trim() !== "";
+  const filterByAddress = address && address.trim() !== "";
   if (address.trim() !== "") {
     addressesIds = (
       await Address.GetAddressesByCoincidences(suburbId, address)
