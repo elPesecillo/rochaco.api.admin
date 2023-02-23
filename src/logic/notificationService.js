@@ -1,7 +1,8 @@
+const moment = require("moment");
+
 const notificationModel = require("../models/Notification");
 const { getUsersBySuburb } = require("./userService");
 const { sendPushNotification } = require("./pushNotificationService");
-const moment = require("moment");
 
 const NOTIFICATION_DEFAULT_SOUND = "default";
 
@@ -42,6 +43,7 @@ const SendSuburbNotification = async ({
       (user) => user.active
     );
     const userPushTokensArrays = suburbUsers.map((user) => user.pushTokens);
+    // eslint-disable-next-line prefer-spread
     const rawUserPushTokens = [].concat.apply([], userPushTokensArrays);
     const userPushTokens = rawUserPushTokens.reduce((acc, cur) => {
       if (acc.indexOf(cur) === -1) {

@@ -38,28 +38,32 @@ const SuburbInviteSchema = new mongoose.Schema({
 });
 
 SuburbInviteSchema.statics = {
-  SaveSuburbInvite: function (userInviteObj) {
-    let userInvite = new this(userInviteObj);
+  SaveSuburbInvite(userInviteObj) {
+    const userInvite = new this(userInviteObj);
     return userInvite.save();
   },
-  UpdateSuburbInviteUsed: function (code, usedBy) {
+  UpdateSuburbInviteUsed(code, usedBy) {
     return this.updateOne(
-      { $and: [{ code: code }, { active: true }] },
+      { $and: [{ code }, { active: true }] },
       {
         $set: {
-          usedBy: usedBy,
+          usedBy,
           active: false,
           updatedTranstime: moment.utc(),
         },
       }
     );
   },
-  GetInviteByCode: function (code) {
+  GetInviteByCode(code) {
     return new Promise((resolve, reject) => {
-      return this.findOne({ code: code, active: true }).exec((err, result) => {
-        if (err) reject(err);
-        if (!result)
+      this.findOne({ code, active: true }).exec((err, result) => {
+        if (err) {
+          reject(err);
+        }
+        if (!result) {
+          // eslint-disable-next-line prefer-promise-reject-errors
           reject({ success: false, message: "Cannot find the invite code." });
+        }
         resolve(result);
       });
     });

@@ -4,10 +4,17 @@ const { UploadBlob } = require("../logic/blobService");
 const NOTIFICATIONS_CONTAINER = "notifications";
 exports.Save = async (req, res) => {
   try {
-    const { suburbId, title, body, level, users } = req.body;
-    let { attachments, sendSuburbNotification = false } = req.body;
-    if (!attachments && req.files) {
-      //upload attachments here
+    const {
+      suburbId,
+      title,
+      body,
+      level,
+      users,
+      sendSuburbNotification = false,
+    } = req.body;
+    let { attachments } = req.body;
+    if (!attachments && req.files?.length > 0) {
+      // upload attachments here
       const files = req.files.map((file) => ({
         ...file,
         name: file.originalname,

@@ -4,24 +4,25 @@ const User = require("../models/user");
 
 const migrateAddresses = async (suburbId) => {
   try {
-    let suburbAddresses = await Suburb.GetSuburbStreets(suburbId);
-    let promises = [];
+    const suburbAddresses = await Suburb.GetSuburbStreets(suburbId);
+    const promises = [];
     suburbAddresses.streets.forEach((address) => {
       promises.push(
         Address.SaveSuburbStreet(suburbId, address.street, address.numbers)
       );
     });
     let savedAddresses = await Promise.all(promises);
-    let suburbUsers = await User.getUsersBySuburb(suburbId);
+    const suburbUsers = await User.getUsersBySuburb(suburbId);
+    // eslint-disable-next-line no-console
     console.log(suburbUsers);
-    let updateUserPromises = [];
+    const updateUserPromises = [];
     savedAddresses = [].concat(...savedAddresses);
     suburbUsers.forEach((user) => {
       let address = savedAddresses.filter(
         (a) => a.name === user.street && a.number === user.streetNumber
       );
       address = address.length > 0 ? address[0]._id.toString() : "";
-      if (address)
+      if (address) {
         updateUserPromises.push(
           User.updateUser({
             ...user,
@@ -29,8 +30,9 @@ const migrateAddresses = async (suburbId) => {
             addressId: address,
           })
         );
+      }
     });
-    let saveUsers = await Promise.all(updateUserPromises);
+    await Promise.all(updateUserPromises);
     return savedAddresses;
   } catch (err) {
     throw err;
@@ -73,10 +75,22 @@ const getAddressesBySuburbId = async (suburbId) => {
   }
 };
 
+const GetAddressesByAddressesIds = async (addressesIds) => {
+  const addresses = await Address.GetAddressesByAddressesIds(addressesIds);
+  return addresses;
+};
+
+const GetAddressesByCoincidences = async (suburbId, address) => {
+  const addresses = await Address.GetAddressesByCoincidences(suburbId, address);
+  return addresses;
+};
+
 module.exports = {
   migrateAddresses,
   getSuburbStreets,
   saveSuburbStreet,
   getAddressByNameAndNumber,
   getAddressesBySuburbId,
+  GetAddressesByAddressesIds,
+  GetAddressesByCoincidences,
 };

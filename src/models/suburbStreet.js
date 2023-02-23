@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const moment = require("moment");
-const { getUsersBySuburbStreet } = require("../logic/userService");
 
 const suburbStreetSchema = new mongoose.Schema({
   street: {
@@ -14,11 +13,11 @@ const suburbStreetSchema = new mongoose.Schema({
 });
 
 suburbStreetSchema.statics = {
-  SaveStreet: function (suburbStreet) {
-    let config = new this(suburbStreet);
+  SaveStreet(suburbStreet) {
+    const config = new this(suburbStreet);
     return config.save();
   },
-  UpdateStreet: function (id, street) {
+  UpdateStreet(id, street) {
     return this.updateOne({ _id: id }, { ...street });
   },
 };

@@ -14,11 +14,11 @@ const SuburbConfigSchema = new mongoose.Schema({
 });
 
 SuburbConfigSchema.statics = {
-  SaveConfig: function (suburbConfig) {
-    let config = new this(suburbConfig);
+  SaveConfig(suburbConfig) {
+    const config = new this(suburbConfig);
     return config.save();
   },
-  UpdateConfig: function (id, config) {
+  UpdateConfig(id, config) {
     return this.updateOne({ _id: id }, { ...config });
   },
 };

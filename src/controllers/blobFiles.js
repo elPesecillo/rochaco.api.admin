@@ -10,11 +10,12 @@ const User = require("../logic/userService");
  */
 exports.uploadBlobs = async (req, res) => {
   try {
-    let url = `${apiUrl}/UploadFile${apiKey ? `?code=${apiKey}` : ""}`;
+    const url = `${apiUrl}/UploadFile${apiKey ? `?code=${apiKey}` : ""}`;
     req
       .pipe(
-        request({ url: url }, (error, response, body) => {
+        request({ url }, (error, response) => {
           if (error) {
+            // eslint-disable-next-line no-console
             console.log(
               `An error occurs in the following url: ${url}: `,
               error
@@ -31,18 +32,18 @@ exports.uploadBlobs = async (req, res) => {
               errorMessage: message || "",
               exception: message || {},
             });
-          } else {
-            if (response.statusCode < 300)
-              User.updateUserPicture(
-                req.query.userId,
-                JSON.parse(response.body)[0].url
-              );
+          } else if (response.statusCode < 300) {
+            User.updateUserPicture(
+              req.query.userId,
+              JSON.parse(response.body)[0].url
+            );
           }
         })
       )
       .pipe(res);
-    //res.status("200").json({ message: "ok" });
+    // res.status("200").json({ message: "ok" });
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.error(err);
     res
       .status("400")
