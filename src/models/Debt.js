@@ -19,6 +19,10 @@ const DebtSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Address",
   },
+  debtConfigId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "DebtConfig",
+  },
   status: {
     type: String,
     enum: [
@@ -176,7 +180,11 @@ DebtSchema.statics = {
       addressId,
       status: { $in: statuses },
     };
-    return this.find(query).sort({ periodDate: "asc" }).lean();
+    return this.find(query)
+      .sort({ periodDate: "asc" })
+      .populate("Address")
+      .populate("debtConfigId")
+      .lean();
   },
   async GetDebtsReadyToChargeBySuburb(suburbId, currentDate, statuses) {
     const query = {

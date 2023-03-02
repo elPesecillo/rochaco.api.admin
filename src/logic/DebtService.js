@@ -154,6 +154,7 @@ const GenerateRawDebts = (addresses, periods, debtConfig) => {
       rawDebts.push({
         suburbId: debtConfig.suburbId,
         addressId,
+        debtConfigId: debtConfig._id.toString(),
         status: DEBT_STATUS_PENDING,
         chargeDate: dayjs(period).add(
           Number.parseInt(debtConfig.chargeOnDay, 10) - 1,
@@ -290,6 +291,7 @@ const ApplyDebtsToAddresses = async (debtConfigId, addressesIds) => {
   const debts = addresses.map((address) => ({
     suburbId: debtConfig.suburbId,
     addressId: address._id,
+    debtConfigId: debtConfig._id.toString(),
     status: DEBT_STATUS_PENDING,
     chargeDate: dayjs(currentDay).add(
       Number.parseInt(debtConfig.chargeOnDay, 10) - 1,

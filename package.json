@@ -8,11 +8,7 @@
     "test": "npx jest",
     "test:watch": "npx jest --watch",
     "test:coverage": "npx jest --coverage",
-    "heroku-prebuild": "npm install --dev",
-    "build:server": "webpack --config webpack.config.js ",
     "start": "node src/server.js",
-    "heroku-postbuild": "npm run build:server",
-    "start-all": "npm build:server & npm start",
     "run:dev": "node src/server.js"
   },
   "repository": {
