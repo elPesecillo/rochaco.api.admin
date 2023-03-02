@@ -16,10 +16,10 @@ const validApiRequest = (apiPath, token, apiKey) => new Promise((resolve, reject
 });
 
 exports.checkApiAuth = (req, res, next) => {
-  // eslint-disable-next-line no-console
-  console.log(`validando si el request esta autenticado...`);
   // check request headers over here to know if the request is authenticated
   const apiPath = req.baseUrl;
+  // eslint-disable-next-line no-console
+  console.log(`validando si el request esta autenticado, path: ${apiPath}`);
   const token = req.headers.authorization;
   const apiKey =
       req.headers["api-key"] || req.query["api-key"] || req.body["api-key"];
