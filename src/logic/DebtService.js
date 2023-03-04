@@ -638,7 +638,7 @@ const AdminEditDebtPayment = async (debtPayment) => {
   const status = PAYMENT_STATUS_APPROVED;
   const { oldDebtPayment } = await DebtPaymentValidations(
     debts,
-    amount,
+    Number.parseFloat(amount),
     debtPaymentId,
     PAYMENT_STATUS_PENDING
   );
