@@ -182,7 +182,7 @@ DebtSchema.statics = {
     };
     return this.find(query)
       .sort({ periodDate: "asc" })
-      .populate("Address")
+      .populate("addressId")
       .populate("debtConfigId")
       .lean();
   },

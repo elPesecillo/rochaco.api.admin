@@ -292,7 +292,7 @@ const ApplyDebtsToAddresses = async (debtConfigId, addressesIds) => {
     suburbId: debtConfig.suburbId,
     addressId: address._id,
     debtConfigId: debtConfig._id.toString(),
-    status: DEBT_STATUS_PENDING,
+    status: DEBT_STATUS_CHARGED,
     chargeDate: dayjs(currentDay).add(
       Number.parseInt(debtConfig.chargeOnDay, 10) - 1,
       "day"
