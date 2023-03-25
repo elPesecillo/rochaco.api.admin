@@ -94,6 +94,9 @@ DebtSchema.statics = {
       periodDate: { $in: periodDates },
     }).lean();
   },
+  async GetDebtsByIds(debtIds) {
+    return this.find({ _id: { $in: debtIds } }).lean();
+  },
   async SaveDebts(debts) {
     return this.insertMany(debts);
   },

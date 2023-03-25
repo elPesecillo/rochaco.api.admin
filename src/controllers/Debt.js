@@ -134,7 +134,7 @@ exports.SaveDebtPayment = async (req, res) => {
       addressId,
       amount: rawAmount,
       userId,
-      debts: rawDebts,
+      debtIds: rawDebts,
     } = req.body;
     const debts = JSON.parse(rawDebts);
     const amount = Number.parseFloat(rawAmount);

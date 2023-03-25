@@ -8,6 +8,8 @@ const httpRequest = (method, url, request, _headers) => {
     url,
     data: request,
     headers: hdrs,
+    maxBodyLength: Infinity,
+    maxContentLength: Infinity,
   })
     .then((res) => {
       const result = handleResponse(res);

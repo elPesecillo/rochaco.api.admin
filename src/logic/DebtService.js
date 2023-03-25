@@ -552,9 +552,34 @@ const RejectDebtPayment = async (paymentId, userId, comment) => {
     userId,
     comment
   );
+  const debtDetails = await Debt.GetDebtsByIds(
+    payment.debts.map((debt) => debt.debtId.toString())
+  );
+  const currentDate = new Date();
+  const debtsToBeExpired = debtDetails.filter(
+    (debt) => currentDate > debt.expirationDate
+  );
+  const debtsToCharge = debtDetails.filter(
+    (debt) =>
+      currentDate > debt.periodDate && currentDate <= debt.expirationDate
+  );
+  const debtsToBePending = debtDetails.filter(
+    (debt) => currentDate < debt.periodDate
+  );
+
   await Debt.UpdateManyDebtStatus(
-    payment.debts.map((debt) => debt.debtId.toString()),
+    debtsToBeExpired.map((debt) => debt._id.toString()),
+    DEBT_STATUS_EXPIRED,
+    userId
+  );
+  await Debt.UpdateManyDebtStatus(
+    debtsToBePending.map((debt) => debt._id.toString()),
     DEBT_STATUS_PENDING,
+    userId
+  );
+  await Debt.UpdateManyDebtStatus(
+    debtsToCharge.map((debt) => debt._id.toString()),
+    DEBT_STATUS_CHARGED,
     userId
   );
 
