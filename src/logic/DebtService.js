@@ -342,6 +342,47 @@ const GetDebtsByAddressId = async (addressId, statuses) => {
   return debts;
 };
 
+const GetDebtsByAddressIdPaginated = async (
+  addressId,
+  statuses,
+  page,
+  pageSize
+) => {
+  const selectedStatuses =
+    statuses === "all"
+      ? `${DEBT_STATUS_PENDING},${DEBT_STATUS_PAID},${DEBT_STATUS_IN_REVIEW},${DEBT_STATUS_CANCELLED}`
+      : statuses;
+  const debts = await Debt.GetByAddressPaginated(
+    addressId,
+    selectedStatuses.split(","),
+    page,
+    pageSize
+  );
+  return debts;
+};
+
+const GetDebtsGroupedBySuburbAndAddress = async (
+  suburbId,
+  statuses,
+  maxDate,
+  page,
+  pageSize
+) => {
+  const selectedStatuses =
+    statuses === "all"
+      ? `${DEBT_STATUS_PENDING},${DEBT_STATUS_PAID},${DEBT_STATUS_IN_REVIEW},${DEBT_STATUS_CANCELLED}`
+      : statuses;
+  const selectedMaxDate = maxDate ? new Date(maxDate) : new Date();
+  const debts = await Debt.GetDebtsGroupedBySuburbIdAndAddressId(
+    suburbId,
+    selectedStatuses.split(","),
+    selectedMaxDate,
+    Number.parseInt(page, 10) || 0,
+    Number.parseInt(pageSize, 10) || 10
+  );
+  return debts;
+};
+
 const UpdateDebtsReadyToBeCharged = async (
   suburbId,
   currentDate = new Date()
@@ -726,6 +767,8 @@ module.exports = {
   ApplyDebtsToAddresses,
   GetDebtsBySuburbPaginated,
   GetDebtsByAddressId,
+  GetDebtsByAddressIdPaginated,
+  GetDebtsGroupedBySuburbAndAddress,
   GetDebtPaymentBySuburb,
   UpdateDebtsReadyToBeCharged,
   UpdateDebtsExpired,
