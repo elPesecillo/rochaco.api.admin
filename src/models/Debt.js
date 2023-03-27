@@ -8,6 +8,8 @@ const {
   DEBT_STATUS_CHARGED,
 } = require("../constants/DebtTypes");
 
+const { ObjectId } = mongoose.Types;
+
 const MAX_LIMIT = 50;
 
 const DebtSchema = new mongoose.Schema({
@@ -94,8 +96,34 @@ DebtSchema.statics = {
       periodDate: { $in: periodDates },
     }).lean();
   },
+  async GetDebtsByIds(debtIds) {
+    return this.find({ _id: { $in: debtIds } }).lean();
+  },
   async SaveDebts(debts) {
     return this.insertMany(debts);
+  },
+  async GetByAddressPaginated(addressId, statuses, page, limit) {
+    let selectedLimit = parseInt(limit, 10);
+    if (selectedLimit > MAX_LIMIT) {
+      selectedLimit = MAX_LIMIT;
+    }
+    let selectedPage = parseInt(page, 10);
+    if (page < 0) {
+      selectedPage = 0;
+    }
+    const skip = selectedPage * selectedLimit;
+    const query = {
+      addressId,
+      status: { $in: statuses },
+    };
+    const total = await this.countDocuments(query);
+    const debts = await this.find(query)
+      .populate("debtConfigId")
+      .sort({ periodDate: "asc" })
+      .skip(skip)
+      .limit(selectedLimit)
+      .lean();
+    return { total, debts, page, pageSize: selectedLimit };
   },
   async UpdateManyDebtStatus(debtIds, status, userId, debtPayments) {
     const addDebtPayment = !!debtPayments;
@@ -182,7 +210,7 @@ DebtSchema.statics = {
     };
     return this.find(query)
       .sort({ periodDate: "asc" })
-      .populate("Address")
+      .populate("addressId")
       .populate("debtConfigId")
       .lean();
   },
@@ -223,13 +251,23 @@ DebtSchema.statics = {
       },
     ]);
   },
-  async GetDebtsGroupedBySuburbIdAndAddressId(suburbId, statuses, maxDate) {
+  async GetDebtsGroupedBySuburbIdAndAddressId(
+    suburbId,
+    statuses,
+    maxDate,
+    page = 0,
+    limit = 10
+  ) {
+    const selectedLimit = parseInt(limit, 10);
     const query = {
-      suburbId,
-      status: { $in: statuses },
-      periodDate: { $lte: maxDate },
+      $and: [
+        { suburbId: ObjectId(suburbId) },
+        { status: { $in: statuses } },
+        { periodDate: { $lte: maxDate } },
+      ],
     };
-    return this.aggregate([
+    const skip = page * selectedLimit;
+    const aggregateQuery = [
       {
         $match: query,
       },
@@ -237,11 +275,27 @@ DebtSchema.statics = {
         $group: {
           _id: { suburbId: "$suburbId", addressId: "$addressId" },
           total: {
-            $sum: "$missingAmount",
+            $sum: "$amount",
           },
         },
       },
-    ]);
+    ];
+    const total = (await this.aggregate(aggregateQuery)).length;
+    const groupedDebts = await this.aggregate([
+      ...aggregateQuery,
+      {
+        $lookup: {
+          from: "addresses",
+          localField: "_id.addressId",
+          foreignField: "_id",
+          as: "address",
+        },
+      },
+    ])
+      .sort({ total: "desc" })
+      .skip(skip)
+      .limit(selectedLimit);
+    return { total, groupedDebts, page, pageSize: selectedLimit };
   },
 };
 
