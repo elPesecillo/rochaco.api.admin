@@ -354,7 +354,7 @@ exports.saveUserBySuburbId = async (req, res) => {
       }
       const updateCode = await SuburbInvite.UpdateSuburbInviteUsed(
         code,
-        save.userData._doc._id.toString()
+        save.userData._id.toString()
       );
 
       res.status("200").json({
