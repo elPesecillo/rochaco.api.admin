@@ -292,7 +292,7 @@ const ApplyDebtsToAddresses = async (debtConfigId, addressesIds) => {
     suburbId: debtConfig.suburbId,
     addressId: address._id,
     debtConfigId: debtConfig._id.toString(),
-    status: DEBT_STATUS_PENDING,
+    status: DEBT_STATUS_CHARGED,
     chargeDate: dayjs(currentDay).add(
       Number.parseInt(debtConfig.chargeOnDay, 10) - 1,
       "day"
@@ -338,6 +338,47 @@ const GetDebtsByAddressId = async (addressId, statuses) => {
   const debts = await Debt.GetDebtsByAddressId(
     addressId,
     selectedStatuses.split(",")
+  );
+  return debts;
+};
+
+const GetDebtsByAddressIdPaginated = async (
+  addressId,
+  statuses,
+  page,
+  pageSize
+) => {
+  const selectedStatuses =
+    statuses === "all"
+      ? `${DEBT_STATUS_PENDING},${DEBT_STATUS_PAID},${DEBT_STATUS_IN_REVIEW},${DEBT_STATUS_CANCELLED}`
+      : statuses;
+  const debts = await Debt.GetByAddressPaginated(
+    addressId,
+    selectedStatuses.split(","),
+    page,
+    pageSize
+  );
+  return debts;
+};
+
+const GetDebtsGroupedBySuburbAndAddress = async (
+  suburbId,
+  statuses,
+  maxDate,
+  page,
+  pageSize
+) => {
+  const selectedStatuses =
+    statuses === "all"
+      ? `${DEBT_STATUS_PENDING},${DEBT_STATUS_PAID},${DEBT_STATUS_IN_REVIEW},${DEBT_STATUS_CANCELLED}`
+      : statuses;
+  const selectedMaxDate = maxDate ? new Date(maxDate) : new Date();
+  const debts = await Debt.GetDebtsGroupedBySuburbIdAndAddressId(
+    suburbId,
+    selectedStatuses.split(","),
+    selectedMaxDate,
+    Number.parseInt(page, 10) || 0,
+    Number.parseInt(pageSize, 10) || 10
   );
   return debts;
 };
@@ -552,9 +593,34 @@ const RejectDebtPayment = async (paymentId, userId, comment) => {
     userId,
     comment
   );
+  const debtDetails = await Debt.GetDebtsByIds(
+    payment.debts.map((debt) => debt.debtId.toString())
+  );
+  const currentDate = new Date();
+  const debtsToBeExpired = debtDetails.filter(
+    (debt) => currentDate > debt.expirationDate
+  );
+  const debtsToCharge = debtDetails.filter(
+    (debt) =>
+      currentDate > debt.periodDate && currentDate <= debt.expirationDate
+  );
+  const debtsToBePending = debtDetails.filter(
+    (debt) => currentDate < debt.periodDate
+  );
+
   await Debt.UpdateManyDebtStatus(
-    payment.debts.map((debt) => debt.debtId.toString()),
+    debtsToBeExpired.map((debt) => debt._id.toString()),
+    DEBT_STATUS_EXPIRED,
+    userId
+  );
+  await Debt.UpdateManyDebtStatus(
+    debtsToBePending.map((debt) => debt._id.toString()),
     DEBT_STATUS_PENDING,
+    userId
+  );
+  await Debt.UpdateManyDebtStatus(
+    debtsToCharge.map((debt) => debt._id.toString()),
+    DEBT_STATUS_CHARGED,
     userId
   );
 
@@ -701,6 +767,8 @@ module.exports = {
   ApplyDebtsToAddresses,
   GetDebtsBySuburbPaginated,
   GetDebtsByAddressId,
+  GetDebtsByAddressIdPaginated,
+  GetDebtsGroupedBySuburbAndAddress,
   GetDebtPaymentBySuburb,
   UpdateDebtsReadyToBeCharged,
   UpdateDebtsExpired,

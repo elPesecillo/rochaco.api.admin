@@ -110,6 +110,37 @@ exports.GetDebtsByAddressId = async (req, res) => {
   }
 };
 
+exports.GetDebtsByAddressIdPaginated = async (req, res) => {
+  try {
+    const { addressId, statuses, page, pageSize } = req.query;
+    const result = await debtService.GetDebtsByAddressIdPaginated(
+      addressId,
+      statuses,
+      Number.parseInt(page, 10),
+      Number.parseInt(pageSize, 10)
+    );
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.GetDebtsGroupedBySuburbAndAddress = async (req, res) => {
+  try {
+    const { suburbId, statuses, maxDate, page, pageSize } = req.query;
+    const result = await debtService.GetDebtsGroupedBySuburbAndAddress(
+      suburbId,
+      statuses,
+      maxDate,
+      page,
+      pageSize
+    );
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.GetDebtPaymentBySuburb = async (req, res) => {
   try {
     const { suburbId, statuses, address, page, limit = 10 } = req.query;
@@ -134,7 +165,7 @@ exports.SaveDebtPayment = async (req, res) => {
       addressId,
       amount: rawAmount,
       userId,
-      debts: rawDebts,
+      debtIds: rawDebts,
     } = req.body;
     const debts = JSON.parse(rawDebts);
     const amount = Number.parseFloat(rawAmount);

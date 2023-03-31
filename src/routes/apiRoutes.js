@@ -198,6 +198,14 @@ router.get(
   debt.GetDebtsBySuburbPaginated
 );
 router.get("/api/debt/getDebtsByAddressId", debt.GetDebtsByAddressId);
+router.get(
+  "/api/debt/getByAddressPaginated",
+  debt.GetDebtsByAddressIdPaginated
+);
+router.get(
+  "/api/debt/getGroupedBySuburbAndAddress",
+  debt.GetDebtsGroupedBySuburbAndAddress
+);
 router.get("/api/debt/getDebtPaymentBySuburb", debt.GetDebtPaymentBySuburb);
 router.post("/api/debt/saveDebtPayment", upload2.any(), debt.SaveDebtPayment);
 router.get("/api/debt/getDebtPaymentById", debt.GetDebtPaymentById);
