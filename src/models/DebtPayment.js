@@ -110,6 +110,7 @@ DebtPaymentSchema.statics = {
     return this.findById(paymentId)
       .populate("debts.debtId")
       .populate("addressId")
+      .populate({ path: "debts.debtId", populate: { path: "debtConfigId" } })
       .lean();
   },
   async SavePayment(payment) {
@@ -171,6 +172,7 @@ DebtPaymentSchema.statics = {
     const debtPayments = await this.find(query)
       .populate("addressId")
       .populate("debts.debtId")
+      .populate({ path: "debts.debtId", populate: { path: "debtConfigId" } })
       .sort({ createdAt: -1 })
       .skip(selectedPage * selectedLimit)
       .limit(limit)

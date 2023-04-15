@@ -462,7 +462,7 @@ const GetDebtPaymentBySuburb = async (
       : statuses;
   let addressesIds = [];
   const filterByAddress = address && address.trim() !== "";
-  if (address.trim() !== "") {
+  if (filterByAddress) {
     addressesIds = (
       await Address.GetAddressesByCoincidences(suburbId, address)
     ).map((foundAddress) => foundAddress._id.toString());

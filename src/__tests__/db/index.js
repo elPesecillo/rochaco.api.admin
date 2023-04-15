@@ -40,6 +40,25 @@ const InitDebtConfig = async (suburbId, userId) => {
   return debtConfig;
 };
 
+const InitDebtAssignments = async (
+  debtConfigId,
+  addressId,
+  suburbId,
+  userId
+) => {
+  console.log(debtConfigId, addressId, suburbId, userId);
+  const debtAssignments = await debtService.UpdateDebtAssignments([
+    {
+      debtConfigId,
+      addressId,
+      delete: false,
+      suburbId,
+      userId,
+    },
+  ]);
+  return debtAssignments;
+};
+
 exports.InitializeDb = async () => {
   const mongoServer = await db.InitMongoServer();
   await mongoServer.Connect();
@@ -52,5 +71,18 @@ exports.InitializeDb = async () => {
     adminUser._id.toString()
   );
 
-  return { mongoServer, suburb, addresses, adminUser, defaultDebtConfig };
+  const defaultDebtAssigments = await InitDebtAssignments(
+    defaultDebtConfig._id.toString(),
+    adminUser.addressId,
+    suburb.id,
+    defaultDebtConfig.userId
+  );
+  return {
+    mongoServer,
+    suburb,
+    addresses,
+    adminUser,
+    defaultDebtConfig,
+    defaultDebtAssigments,
+  };
 };
