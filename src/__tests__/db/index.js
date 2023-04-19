@@ -46,7 +46,6 @@ const InitDebtAssignments = async (
   suburbId,
   userId
 ) => {
-  console.log(debtConfigId, addressId, suburbId, userId);
   const debtAssignments = await debtService.UpdateDebtAssignments([
     {
       debtConfigId,
