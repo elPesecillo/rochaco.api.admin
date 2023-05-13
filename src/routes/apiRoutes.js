@@ -214,4 +214,8 @@ router.post("/api/debt/rejectDebtPayment", debt.RejectDebtPayment);
 router.post("/api/debt/editDebtPayment", upload2.any(), debt.EditDebtPayment);
 router.post("/api/debt/adminEditDebtPayment", debt.AdminEditDebtPayment);
 
+// partners apis
+router.get("/api/partner/getRFs", suburb.GetRFIDs);
+router.post("/api/partner/setRFs", suburb.SetRFIDs);
+
 module.exports = router;
