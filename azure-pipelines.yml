@@ -9,7 +9,7 @@ trigger:
 variables:
 
   # Azure Resource Manager connection created during pipeline creation
-  azureSubscription: 'ddcd673e-8343-44d5-b9c5-3f684b6a944e'
+  azureSubscription: 'Neighby prod connection'
 
   # Web app name
   webAppName: 'neighby-admin-prd'
@@ -32,7 +32,7 @@ stages:
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '18.x'
+        versionSpec: '16.8'
       displayName: 'Install Node.js'
 
     - script: |
@@ -72,6 +72,6 @@ stages:
               azureSubscription: $(azureSubscription)
               appType: webAppLinux
               appName: $(webAppName)
-              runtimeStack: 'NODE|18.12'
+              runtimeStack: 'NODE|16.8'
               package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
               startUpCommand: 'npm run start'
