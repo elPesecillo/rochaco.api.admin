@@ -6,7 +6,7 @@ const mongoose = require("mongoose");
 const base64 = require("base-64");
 const GuestSchema = require("./schemas/guestSchema");
 const PushTokenSchema = require("./schemas/pushTokenSchema");
-const RFIdSchema = require("./schemas/RFIdSchema");
+// const RFIdSchema = require("./schemas/RFIdSchema");
 
 const UserSchema = new mongoose.Schema({
   name: {
@@ -117,7 +117,7 @@ const UserSchema = new mongoose.Schema({
   limitedReason: {
     type: String,
   },
-  rfids: [RFIdSchema],
+  // rfids: [RFIdSchema],
 });
 
 /**
@@ -563,58 +563,58 @@ UserSchema.statics = {
   changeLimited(userId, limited) {
     return this.updateOne({ _id: userId }, { $set: { limited } });
   },
-  addUserRfid(userId, rfId) {
-    return new Promise((resolve, reject) => {
-      this.findOne({ _id: userId }).exec((err, result) => {
-        if (err) reject(err);
-        else if (!result) reject({ message: "user not found" });
-        else {
-          const currentRfids = result.rfids || [];
-          const mergedRfids = currentRfids.some((item) => item.rfid === rfId)
-            ? currentRfids
-            : [...currentRfids, { rfid: rfId }];
+  // addUserRfid(userId, rfId) {
+  //   return new Promise((resolve, reject) => {
+  //     this.findOne({ _id: userId }).exec((err, result) => {
+  //       if (err) reject(err);
+  //       else if (!result) reject({ message: "user not found" });
+  //       else {
+  //         const currentRfids = result.rfids || [];
+  //         const mergedRfids = currentRfids.some((item) => item.rfid === rfId)
+  //           ? currentRfids
+  //           : [...currentRfids, { rfid: rfId }];
 
-          this.findOneAndUpdate(
-            { _id: userId },
-            { $set: { rfids: [...mergedRfids] } },
-            { new: true },
-            (error, user) => {
-              if (error) reject(error);
-              else {
-                resolve({ userId: user._id, rfids: user.rfids });
-              }
-            }
-          );
-        }
-      });
-    });
-  },
-  removeUserRfid(userId, rfId) {
-    return new Promise((resolve, reject) => {
-      this.findOne({ _id: userId }).exec((err, result) => {
-        if (err) reject(err);
-        else if (!result) reject({ message: "user not found" });
-        else {
-          const currentRfids = result.rfids || [];
-          const filteredRfids = currentRfids.filter(
-            (item) => item.rfid !== rfId
-          );
+  //         this.findOneAndUpdate(
+  //           { _id: userId },
+  //           { $set: { rfids: [...mergedRfids] } },
+  //           { new: true },
+  //           (error, user) => {
+  //             if (error) reject(error);
+  //             else {
+  //               resolve({ userId: user._id, rfids: user.rfids });
+  //             }
+  //           }
+  //         );
+  //       }
+  //     });
+  //   });
+  // },
+  // removeUserRfid(userId, rfId) {
+  //   return new Promise((resolve, reject) => {
+  //     this.findOne({ _id: userId }).exec((err, result) => {
+  //       if (err) reject(err);
+  //       else if (!result) reject({ message: "user not found" });
+  //       else {
+  //         const currentRfids = result.rfids || [];
+  //         const filteredRfids = currentRfids.filter(
+  //           (item) => item.rfid !== rfId
+  //         );
 
-          this.findOneAndUpdate(
-            { _id: userId },
-            { $set: { rfids: [...filteredRfids] } },
-            { new: true },
-            (error, user) => {
-              if (error) reject(error);
-              else {
-                resolve({ userId: user._id, rfids: user.rfids });
-              }
-            }
-          );
-        }
-      });
-    });
-  },
+  //         this.findOneAndUpdate(
+  //           { _id: userId },
+  //           { $set: { rfids: [...filteredRfids] } },
+  //           { new: true },
+  //           (error, user) => {
+  //             if (error) reject(error);
+  //             else {
+  //               resolve({ userId: user._id, rfids: user.rfids });
+  //             }
+  //           }
+  //         );
+  //       }
+  //     });
+  //   });
+  // },
   /**
    * Validate if the user token is active
    */
@@ -711,7 +711,7 @@ UserSchema.statics = {
           email: 11,
           loginName: 12,
           addressId: 13,
-          rfids: 14,
+          // rfids: 14,
           pushTokens: 15,
         })
         .exec((err, result) => {
@@ -745,6 +745,9 @@ UserSchema.statics = {
         }
       });
     });
+  },
+  getUsersByAddressId(addressId) {
+    return this.find({ addressId }).lean();
   },
   updateUserTerms(userId, termsVersion) {
     return new Promise((resolve, reject) => {
