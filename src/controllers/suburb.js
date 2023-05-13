@@ -177,7 +177,7 @@ exports.saveSuburbConfig = (req, res) => {
   if (ObjectId.isValid(suburbId)) {
     suburbService
       .saveSuburbConfig(suburbId, config)
-      .then((sub) => {
+      .then(() => {
         res.status(200).json({
           success: true,
           message:
@@ -518,12 +518,14 @@ exports.getSuburbAutomationInfo = async (req, res) => {
     if (ObjectId.isValid(suburbId)) {
       const addresses = await addressService.getAddressesBySuburbId(suburbId);
       const users = await userService.getUsersBySuburb(suburbId);
-      const addressesInfo = addresses.map((a) => {
+      const addressesInfo = addresses.map((address) => {
         const usersAddress = users.filter((u) =>
-          u.addressId ? u.addressId.toString() === a._id.toString() : false
+          u.addressId
+            ? u.addressId.toString() === address._id.toString()
+            : false
         );
         return {
-          address: { ...a },
+          address: { ...address },
           status: {
             active: usersAddress.some((u) => u.active),
             limited: usersAddress
@@ -531,7 +533,7 @@ exports.getSuburbAutomationInfo = async (req, res) => {
               .some((u) =>
                 typeof u.limited !== "undefined" ? u.limited : false
               ),
-            rfids: usersAddress.map((u) => u.rfids || []).flat(),
+            rfids: address.rfids || [], // usersAddress.map((u) => u.rfids || []).flat(),
           },
         };
       });
@@ -561,6 +563,42 @@ exports.getSuburbData = async (req, res) => {
       message:
         err.message ||
         "An unknown error occurs while trying to get automation info.",
+    });
+  }
+};
+
+exports.GetRFIDs = async (req, res) => {
+  try {
+    const { street, streetNumber, suburbId } = req.query;
+    const result = await suburbService.GetAddressRFIDs(
+      street,
+      streetNumber,
+      suburbId
+    );
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message ||
+        "An unknown error occurs while trying to get address rfids.",
+    });
+  }
+};
+
+exports.SetRFIDs = async (req, res) => {
+  try {
+    const { street, streetNumber, suburbId, rfIds } = req.body;
+    const result = await suburbService.SetAddressRFIDs(
+      street,
+      streetNumber,
+      suburbId,
+      rfIds
+    );
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to set rfids.",
     });
   }
 };

@@ -97,7 +97,9 @@ DebtSchema.statics = {
     }).lean();
   },
   async GetDebtsByIds(debtIds) {
-    return this.find({ _id: { $in: debtIds } }).lean();
+    return this.find({ _id: { $in: debtIds } })
+      .populate("debtConfigId")
+      .lean();
   },
   async SaveDebts(debts) {
     return this.insertMany(debts);
