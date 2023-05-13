@@ -36,6 +36,8 @@ const apiWithKey = [
   "/api/notification/newReservation",
   "/api/notification/approveRejectReservation",
   "/api/notification/newSurvey",
+  "/api/partner/getRFs",
+  "/api/partner/setRFs",
 ];
 
 const protectedApi = ["/api/suburb/approveReject"];

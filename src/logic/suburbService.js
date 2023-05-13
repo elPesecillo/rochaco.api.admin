@@ -1,3 +1,4 @@
+/* eslint-disable indent */
 /* eslint-disable prefer-promise-reject-errors */
 const { ObjectId } = require("mongoose").Types;
 const CryptoJS = require("crypto-js");
@@ -10,6 +11,7 @@ const User = require("../models/user");
 const SuburbConfig = require("../models/suburbConfig");
 const SuburbStreet = require("../models/suburbStreet");
 const suburbData = require("../models/suburbData");
+const Address = require("../models/Address");
 
 const pjson = require("../../package.json");
 
@@ -239,8 +241,8 @@ const saveSuburbStreet = async (suburbId, street) => {
     const suburbStreets = await Suburb.GetSuburbStreets(suburbId);
     const selectedStreet = suburbStreets.streets
       ? suburbStreets.streets.filter(
-        (st) => st.street.toLowerCase() === street.street.toLowerCase()
-      )
+          (st) => st.street.toLowerCase() === street.street.toLowerCase()
+        )
       : [];
     if (selectedStreet.length === 0) {
       const saveStreet = await SuburbStreet.SaveStreet(street);
@@ -370,6 +372,40 @@ const EditMap = async (mapUrl, suburbId) => {
   }
 };
 
+const GetAddressRFIDs = async (street, streetNumber, suburbId) => {
+  const selectedAddress = await Address.GetAddressByNameNumberAndSuburbId(
+    street,
+    streetNumber,
+    suburbId
+  );
+  if (selectedAddress) {
+    return selectedAddress.rfIds || [];
+  }
+  return [];
+};
+
+const SetAddressRFIDs = async (street, streetNumber, suburbId, rfIds) => {
+  const selectedAddress = await Address.GetAddressByNameNumberAndSuburbId(
+    street,
+    streetNumber,
+    suburbId
+  );
+  if (selectedAddress) {
+    const rfsToAdd = rfIds.filter((rfId) => rfId.add);
+    const rfsToRemove = rfIds.filter((rfId) => rfId.remove);
+    const addPromise = rfsToAdd.map((rfId) =>
+      Address.AddAddressRFId(selectedAddress._id.toString(), rfId.rfId)
+    );
+    const added = await Promise.all(addPromise);
+    const removePromise = rfsToRemove.map((rfId) =>
+      Address.RemoveAddressRFId(selectedAddress._id.toString(), rfId.rfId)
+    );
+    const removed = await Promise.all(removePromise);
+    return [...added, ...removed];
+  }
+  return [];
+};
+
 module.exports = {
   saveSuburb,
   suburbAddStatus,
@@ -394,4 +430,6 @@ module.exports = {
   RemovePhone,
   RemoveAccount,
   EditMap,
+  GetAddressRFIDs,
+  SetAddressRFIDs,
 };

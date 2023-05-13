@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const moment = require("moment");
+const RFIdSchema = require("./schemas/RFIdSchema");
 
 const AddressSchema = new mongoose.Schema({
   suburbId: {
@@ -15,6 +16,7 @@ const AddressSchema = new mongoose.Schema({
     type: Date,
     default: moment.utc(),
   },
+  rfIds: [RFIdSchema],
 });
 
 AddressSchema.statics = {
@@ -100,6 +102,35 @@ AddressSchema.statics = {
   },
   GetAddressByNameAndNumber(streetName, number) {
     return this.findOne({ name: streetName, number }).lean();
+  },
+  GetAddressByNameNumberAndSuburbId(streetName, number, suburbId) {
+    return this.findOne({ name: streetName, number, suburbId }).lean();
+  },
+  async AddAddressRFId(addressId, rfid) {
+    const address = await this.findOne({ _id: addressId });
+    if (address) {
+      const alreadyExists = address.rfIds?.find((r) => r.rfid === rfid);
+      if (!alreadyExists) {
+        address.rfIds.push({ rfid, transtime: moment.utc() });
+        return address.save();
+      }
+    }
+    return null;
+  },
+  async RemoveAddressRFId(addressId, rfid) {
+    const address = await this.findOne({ _id: addressId }).lean();
+    if (address) {
+      const alreadyExists = address.rfIds?.find((r) => r.rfid === rfid);
+      if (alreadyExists) {
+        const rfIds = address.rfIds.filter((r) => r.rfid !== rfid);
+        return this.findOneAndUpdate(
+          { _id: addressId },
+          { rfIds },
+          { new: true }
+        );
+      }
+    }
+    return null;
   },
 };
 
