@@ -533,7 +533,7 @@ exports.getSuburbAutomationInfo = async (req, res) => {
               .some((u) =>
                 typeof u.limited !== "undefined" ? u.limited : false
               ),
-            rfids: address.rfids || [], // usersAddress.map((u) => u.rfids || []).flat(),
+            rfids: address.rfIds || [], // usersAddress.map((u) => u.rfids || []).flat(),
           },
         };
       });
