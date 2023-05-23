@@ -16,9 +16,10 @@ const saveUser = (userObj) =>
           });
         } else {
           const addressId = (
-            await AddressService.getAddressByNameAndNumber(
+            await AddressService.GetAddressByNameNumberAndSuburbId(
               userObj.street,
-              userObj.streetNumber
+              userObj.streetNumber,
+              userObj.suburb
             )
           )._id.toString();
           // create the user
@@ -125,9 +126,10 @@ const saveUserWithPassword = async (newUser) => {
           userObj.password = encryptedPassword;
 
           const addressId = (
-            await AddressService.getAddressByNameAndNumber(
+            await AddressService.GetAddressByNameNumberAndSuburbId(
               userObj.street,
-              userObj.streetNumber
+              userObj.streetNumber,
+              userObj.suburb
             )
           )._id.toString();
           saveUser({ ...userObj, addressId }).then(
