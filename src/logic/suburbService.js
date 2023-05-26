@@ -406,6 +406,18 @@ const SetAddressRFIDs = async (street, streetNumber, suburbId, rfIds) => {
   return [];
 };
 
+const AddRFId = async (addressId, rfId) =>
+  Address.AddRFIdToAddress(addressId, rfId);
+
+const UpdateRFId = async (addressId, rfId, newRfId) =>
+  Address.UpdateRFIdToAddress(addressId, rfId, newRfId);
+
+const RemoveRFId = async (addressId, rfId) =>
+  Address.RemoveRFIdFromAddress(addressId, rfId);
+
+const GetAddress = async (addressId) =>
+  Address.GetAddressByAddressId(addressId);
+
 module.exports = {
   saveSuburb,
   suburbAddStatus,
@@ -432,4 +444,8 @@ module.exports = {
   EditMap,
   GetAddressRFIDs,
   SetAddressRFIDs,
+  AddRFId,
+  UpdateRFId,
+  RemoveRFId,
+  GetAddress,
 };

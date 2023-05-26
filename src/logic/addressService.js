@@ -67,9 +67,17 @@ const getAddressByNameAndNumber = async (streetName, number) => {
   }
 };
 
-const GetAddressByNameNumberAndSuburbId = async (streetName, number, suburbId) => {
+const GetAddressByNameNumberAndSuburbId = async (
+  streetName,
+  number,
+  suburbId
+) => {
   try {
-    return await Address.GetAddressByNameNumberAndSuburbId(streetName, number, suburbId);
+    return await Address.GetAddressByNameNumberAndSuburbId(
+      streetName,
+      number,
+      suburbId
+    );
   } catch (err) {
     throw err;
   }
@@ -93,6 +101,11 @@ const GetAddressesByCoincidences = async (suburbId, address) => {
   return addresses;
 };
 
+const GetAddress = async (addressId) => {
+  const address = await Address.GetAddressByAddressId(addressId);
+  return address;
+};
+
 module.exports = {
   migrateAddresses,
   getSuburbStreets,
@@ -102,4 +115,5 @@ module.exports = {
   getAddressesBySuburbId,
   GetAddressesByAddressesIds,
   GetAddressesByCoincidences,
+  GetAddress,
 };
