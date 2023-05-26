@@ -132,6 +132,58 @@ AddressSchema.statics = {
     }
     return null;
   },
+  async AddRFIdToAddress(addressId, rfid) {
+    const address = await this.findOne({ _id: addressId });
+    if (address) {
+      const alreadyExists = address.rfIds?.find((r) => r.rfid === rfid);
+      if (!alreadyExists) {
+        address.rfIds.push({ rfid, transtime: moment.utc() });
+        return address.save();
+      }
+      return address;
+    }
+    return null;
+  },
+  async UpdateRFIdToAddress(addressId, rfid, newRfId) {
+    const address = await this.findOne({ _id: addressId }).lean();
+    if (address) {
+      const alreadyExists = address.rfIds?.find((r) => r.rfid === rfid);
+      if (alreadyExists) {
+        const rfIds = address.rfIds.map((r) => {
+          if (r.rfid === rfid) {
+            return { rfid: newRfId, transtime: moment.utc() };
+          }
+          return r;
+        });
+        return this.findOneAndUpdate(
+          { _id: addressId },
+          { rfIds },
+          { new: true, useFindAndModify: false }
+        );
+      }
+      return address;
+    }
+    return null;
+  },
+  async RemoveRFIdFromAddress(addressId, rfid) {
+    const address = await this.findOne({ _id: addressId }).lean();
+    if (address) {
+      const alreadyExists = address.rfIds?.find((r) => r.rfid === rfid);
+      if (alreadyExists) {
+        const rfIds = address.rfIds.filter((r) => r.rfid !== rfid);
+        return this.findOneAndUpdate(
+          { _id: addressId },
+          { rfIds },
+          { new: true, useFindAndModify: false }
+        );
+      }
+      return address;
+    }
+    return null;
+  },
+  async GetAddressByAddressId(addressId) {
+    return this.findOne({ _id: addressId }).lean();
+  },
 };
 
 const Address = mongoose.model("Address", AddressSchema);

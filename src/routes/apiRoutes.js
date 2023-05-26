@@ -125,6 +125,12 @@ router.get(
   "/api/suburb/getSuburbAutomationInfo",
   suburb.getSuburbAutomationInfo
 );
+router.get("/api/suburb/getRFs", suburb.GetRFIDs);
+router.post("/api/suburb/setRFs", suburb.SetRFIDs);
+router.get("/api/suburb/getAddress", suburb.GetAddress);
+router.post("/api/suburb/addRFId", suburb.AddRFId);
+router.patch("/api/suburb/updateRFId", suburb.UpdateRFId);
+router.delete("/api/suburb/removeRFId", suburb.RemoveRFId);
 
 // suburb data
 router.post("/api/suburb/data", suburb.SaveSuburbData);

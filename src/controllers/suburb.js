@@ -602,3 +602,55 @@ exports.SetRFIDs = async (req, res) => {
     });
   }
 };
+
+exports.AddRFId = async (req, res) => {
+  try {
+    const { addressId, rfId } = req.body;
+    const result = await suburbService.AddRFId(addressId, rfId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to add rfid.",
+    });
+  }
+};
+
+exports.UpdateRFId = async (req, res) => {
+  try {
+    const { addressId, rfId, newRfId } = req.body;
+    const result = await suburbService.UpdateRFId(addressId, rfId, newRfId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to update rfid.",
+    });
+  }
+};
+
+exports.RemoveRFId = async (req, res) => {
+  try {
+    const { addressId, rfId } = req.query;
+    const result = await suburbService.RemoveRFId(addressId, rfId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to remove rfid.",
+    });
+  }
+};
+
+exports.GetAddress = async (req, res) => {
+  try {
+    const { addressId } = req.query;
+    const result = await suburbService.GetAddress(addressId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying get address.",
+    });
+  }
+};
