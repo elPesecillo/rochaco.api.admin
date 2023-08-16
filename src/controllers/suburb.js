@@ -603,6 +603,32 @@ exports.SetRFIDs = async (req, res) => {
   }
 };
 
+exports.GetAllRFIDs = async (req, res) => {
+  try {
+    const { suburbId } = req.query;
+    const result = await suburbService.GetAllRFIDs(suburbId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to get rfids.",
+    });
+  }
+};
+
+exports.SetAllRFIDs = async (req, res) => {
+  try {
+    const addresses = req.body;
+    const result = await suburbService.SetAllRFIDs(addresses);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to get rfids.",
+    });
+  }
+};
+
 exports.AddRFId = async (req, res) => {
   try {
     const { addressId, rfId } = req.body;

@@ -222,6 +222,8 @@ router.post("/api/debt/adminEditDebtPayment", debt.AdminEditDebtPayment);
 
 // partners apis
 router.get("/api/partner/getRFs", suburb.GetRFIDs);
+router.get("/api/partner/getAllRFs", suburb.GetAllRFIDs);
 router.post("/api/partner/setRFs", suburb.SetRFIDs);
+router.post("/api/partner/setAllRFs", suburb.SetAllRFIDs);
 
 module.exports = router;

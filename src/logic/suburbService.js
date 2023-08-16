@@ -384,6 +384,26 @@ const GetAddressRFIDs = async (street, streetNumber, suburbId) => {
   return [];
 };
 
+const GetAllRFIDs = async (suburbId) => {
+  const addresses = await Address.GetAddressesBySuburb(suburbId);
+  const leanAddresses = addresses.map((address) => ({
+    id: address._id,
+    name: address.name,
+    number: address.number,
+    rfIds: address.rfIds ? address.rfIds.map((rfId) => rfId.rfid) : [],
+  }));
+  return leanAddresses;
+};
+
+const SetAllRFIDs = async (addresses) => {
+  const updateRFsPromises = addresses?.map((address) =>
+    Address.UpdateRFs({ addressId: address.id, rfs: address.rfIds })
+  );
+
+  const result = await Promise.all(updateRFsPromises);
+  return result;
+};
+
 const SetAddressRFIDs = async (street, streetNumber, suburbId, rfIds) => {
   const selectedAddress = await Address.GetAddressByNameNumberAndSuburbId(
     street,
@@ -443,7 +463,9 @@ module.exports = {
   RemoveAccount,
   EditMap,
   GetAddressRFIDs,
+  GetAllRFIDs,
   SetAddressRFIDs,
+  SetAllRFIDs,
   AddRFId,
   UpdateRFId,
   RemoveRFId,
