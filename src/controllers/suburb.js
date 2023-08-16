@@ -533,7 +533,7 @@ exports.getSuburbAutomationInfo = async (req, res) => {
               .some((u) =>
                 typeof u.limited !== "undefined" ? u.limited : false
               ),
-            rfids: address.rfids || [], // usersAddress.map((u) => u.rfids || []).flat(),
+            rfids: address.rfIds || [], // usersAddress.map((u) => u.rfids || []).flat(),
           },
         };
       });
@@ -599,6 +599,32 @@ exports.SetRFIDs = async (req, res) => {
     res.status(500).json({
       message:
         err.message || "An unknown error occurs while trying to set rfids.",
+    });
+  }
+};
+
+exports.GetAllRFIDs = async (req, res) => {
+  try {
+    const { suburbId } = req.query;
+    const result = await suburbService.GetAllRFIDs(suburbId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to get rfids.",
+    });
+  }
+};
+
+exports.SetAllRFIDs = async (req, res) => {
+  try {
+    const addresses = req.body;
+    const result = await suburbService.SetAllRFIDs(addresses);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json({
+      message:
+        err.message || "An unknown error occurs while trying to get rfids.",
     });
   }
 };

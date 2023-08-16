@@ -38,6 +38,8 @@ const apiWithKey = [
   "/api/notification/newSurvey",
   "/api/partner/getRFs",
   "/api/partner/setRFs",
+  "/api/partner/getAllRFs",
+  "/api/partner/setAllRFs",
 ];
 
 const protectedApi = ["/api/suburb/approveReject"];

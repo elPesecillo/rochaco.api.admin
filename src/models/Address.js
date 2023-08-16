@@ -181,6 +181,15 @@ AddressSchema.statics = {
     }
     return null;
   },
+  async UpdateRFs({ addressId, rfs }) {
+    return this.findOneAndUpdate(
+      { _id: addressId },
+      {
+        rfIds: rfs.map((rf) => ({ rfid: rf, transtime: new Date() })),
+      },
+      { new: true, useFindAndModify: false }
+    );
+  },
   async GetAddressByAddressId(addressId) {
     return this.findOne({ _id: addressId }).lean();
   },
